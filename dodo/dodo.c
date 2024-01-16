@@ -14,9 +14,6 @@
 #define usb_hw_set   ((usb_hw_t *)hw_set_alias_untyped  (usb_hw))
 #define usb_hw_clear ((usb_hw_t *)hw_clear_alias_untyped(usb_hw))
 
-#define AIRCR_Register (*((volatile uint32_t*)(PPB_BASE + 0x0ED0C)))
-#define SYSTEM_REBOOT_MAGIC 0x05FA0004 // Reset everything but debug connection
-
 #define EP0_IN_ADDR  (USB_DIR_IN  | 0)
 #define EP0_OUT_ADDR (USB_DIR_OUT | 0)
 #define EP1_OUT_ADDR (USB_DIR_OUT | 1)
