@@ -37,7 +37,7 @@ static volatile bool configured = false;
 // Global data buffer for EP0
 static uint8_t ep0_buf[64];
 
-struct usb_endpoint_configuration {
+struct usb_endpoint {
     const struct usb_endpoint_descriptor *descriptor;
     usb_ep_handler handler;
 
@@ -54,7 +54,7 @@ struct usb_device_configuration {
     const unsigned char                       **descriptor_strings;
     const struct usb_configuration_descriptor *config_descriptor;
     const struct usb_interface_descriptor     *interface_descriptor;
-    struct usb_endpoint_configuration         endpoints[USB_NUM_ENDPOINTS];
+    struct usb_endpoint                       endpoints[USB_NUM_ENDPOINTS];
 };
 
 // ==[ Configuration ]=========================================================
@@ -190,7 +190,7 @@ static struct usb_device_configuration dev_config = {
 // ==[ Endpoints ]=============================================================
 
 // set up ep_ctrl register for an endpoint (not EP0)
-void usb_setup_endpoint(const struct usb_endpoint_configuration *ep) {
+void usb_setup_endpoint(const struct usb_endpoint *ep) {
     printf("Set up endpoint 0x%x with buffer address 0x%p\n", ep->descriptor->bEndpointAddress, ep->data_buffer);
 
     // EP0 doesn't have one so return if that is the case
@@ -207,7 +207,7 @@ void usb_setup_endpoint(const struct usb_endpoint_configuration *ep) {
 
 // set up ep_ctrl register for all endpoints (not EP0)
 void usb_setup_endpoints() {
-    const struct usb_endpoint_configuration *endpoints = dev_config.endpoints;
+    const struct usb_endpoint *endpoints = dev_config.endpoints;
     for (int i = 0; i < USB_NUM_ENDPOINTS; i++) {
         if (endpoints[i].descriptor && endpoints[i].handler) {
             usb_setup_endpoint(&endpoints[i]);
@@ -216,8 +216,8 @@ void usb_setup_endpoints() {
 }
 
 // ep addr -> &endpoints[i]
-struct usb_endpoint_configuration *usb_get_endpoint_configuration(uint8_t addr) {
-    struct usb_endpoint_configuration *endpoints = dev_config.endpoints;
+struct usb_endpoint *usb_get_endpoint_configuration(uint8_t addr) {
+    struct usb_endpoint *endpoints = dev_config.endpoints;
     for (int i = 0; i < USB_NUM_ENDPOINTS; i++) {
         if (endpoints[i].descriptor && (endpoints[i].descriptor->bEndpointAddress == addr)) {
             return &endpoints[i];
@@ -227,7 +227,7 @@ struct usb_endpoint_configuration *usb_get_endpoint_configuration(uint8_t addr) 
 }
 
 // start a transfer on an endpoint
-void usb_start_transfer(struct usb_endpoint_configuration *ep, uint8_t *buf, uint16_t len) {
+void usb_start_transfer(struct usb_endpoint *ep, uint8_t *buf, uint16_t len) {
     assert(len <= 64);
 
     printf("Start transfer of len %d on ep addr 0x%x\n", len, ep->descriptor->bEndpointAddress);
@@ -259,14 +259,14 @@ void ep0_in_handler(uint8_t *buf, uint16_t len) {
         usb_hw->dev_addr_ctrl = dev_addr; // Set actual device address in hardware
         should_set_address = false;
     } else { // Receive a ZLSP from the host on EP0 OUT
-        struct usb_endpoint_configuration *ep = usb_get_endpoint_configuration(EP0_OUT_ADDR);
+        struct usb_endpoint *ep = usb_get_endpoint_configuration(EP0_OUT_ADDR);
         usb_start_transfer(ep, NULL, 0);
     }
 }
 
 void ep1_out_handler(uint8_t *buf, uint16_t len) {
     printf("RX %d bytes from host\n", len);
-    struct usb_endpoint_configuration *ep = usb_get_endpoint_configuration(EP2_IN_ADDR); // Send data back to host
+    struct usb_endpoint *ep = usb_get_endpoint_configuration(EP2_IN_ADDR); // Send data back to host
     usb_start_transfer(ep, buf, len);
 }
 
@@ -280,7 +280,7 @@ void ep2_in_handler(uint8_t *buf, uint16_t len) {
 // send device descriptor to host
 void usb_handle_device_descriptor(volatile struct usb_setup_packet *pkt) {
     const struct usb_device_descriptor *d = dev_config.device_descriptor;
-    struct usb_endpoint_configuration *ep = usb_get_endpoint_configuration(EP0_IN_ADDR); // EP0 in
+    struct usb_endpoint *ep = usb_get_endpoint_configuration(EP0_IN_ADDR); // EP0 in
     ep->next_datapid = 1; // force datapid to 1
     usb_start_transfer(ep, (uint8_t *) d, MIN(sizeof(struct usb_device_descriptor), pkt->wLength));
 }
@@ -298,7 +298,7 @@ void usb_handle_config_descriptor(volatile struct usb_setup_packet *pkt) {
     if (pkt->wLength >= d->wTotalLength) {
         memcpy((void *) buf, dev_config.interface_descriptor, sizeof(struct usb_interface_descriptor));
         buf += sizeof(struct usb_interface_descriptor);
-        const struct usb_endpoint_configuration *ep = dev_config.endpoints;
+        const struct usb_endpoint *ep = dev_config.endpoints;
 
         // Copy all the endpoint descriptors starting from EP1
         for (uint i = 2; i < USB_NUM_ENDPOINTS; i++) {
@@ -419,7 +419,7 @@ void usb_handle_setup_packet(void) {
 // ==[ Buffers ]===============================================================
 
 // notify an endpoint that a transfer has completed
-static void usb_handle_ep_buff_done(struct usb_endpoint_configuration *ep) {
+static void usb_handle_ep_buff_done(struct usb_endpoint *ep) {
     uint32_t buffer_control = *ep->buffer_control;
     uint16_t len = buffer_control & USB_BUF_CTRL_LEN_MASK; // get the ep's transfer length
     ep->handler((uint8_t *) ep->data_buffer, len); // call ep's buffer done handler
@@ -430,7 +430,7 @@ static void usb_handle_buff_done(uint ep_num, bool in) {
     uint8_t ep_addr = ep_num | (in ? USB_DIR_IN : 0);
     printf("EP %d (in = %d) done\n", ep_num, in);
     for (uint i = 0; i < USB_NUM_ENDPOINTS; i++) {
-        struct usb_endpoint_configuration *ep = &dev_config.endpoints[i];
+        struct usb_endpoint *ep = &dev_config.endpoints[i];
         if (ep->descriptor && ep->handler) {
             if (ep->descriptor->bEndpointAddress == ep_addr) {
                 usb_handle_ep_buff_done(ep);
