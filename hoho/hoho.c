@@ -7,7 +7,7 @@
 #include "hardware/irq.h" // For interrupt enable and numbers
 #include "hardware/resets.h" // For resetting the USB controller
 
-#include "../include/usb_common.h" // Includes descriptor structs
+#include "usb_common.h" // Includes descriptor structs
 
 // ==[ Declarations ]==========================================================
 
