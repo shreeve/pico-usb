@@ -259,13 +259,13 @@ void ep0_out_handler(uint8_t *buf, uint16_t len) {
     ; // Nothing to do
 }
 
-// EP0 IN transfer complete
+// EP0_IN transfer complete
 // Finish the SET_ADDRESS or receive a ZLSP from host
 void ep0_in_handler(uint8_t *buf, uint16_t len) {
     if (should_set_address) {
         usb_hw->dev_addr_ctrl = device_address; // Set hardware device address
         should_set_address = false;
-    } else { // Receive a ZLSP from the host on EP0 OUT
+    } else { // Receive a ZLSP from the host on EP0_OUT
         usb_start_transfer(usb_get_endpoint(EP0_OUT_ADDR), NULL, 0);
     }
 }
@@ -285,7 +285,7 @@ void ep2_in_handler(uint8_t *buf, uint16_t len) {
 // Send device descriptor to host
 void usb_handle_device_descriptor(volatile struct usb_setup_packet *pkt) {
     const struct usb_device_descriptor *dd = device.device_descriptor;
-    struct usb_endpoint *ep = usb_get_endpoint(EP0_IN_ADDR); // EP0 in
+    struct usb_endpoint *ep = usb_get_endpoint(EP0_IN_ADDR); // EP0_IN
     ep->next_datapid = 1; // Reset to DATA1
     usb_start_transfer(ep, (uint8_t *) dd, MIN(sizeof(struct usb_device_descriptor), pkt->wLength));
 }
