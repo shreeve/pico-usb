@@ -249,7 +249,7 @@ void usb_start_transfer(struct usb_endpoint *ep, uint8_t *buf, uint16_t len) {
 }
 
 // Send a ZLSP (zero length status packet) to host
-void usb_acknowledge_out_request(void) {
+void usb_acknowledge_out_request() {
     usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), NULL, 0);
 }
 
@@ -378,7 +378,7 @@ void usb_set_device_configuration(volatile struct usb_setup_packet *pkt) {
 }
 
 // Respond to a setup packet from the host
-void usb_handle_setup_packet(void) {
+void usb_handle_setup_packet() {
     volatile struct usb_setup_packet *pkt = (volatile struct usb_setup_packet *) &usb_dpram->setup_packet;
     uint8_t req_direction = pkt->bmRequestType;
     uint8_t req = pkt->bRequest;
@@ -463,15 +463,15 @@ static void usb_handle_buff_status() {
 // ==[ Interrupt ]=============================================================
 
 // Bus reset from the host by setting the device address back to 0
-void usb_bus_reset(void) {
+void usb_bus_reset() {
     device_address = 0; // Set address back to 0
-    should_set_address = false;
     usb_hw->dev_addr_ctrl = 0;
+    should_set_address = false;
     configured = false;
 }
 
 // Interrupt handler
-void isr_usbctrl(void) {
+void isr_usbctrl() {
     uint32_t status = usb_hw->ints;
     uint32_t handled = 0;
 
@@ -531,7 +531,7 @@ void usb_device_init() {
 
 // ==[ Main ]==================================================================
 
-int main(void) {
+int main() {
     stdio_init_all();
     printf("USB Device example\n");
     usb_device_init();
