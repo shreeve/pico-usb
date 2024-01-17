@@ -6,7 +6,7 @@ A very small USB library (without TinyUSB) for the rp2040.
 
 The rp2040 chip in the Raspberry Pi Pico/W boards supports USB Host and
 USB Device modes. Most examples and implementations use the excellent
-TinyUSB library to provide this support. However, TinyUSB has some
+[TinyUSB](https://github.com/hathach/tinyusb) library to provide this support. However, TinyUSB has some
 limitations. These include a somewhat hard coded initial configuration
 that requires the code to be recompiled when changes are made.
 
