@@ -14,7 +14,7 @@ that requires the code to be recompiled when changes are made.
 
 The goal of this repo is to offer a simple USB Device example and a
 simple USB Host example, without using any code from TinyUSB. There
-is currently an example in the pico-examples repository that shows
+is currently an example in the [pico-examples](https://github.com/raspberrypi/pico-examples/tree/master/usb/device/dev_lowlevel) repository that shows
 how to implement a basic low level USB Device without TinyUSB. I would
 like to streamline this USB Device example and also add a USB Host
 example to show how to implement basic versions of each of these.
