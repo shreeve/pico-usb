@@ -188,7 +188,7 @@ static struct usb_device device = {
 
 // set up ep_ctrl register for an endpoint (not EP0)
 void usb_setup_endpoint(const struct usb_endpoint *ep) {
-    printf("Set up endpoint 0x%x with buffer address 0x%p\n", ep->descriptor->bEndpointAddress, ep->data_buffer);
+    printf("Set up endpoint 0x%02x with buffer address 0x%p\n", ep->descriptor->bEndpointAddress, ep->data_buffer);
 
     // EP0 doesn't have one so return if that is the case
     if (!ep->endpoint_control) return;
@@ -216,18 +216,22 @@ void usb_setup_endpoints() {
 struct usb_endpoint *usb_get_endpoint_configuration(uint8_t addr) {
     struct usb_endpoint *endpoints = device.endpoints;
     for (int i = 0; i < USB_NUM_ENDPOINTS; i++) {
-        if (endpoints[i].descriptor && (endpoints[i].descriptor->bEndpointAddress == addr)) {
+        if (endpoints[i].descriptor &&
+           (endpoints[i].descriptor->bEndpointAddress == addr)) {
             return &endpoints[i];
         }
     }
     return NULL;
 }
 
+// ==[ Handlers ]==============================================================
+
 // start a transfer on an endpoint
 void usb_start_transfer(struct usb_endpoint *ep, uint8_t *buf, uint16_t len) {
     assert(len <= 64);
 
-    printf("Start transfer of len %d on ep addr 0x%x\n", len, ep->descriptor->bEndpointAddress);
+    printf("Start transfer EP addr 0x%02x of %d byte%s\n",
+            ep->descriptor->bEndpointAddress, len, len == 1 ? "" : "s");
 
     // Prepare buffer control register value
     uint32_t val = len | USB_BUF_CTRL_AVAIL;
@@ -242,8 +246,6 @@ void usb_start_transfer(struct usb_endpoint *ep, uint8_t *buf, uint16_t len) {
 
     *ep->buffer_control = val;
 }
-
-// ==[ Handlers ]==============================================================
 
 void ep0_out_handler(uint8_t *buf, uint16_t len) {
     ; // nothing to do
@@ -276,10 +278,10 @@ void ep2_in_handler(uint8_t *buf, uint16_t len) {
 
 // send device descriptor to host
 void usb_handle_device_descriptor(volatile struct usb_setup_packet *pkt) {
-    const struct usb_device_descriptor *d = device.device_descriptor;
+    const struct usb_device_descriptor *dd = device.device_descriptor;
     struct usb_endpoint *ep = usb_get_endpoint_configuration(EP0_IN_ADDR); // EP0 in
     ep->next_datapid = 1; // force datapid to 1
-    usb_start_transfer(ep, (uint8_t *) d, MIN(sizeof(struct usb_device_descriptor), pkt->wLength));
+    usb_start_transfer(ep, (uint8_t *) dd, MIN(sizeof(struct usb_device_descriptor), pkt->wLength));
 }
 
 // send config descriptor to host
@@ -287,12 +289,12 @@ void usb_handle_config_descriptor(volatile struct usb_setup_packet *pkt) {
     uint8_t *buf = &ep0_buf[0];
 
     // First request will want just the config descriptor
-    const struct usb_configuration_descriptor *d = device.config_descriptor;
-    memcpy((void *) buf, d, sizeof(struct usb_configuration_descriptor));
+    const struct usb_configuration_descriptor *cd = device.config_descriptor;
+    memcpy((void *) buf, cd, sizeof(struct usb_configuration_descriptor));
     buf += sizeof(struct usb_configuration_descriptor);
 
     // If we more than just the config descriptor copy it all
-    if (pkt->wLength >= d->wTotalLength) {
+    if (pkt->wLength >= cd->wTotalLength) {
         memcpy((void *) buf, device.interface_descriptor, sizeof(struct usb_interface_descriptor));
         buf += sizeof(struct usb_interface_descriptor);
         const struct usb_endpoint *ep = device.endpoints;
@@ -359,14 +361,14 @@ void usb_acknowledge_out_request(void) {
 // Actually set in ep0_in_handler since we must acknowledge the request first as a device with address zero
 void usb_set_device_address(volatile struct usb_setup_packet *pkt) {
     dev_addr = (pkt->wValue & 0xff); // set address is goofy because we have to send a ZLSP first with address 0
-    printf("Set address %d\r\n", dev_addr);
+    printf("Set address to %d\n", dev_addr);
     should_set_address = true; // will set address in the callback phase
     usb_acknowledge_out_request();
 }
 
 // handle SET_CONFIGURATION request from the host
 void usb_set_device_configuration(volatile struct usb_setup_packet *pkt) {
-    printf("Device Enumerated\r\n"); // Only one configuration so just acknowledge the request
+    printf("Device Enumerated!\n"); // Only one configuration so just acknowledge the request
     usb_acknowledge_out_request();
     configured = true;
 }
@@ -385,7 +387,7 @@ void usb_handle_setup_packet(void) {
             usb_set_device_configuration(pkt);
         } else {
             usb_acknowledge_out_request();
-            printf("Other OUT request (0x%x)\r\n", pkt->bRequest);
+            printf("Other OUT request (0x%02x)\n", pkt->bRequest);
         }
     } else if (req_direction == USB_DIR_IN) {
         if (req == USB_REQUEST_GET_DESCRIPTOR) {
@@ -394,21 +396,21 @@ void usb_handle_setup_packet(void) {
             switch (descriptor_type) {
                 case USB_DT_DEVICE:
                     usb_handle_device_descriptor(pkt);
-                    printf("GET DEVICE DESCRIPTOR\r\n");
+                    printf("GET DEVICE DESCRIPTOR\n");
                     break;
                 case USB_DT_CONFIG:
                     usb_handle_config_descriptor(pkt);
-                    printf("GET CONFIG DESCRIPTOR\r\n");
+                    printf("GET CONFIG DESCRIPTOR\n");
                     break;
                 case USB_DT_STRING:
                     usb_handle_string_descriptor(pkt);
-                    printf("GET STRING DESCRIPTOR\r\n");
+                    printf("GET STRING DESCRIPTOR\n");
                     break;
                 default:
-                    printf("Unhandled GET_DESCRIPTOR type 0x%x\r\n", descriptor_type);
+                    printf("Unhandled GET_DESCRIPTOR type 0x%04x\n", descriptor_type);
             }
         } else {
-            printf("Other IN request (0x%x)\r\n", pkt->bRequest);
+            printf("Other IN request (0x%02x)\n", pkt->bRequest);
         }
     }
 }
@@ -425,7 +427,7 @@ static void usb_handle_ep_buff_done(struct usb_endpoint *ep) {
 // find ep configuration for an ep_num and directio and notify of transfer completion
 static void usb_handle_buff_done(uint ep_num, bool in) {
     uint8_t ep_addr = ep_num | (in ? USB_DIR_IN : 0);
-    printf("EP %d (in = %d) done\n", ep_num, in);
+    printf("EP %d (%s) done\n", ep_num, in ? "IN" : "OUT");
     for (uint i = 0; i < USB_NUM_ENDPOINTS; i++) {
         struct usb_endpoint *ep = &device.endpoints[i];
         if (ep->descriptor && ep->handler) {
@@ -491,7 +493,7 @@ void isr_usbctrl(void) {
     }
 
     if (status ^ handled) {
-        panic("Unhandled IRQ 0x%x\n", (uint) (status ^ handled));
+        panic("Unhandled IRQ 0x%04x\n", (uint) (status ^ handled));
     }
 }
 
@@ -518,7 +520,7 @@ void usb_device_init() {
 
 int main(void) {
     stdio_init_all();
-    printf("USB Device Low-Level hardware example\n");
+    printf("USB Device example\n");
     usb_device_init();
 
     // Wait until configured
