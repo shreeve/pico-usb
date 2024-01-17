@@ -263,7 +263,7 @@ void ep0_out_handler(uint8_t *buf, uint16_t len) {
 // Finish the SET_ADDRESS or receive a ZLSP from host
 void ep0_in_handler(uint8_t *buf, uint16_t len) {
     if (should_set_address) {
-        usb_hw->dev_addr_ctrl = device_address; // Set actual device address in hardware
+        usb_hw->dev_addr_ctrl = device_address; // Set hardware device address
         should_set_address = false;
     } else { // Receive a ZLSP from the host on EP0 OUT
         struct usb_endpoint *ep = usb_get_endpoint(EP0_OUT_ADDR);
