@@ -282,7 +282,7 @@ void ep2_in_handler(uint8_t *buf, uint16_t len) {
     usb_start_transfer(usb_get_endpoint(EP1_OUT_ADDR), NULL, 64); // Get ready to rx again from host
 }
 
-// ==[ Descriptors ]===========================================================
+// ==[ Setup ]=================================================================
 
 // Send device descriptor to host
 void usb_handle_device_descriptor(volatile struct usb_setup_packet *pkt) {
@@ -357,8 +357,6 @@ void usb_handle_string_descriptor(volatile struct usb_setup_packet *pkt) {
 
     usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), &ep0_buf[0], MIN(len, pkt->wLength));
 }
-
-// ==[ Commands ]==============================================================
 
 // Handle SET_ADDR request from the host
 // Actually set in ep0_in_handler since we must acknowledge the request first as a device with address zero
