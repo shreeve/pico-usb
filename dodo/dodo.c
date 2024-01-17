@@ -422,9 +422,9 @@ void usb_handle_setup_packet() {
 // Notify an endpoint that a transfer has completed
 static void usb_handle_ep_buff_done(struct usb_endpoint *ep) {
     uint32_t buffer_control = *ep->buffer_control;
-    uint16_t len = buffer_control & USB_BUF_CTRL_LEN_MASK; // Get the ep's transfer length
+    uint16_t len = buffer_control & USB_BUF_CTRL_LEN_MASK; // Get buffer length
 
-    ep->handler((uint8_t *) ep->data_buffer, len); // Call ep's buffer done handler
+    ep->handler((uint8_t *) ep->data_buffer, len); // Call buffer done handler
 }
 
 // Notify an endpoint that a transfer has completed
