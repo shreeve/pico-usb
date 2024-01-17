@@ -359,9 +359,11 @@ void usb_handle_string_descriptor(volatile struct usb_setup_packet *pkt) {
 }
 
 // Handle SET_ADDR request from the host
-// Actually set in ep0_in_handler since we must acknowledge the request first as a device with address zero
 void usb_set_device_address(volatile struct usb_setup_packet *pkt) {
-    dev_addr = (pkt->wValue & 0xff); // Set address is goofy because we have to send a ZLSP first with address 0
+    // This is a little weird because we must first acknowledge the request
+    // using a device address of zero. We do that here and then set a flag
+    // to perform the actual update in the ep0_in_handler.
+    dev_addr = (pkt->wValue & 0xff);
     printf("Set address to %d\n", dev_addr);
     should_set_address = true; // Will set address in the callback phase
     usb_acknowledge_out_request();
