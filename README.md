@@ -35,7 +35,7 @@ possible.
 ## Status
 
 Currently, the code in `dodo` is basically just a streamlined version
-of the low level USB device from pico-examples. The CMakeLists.txt
+of the low level USB device from [pico-examples](https://github.com/raspberrypi/pico-examples/tree/master/usb/device/dev_lowlevel). The CMakeLists.txt
 files in this repo are written to be very minimal. They work in VScode
 when opening these two directories. There is probably a way to create
 a top-level CMakeLists.txt file so that each directory doesn't need
@@ -65,4 +65,4 @@ directory contains some configuration for this setup.
 
 ## License
 
-BSD-3, same as the code in pico-examples.
+BSD-3, same as the code in [pico-examples](https://github.com/raspberrypi/pico-examples/tree/master/usb/device/dev_lowlevel).
