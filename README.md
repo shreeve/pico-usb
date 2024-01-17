@@ -65,4 +65,4 @@ directory contains some configuration for this setup.
 
 ## License
 
-BSD-3, same as the code in [pico-examples](https://github.com/raspberrypi/pico-examples/tree/master/usb/device/dev_lowlevel).
+BSD-3-Clause license, the same as code in [pico-examples](https://github.com/raspberrypi/pico-examples/tree/master/usb/device/dev_lowlevel).
