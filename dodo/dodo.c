@@ -225,7 +225,7 @@ struct usb_endpoint *usb_get_endpoint(uint8_t addr) {
     return NULL;
 }
 
-// ==[ Handlers ]==============================================================
+// ==[ Transfers ]=============================================================
 
 // Start a transfer on an endpoint
 void usb_start_transfer(struct usb_endpoint *ep, uint8_t *buf, uint16_t len) {
@@ -248,12 +248,19 @@ void usb_start_transfer(struct usb_endpoint *ep, uint8_t *buf, uint16_t len) {
     *ep->buffer_control = val;
 }
 
+// Send a ZLSP (zero length status packet) to host
+void usb_acknowledge_out_request(void) {
+    usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), NULL, 0);
+}
+
+// ==[ Handlers ]==============================================================
+
 void ep0_out_handler(uint8_t *buf, uint16_t len) {
     ; // Nothing to do
 }
 
 // EP0 IN transfer complete
-// Finish the SET_ADDRESS or receive a zero length status packet (ZLSP) from host
+// Finish the SET_ADDRESS or receive a ZLSP from host
 void ep0_in_handler(uint8_t *buf, uint16_t len) {
     if (should_set_address) {
         usb_hw->dev_addr_ctrl = dev_addr; // Set actual device address in hardware
@@ -352,11 +359,6 @@ void usb_handle_string_descriptor(volatile struct usb_setup_packet *pkt) {
 }
 
 // ==[ Commands ]==============================================================
-
-// Send a ZLSP to host
-void usb_acknowledge_out_request(void) {
-    usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), NULL, 0);
-}
 
 // Handle SET_ADDR request from the host
 // Actually set in ep0_in_handler since we must acknowledge the request first as a device with address zero
