@@ -1,33 +1,31 @@
-// ==[ TODO: Replace with USB Host code ]======================================
+#include <stdio.h> // For printf
+#include <string.h> // For memcpy
 
-// #include <stdio.h> // For printf
-// #include <string.h> // For memcpy
-//
-// #include "pico/stdlib.h" // Pico stdlib
-// #include "hardware/regs/usb.h" // USB register definitions from pico-sdk
-// #include "hardware/structs/usb.h" // USB hardware struct definitions from pico-sdk
-// #include "hardware/irq.h" // For interrupt enable and numbers
-// #include "hardware/resets.h" // For resetting the USB controller
-//
-// #include "../include/usb_common.h" // Include descriptor struct definitions
-//
-// // ==[ Declarations ]==========================================================
-//
-// #define usb_hw_set   ((usb_hw_t *)hw_set_alias_untyped  (usb_hw))
-// #define usb_hw_clear ((usb_hw_t *)hw_clear_alias_untyped(usb_hw))
-//
-// #define EP0_OUT_ADDR (USB_DIR_OUT | 0)
-// #define EP0_IN_ADDR  (USB_DIR_IN  | 0)
-// #define EP1_OUT_ADDR (USB_DIR_OUT | 1)
-// #define EP2_IN_ADDR  (USB_DIR_IN  | 2)
-//
-// void ep0_out_handler(uint8_t *buf, uint16_t len);
-// void ep0_in_handler (uint8_t *buf, uint16_t len);
-// void ep1_out_handler(uint8_t *buf, uint16_t len);
-// void ep2_in_handler (uint8_t *buf, uint16_t len);
-//
-// typedef void (*usb_ep_handler)(uint8_t *buf, uint16_t len);
-//
+#include "pico/stdlib.h" // Pico stdlib
+#include "hardware/regs/usb.h" // USB registers from pico-sdk
+#include "hardware/structs/usb.h" // USB hardware structs from pico-sdk
+#include "hardware/irq.h" // For interrupt enable and numbers
+#include "hardware/resets.h" // For resetting the USB controller
+
+#include "../include/usb_common.h" // Includes descriptor structs
+
+// ==[ Declarations ]==========================================================
+
+#define usb_hw_set   ((usb_hw_t *)hw_set_alias_untyped  (usb_hw))
+#define usb_hw_clear ((usb_hw_t *)hw_clear_alias_untyped(usb_hw))
+
+#define EP0_OUT_ADDR (USB_DIR_OUT | 0)
+#define EP0_IN_ADDR  (USB_DIR_IN  | 0)
+#define EP1_OUT_ADDR (USB_DIR_OUT | 1)
+#define EP2_IN_ADDR  (USB_DIR_IN  | 2)
+
+void ep0_out_handler(uint8_t *buf, uint16_t len);
+void ep0_in_handler (uint8_t *buf, uint16_t len);
+void ep1_out_handler(uint8_t *buf, uint16_t len);
+void ep2_in_handler (uint8_t *buf, uint16_t len);
+
+typedef void (*usb_ep_handler)(uint8_t *buf, uint16_t len);
+
 // // Global device address
 // static bool should_set_address = false;
 // static uint8_t dev_addr = 0;
