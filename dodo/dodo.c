@@ -187,20 +187,20 @@ static volatile bool configured = false;
 
 // ==[ Endpoints ]=============================================================
 
-// set up ep_ctrl register for an endpoint (not EP0)
+// Set up an endpoint's control register (except EP0)
 void usb_setup_endpoint(const struct usb_endpoint *ep) {
-    printf("Set up endpoint 0x%02x with buffer address 0x%p\n", ep->descriptor->bEndpointAddress, ep->data_buffer);
+    printf("Set up endpoint 0x%02x with buffer address 0x%p\n",
+           ep->descriptor->bEndpointAddress, ep->data_buffer);
 
-    // EP0 doesn't have one so return if that is the case
-    if (!ep->endpoint_control) return;
-
-    // Get the data buffer as an offset of the USB controller's DPRAM
-    uint32_t dpram_offset = ((uint32_t) (ep->data_buffer)) ^ ((uint32_t) usb_dpram); // TODO: This ok?
-    uint32_t reg = EP_CTRL_ENABLE_BITS          | // enable endpoint
-                   EP_CTRL_INTERRUPT_PER_BUFFER | // one irq per transferred buffer
-                   (ep->descriptor->bmAttributes << EP_CTRL_BUFFER_TYPE_LSB) | // ctrl, iso, bulk, int
-                   dpram_offset;
-    *ep->endpoint_control = reg;
+    // Set ep_ctrl register for this endpoint (skip EP0 since it uses SIE_CTRL)
+    if (ep->endpoint_control) {
+        uint32_t type = ep->descriptor->bmAttributes << EP_CTRL_BUFFER_TYPE_LSB;
+        uint32_t offset = ((uint32_t) ep->data_buffer) ^ ((uint32_t) usb_dpram);
+        *ep->endpoint_control = EP_CTRL_ENABLE_BITS          | // enable EP
+                                EP_CTRL_INTERRUPT_PER_BUFFER | // one IRQ per
+                                type   | // Control, iso, bulk, or interrupt
+                                offset ; // Address base offset in DSPRAM
+    }
 }
 
 // set up ep_ctrl register for all endpoints (not EP0)
