@@ -460,15 +460,43 @@ static void usb_handle_buff_status() {
     }
 }
 
-// ==[ Interrupt ]=============================================================
+// ==[ Resets ]================================================================
 
-// Bus reset from the host by setting the device address back to 0
+// Reset USB bus
 void usb_bus_reset() {
     device_address = 0; // Set address back to 0
     usb_hw->dev_addr_ctrl = 0;
     should_set_address = false;
     configured = false;
 }
+
+// Reset USB device
+void usb_device_reset() {
+
+    // Reset controller
+    reset_block       (RESETS_RESET_USBCTRL_BITS);
+    unreset_block_wait(RESETS_RESET_USBCTRL_BITS);
+
+    // Clear state
+    memset(usb_dpram, 0, sizeof(*usb_dpram));
+    irq_set_enabled(USBCTRL_IRQ, true);
+
+    // Setup device mode
+    usb_hw->muxing    = USB_USB_MUXING_TO_PHY_BITS              |
+                        USB_USB_MUXING_SOFTCON_BITS             ;
+    usb_hw->pwr       = USB_USB_PWR_VBUS_DETECT_BITS            |
+                        USB_USB_PWR_VBUS_DETECT_OVERRIDE_EN_BITS;
+    usb_hw->main_ctrl = USB_MAIN_CTRL_CONTROLLER_EN_BITS        ;
+    usb_hw->sie_ctrl  = USB_SIE_CTRL_EP0_INT_1BUF_BITS          ;
+    usb_hw->inte      = USB_INTE_BUFF_STATUS_BITS               |
+                        USB_INTE_BUS_RESET_BITS                 |
+                        USB_INTE_SETUP_REQ_BITS                 ;
+
+    usb_setup_endpoints();
+    usb_hw_set->sie_ctrl = USB_SIE_CTRL_PULLUP_EN_BITS;
+}
+
+// ==[ Interrupt ]=============================================================
 
 // Interrupt handler
 void isr_usbctrl() {
@@ -501,40 +529,12 @@ void isr_usbctrl() {
     }
 }
 
-// ==[ Hardware reset ]========================================================
-
-// Reset USB device
-void usb_device_init() {
-
-    // Reset controller
-    reset_block       (RESETS_RESET_USBCTRL_BITS);
-    unreset_block_wait(RESETS_RESET_USBCTRL_BITS);
-
-    // Clear state
-    memset(usb_dpram, 0, sizeof(*usb_dpram));
-    irq_set_enabled(USBCTRL_IRQ, true);
-
-    // Setup device mode
-    usb_hw->muxing    = USB_USB_MUXING_TO_PHY_BITS              |
-                        USB_USB_MUXING_SOFTCON_BITS             ;
-    usb_hw->pwr       = USB_USB_PWR_VBUS_DETECT_BITS            |
-                        USB_USB_PWR_VBUS_DETECT_OVERRIDE_EN_BITS;
-    usb_hw->main_ctrl = USB_MAIN_CTRL_CONTROLLER_EN_BITS        ;
-    usb_hw->sie_ctrl  = USB_SIE_CTRL_EP0_INT_1BUF_BITS          ;
-    usb_hw->inte      = USB_INTE_BUFF_STATUS_BITS               |
-                        USB_INTE_BUS_RESET_BITS                 |
-                        USB_INTE_SETUP_REQ_BITS                 ;
-
-    usb_setup_endpoints();
-    usb_hw_set->sie_ctrl = USB_SIE_CTRL_PULLUP_EN_BITS;
-}
-
 // ==[ Main ]==================================================================
 
 int main() {
     stdio_init_all();
     printf("USB Device example\n");
-    usb_device_init();
+    usb_device_reset();
 
     // Wait until configured
     while (!configured) { tight_loop_contents(); }
