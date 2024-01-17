@@ -196,8 +196,8 @@ void usb_setup_endpoint(const struct usb_endpoint *ep) {
     if (ep->endpoint_control) {
         uint32_t type = ep->descriptor->bmAttributes << EP_CTRL_BUFFER_TYPE_LSB;
         uint32_t offset = ((uint32_t) ep->data_buffer) ^ ((uint32_t) usb_dpram);
-        *ep->endpoint_control = EP_CTRL_ENABLE_BITS          | // enable EP
-                                EP_CTRL_INTERRUPT_PER_BUFFER | // one IRQ per
+        *ep->endpoint_control = EP_CTRL_ENABLE_BITS          | // Enable EP
+                                EP_CTRL_INTERRUPT_PER_BUFFER | // One IRQ per
                                 type   | // Control, iso, bulk, or interrupt
                                 offset ; // Address base offset in DSPRAM
     }
@@ -227,7 +227,7 @@ struct usb_endpoint *usb_get_endpoint(uint8_t addr) {
 
 // ==[ Handlers ]==============================================================
 
-// start a transfer on an endpoint
+// Start a transfer on an endpoint
 void usb_start_transfer(struct usb_endpoint *ep, uint8_t *buf, uint16_t len) {
     assert(len <= 64);
 
@@ -237,19 +237,19 @@ void usb_start_transfer(struct usb_endpoint *ep, uint8_t *buf, uint16_t len) {
     // Prepare buffer control register value
     uint32_t val = len | USB_BUF_CTRL_AVAIL;
 
-    if (ep->descriptor->bEndpointAddress & USB_DIR_IN) { // copy from user memory to usb memory
+    if (ep->descriptor->bEndpointAddress & USB_DIR_IN) {
         memcpy((void *) ep->data_buffer, (void *) buf, len);
-        val |= USB_BUF_CTRL_FULL; // mark buffer as full
+        val |= USB_BUF_CTRL_FULL; // Mark buffer as full
     }
 
     val |= ep->next_datapid ? USB_BUF_CTRL_DATA1_PID : USB_BUF_CTRL_DATA0_PID;
-    ep->next_datapid ^= 1; // flip for next xfer
+    ep->next_datapid ^= 1; // Flip for the next transfer
 
     *ep->buffer_control = val;
 }
 
 void ep0_out_handler(uint8_t *buf, uint16_t len) {
-    ; // nothing to do
+    ; // Nothing to do
 }
 
 // EP0 IN transfer complete
@@ -277,15 +277,15 @@ void ep2_in_handler(uint8_t *buf, uint16_t len) {
 
 // ==[ Descriptors ]===========================================================
 
-// send device descriptor to host
+// Send device descriptor to host
 void usb_handle_device_descriptor(volatile struct usb_setup_packet *pkt) {
     const struct usb_device_descriptor *dd = device.device_descriptor;
     struct usb_endpoint *ep = usb_get_endpoint(EP0_IN_ADDR); // EP0 in
-    ep->next_datapid = 1; // force datapid to 1
+    ep->next_datapid = 1; // Force datapid to 1
     usb_start_transfer(ep, (uint8_t *) dd, MIN(sizeof(struct usb_device_descriptor), pkt->wLength));
 }
 
-// send config descriptor to host
+// Send config descriptor to host
 void usb_handle_config_descriptor(volatile struct usb_setup_packet *pkt) {
     uint8_t *buf = &ep0_buf[0];
 
@@ -361,9 +361,9 @@ void usb_acknowledge_out_request(void) {
 // Handle SET_ADDR request from the host
 // Actually set in ep0_in_handler since we must acknowledge the request first as a device with address zero
 void usb_set_device_address(volatile struct usb_setup_packet *pkt) {
-    dev_addr = (pkt->wValue & 0xff); // set address is goofy because we have to send a ZLSP first with address 0
+    dev_addr = (pkt->wValue & 0xff); // Set address is goofy because we have to send a ZLSP first with address 0
     printf("Set address to %d\n", dev_addr);
-    should_set_address = true; // will set address in the callback phase
+    should_set_address = true; // Will set address in the callback phase
     usb_acknowledge_out_request();
 }
 
@@ -379,7 +379,7 @@ void usb_handle_setup_packet(void) {
     volatile struct usb_setup_packet *pkt = (volatile struct usb_setup_packet *) &usb_dpram->setup_packet;
     uint8_t req_direction = pkt->bmRequestType;
     uint8_t req = pkt->bRequest;
-    usb_get_endpoint(EP0_IN_ADDR)->next_datapid = 1; // reset to DATA1 for EP0 IN
+    usb_get_endpoint(EP0_IN_ADDR)->next_datapid = 1; // Reset to DATA1 for EP0 IN
 
     if (req_direction == USB_DIR_OUT) {
         if (req == USB_REQUEST_SET_ADDRESS) {
@@ -421,8 +421,8 @@ void usb_handle_setup_packet(void) {
 // Notify an endpoint that a transfer has completed
 static void usb_handle_ep_buff_done(struct usb_endpoint *ep) {
     uint32_t buffer_control = *ep->buffer_control;
-    uint16_t len = buffer_control & USB_BUF_CTRL_LEN_MASK; // get the ep's transfer length
-    ep->handler((uint8_t *) ep->data_buffer, len); // call ep's buffer done handler
+    uint16_t len = buffer_control & USB_BUF_CTRL_LEN_MASK; // Get the ep's transfer length
+    ep->handler((uint8_t *) ep->data_buffer, len); // Call ep's buffer done handler
 }
 
 // Find ep configuration for an ep_num and directio and notify of transfer completion
@@ -449,7 +449,7 @@ static void usb_handle_buff_status() {
     uint bit = 1u;
     for (uint i = 0; remaining_buffers && i < USB_NUM_ENDPOINTS * 2; i++) {
         if (remaining_buffers & bit) {
-            usb_hw_clear->buf_status = bit; // clear this in advance
+            usb_hw_clear->buf_status = bit; // Clear this in advance
             usb_handle_buff_done(i >> 1u, !(i & 1u)); // IN transfer for even i, OUT transfer for odd i
             remaining_buffers &= ~bit;
         }
@@ -461,7 +461,7 @@ static void usb_handle_buff_status() {
 
 // Bus reset from the host by setting the device address back to 0
 void usb_bus_reset(void) {
-    dev_addr = 0; // set address back to 0
+    dev_addr = 0; // Set address back to 0
     should_set_address = false;
     usb_hw->dev_addr_ctrl = 0;
     configured = false;
