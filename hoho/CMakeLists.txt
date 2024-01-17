@@ -16,7 +16,7 @@ project(${project_name})
 pico_sdk_init()
 
 add_executable(${project_name}
-  hodo.c
+  hoho.c
 )
 
 target_link_libraries(${project_name} PRIVATE
