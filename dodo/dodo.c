@@ -52,7 +52,7 @@ static const struct usb_interface_descriptor interface_descriptor = {
     .bInterfaceClass    = 0xff, // Vendor specific endpoint
     .bInterfaceSubClass = 0,
     .bInterfaceProtocol = 0,
-    .iInterface         = 0
+    .iInterface         = 5     // String #5
 };
 
 static const struct usb_configuration_descriptor config_descriptor = {
@@ -64,7 +64,7 @@ static const struct usb_configuration_descriptor config_descriptor = {
                             sizeof(ep2_in)),
     .bNumInterfaces      = 1,    // One interface
     .bConfigurationValue = 1,    // Configuration 1
-    .iConfiguration      = 4,    // No string
+    .iConfiguration      = 4,    // String #4
     .bmAttributes        = 0xc0, // attributes: self powered, no remote wakeup
     .bMaxPower           = 0x32  // 100ma
 };
@@ -80,9 +80,9 @@ static const struct usb_device_descriptor device_descriptor = {
     .idVendor           = 0x0000, // Your vendor id (bogus)
     .idProduct          = 0x0001, // Your product id (bogus)
     .bcdDevice          = 0x0001, // No device revision number
-    .iManufacturer      = 1,      // Manufacturer string index
-    .iProduct           = 2,      // Product string index
-    .iSerialNumber      = 3,      // No serial number
+    .iManufacturer      = 1,      // String #1
+    .iProduct           = 2,      // String #2
+    .iSerialNumber      = 3,      // String #3
     .bNumConfigurations = 1       // One configuration
 };
 
@@ -134,10 +134,11 @@ static const unsigned char lang_descriptor[] = {
 };
 
 static const unsigned char *descriptor_strings[] = {
-    (unsigned char *) "PicoUSB", // Vendor
-    (unsigned char *) "Demo"   , // Product
-    (unsigned char *) "12345"  , // Serial
-    (unsigned char *) "Simple"   // Configuration
+    (unsigned char *) "PicoUSB", // String #1: Vendor
+    (unsigned char *) "Demo"   , // String #2: Product
+    (unsigned char *) "12345"  , // String #3: Serial
+    (unsigned char *) "Simple" , // String #4: Configuration
+    (unsigned char *) "Basic"    // String #5: Interface
 };
 
 static struct usb_device device = {
