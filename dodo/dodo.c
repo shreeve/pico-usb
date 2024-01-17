@@ -505,13 +505,18 @@ void usb_device_init() {
     unreset_block_wait(RESETS_RESET_USBCTRL_BITS);
     memset(usb_dpram, 0, sizeof(*usb_dpram));
     irq_set_enabled(USBCTRL_IRQ, true);
-    usb_hw->muxing = USB_USB_MUXING_TO_PHY_BITS | USB_USB_MUXING_SOFTCON_BITS;
-    usb_hw->pwr = USB_USB_PWR_VBUS_DETECT_BITS | USB_USB_PWR_VBUS_DETECT_OVERRIDE_EN_BITS;
-    usb_hw->main_ctrl = USB_MAIN_CTRL_CONTROLLER_EN_BITS;
-    usb_hw->sie_ctrl = USB_SIE_CTRL_EP0_INT_1BUF_BITS;
-    usb_hw->inte = USB_INTS_BUFF_STATUS_BITS |
-                   USB_INTS_BUS_RESET_BITS |
-                   USB_INTS_SETUP_REQ_BITS;
+
+    // Setup device mode
+    usb_hw->muxing    = USB_USB_MUXING_TO_PHY_BITS              |
+                        USB_USB_MUXING_SOFTCON_BITS             ;
+    usb_hw->pwr       = USB_USB_PWR_VBUS_DETECT_BITS            |
+                        USB_USB_PWR_VBUS_DETECT_OVERRIDE_EN_BITS;
+    usb_hw->main_ctrl = USB_MAIN_CTRL_CONTROLLER_EN_BITS        ;
+    usb_hw->sie_ctrl  = USB_SIE_CTRL_EP0_INT_1BUF_BITS          ;
+    usb_hw->inte      = USB_INTS_BUFF_STATUS_BITS               |
+                        USB_INTS_BUS_RESET_BITS                 |
+                        USB_INTS_SETUP_REQ_BITS                 ;
+
     usb_setup_endpoints();
     usb_hw_set->sie_ctrl = USB_SIE_CTRL_PULLUP_EN_BITS;
 }
