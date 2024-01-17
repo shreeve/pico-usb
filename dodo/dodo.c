@@ -294,7 +294,7 @@ void usb_handle_config_descriptor(volatile struct usb_setup_packet *pkt) {
     memcpy((void *) buf, cd, sizeof(struct usb_configuration_descriptor));
     buf += sizeof(struct usb_configuration_descriptor);
 
-    // If we more than just the config descriptor copy it all
+    // If we more need than just the config descriptor copy it all
     if (pkt->wLength >= cd->wTotalLength) {
         memcpy((void *) buf, device.interface_descriptor, sizeof(struct usb_interface_descriptor));
         buf += sizeof(struct usb_interface_descriptor);
