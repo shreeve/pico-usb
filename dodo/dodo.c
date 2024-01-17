@@ -115,7 +115,7 @@ struct usb_endpoint {
     volatile uint32_t *buffer_control;
     volatile uint8_t  *data_buffer;
 
-    uint8_t next_datapid; // Toggle datapid (DATA0/DATA1) after each packet
+    uint8_t next_datapid; // Toggle DATA0/DATA1 each packet
 };
 
 struct usb_device {
@@ -286,7 +286,7 @@ void ep2_in_handler(uint8_t *buf, uint16_t len) {
 void usb_handle_device_descriptor(volatile struct usb_setup_packet *pkt) {
     const struct usb_device_descriptor *dd = device.device_descriptor;
     struct usb_endpoint *ep = usb_get_endpoint(EP0_IN_ADDR); // EP0 in
-    ep->next_datapid = 1; // Force datapid to 1
+    ep->next_datapid = 1; // Reset to DATA1
     usb_start_transfer(ep, (uint8_t *) dd, MIN(sizeof(struct usb_device_descriptor), pkt->wLength));
 }
 
@@ -379,7 +379,8 @@ void usb_handle_setup_packet() {
     volatile struct usb_setup_packet *pkt = (volatile struct usb_setup_packet *) &usb_dpram->setup_packet;
     uint8_t req_direction = pkt->bmRequestType;
     uint8_t req = pkt->bRequest;
-    usb_get_endpoint(EP0_IN_ADDR)->next_datapid = 1; // Reset to DATA1 for EP0 IN
+
+    usb_get_endpoint(EP0_IN_ADDR)->next_datapid = 1; // Reset to DATA1
 
     if (req_direction == USB_DIR_OUT) {
         if (req == USB_REQUEST_SET_ADDRESS) {
@@ -422,13 +423,16 @@ void usb_handle_setup_packet() {
 static void usb_handle_ep_buff_done(struct usb_endpoint *ep) {
     uint32_t buffer_control = *ep->buffer_control;
     uint16_t len = buffer_control & USB_BUF_CTRL_LEN_MASK; // Get the ep's transfer length
+
     ep->handler((uint8_t *) ep->data_buffer, len); // Call ep's buffer done handler
 }
 
-// Find ep configuration for an ep_num and directio and notify of transfer completion
+// Notify an endpoint that a transfer has completed
 static void usb_handle_buff_done(uint ep_num, bool in) {
-    uint8_t ep_addr = ep_num | (in ? USB_DIR_IN : 0);
-    printf("EP %d (%s) done\n", ep_num, in ? "IN" : "OUT");
+    uint8_t ep_addr = ep_num | (in ? USB_DIR_IN : USB_DIR_OUT);
+
+    printf("EP%d_%s done\n", ep_num, in ? "IN" : "OUT");
+
     for (uint i = 0; i < USB_NUM_ENDPOINTS; i++) {
         struct usb_endpoint *ep = &device.endpoints[i];
         if (ep->descriptor && ep->handler) {
@@ -440,17 +444,16 @@ static void usb_handle_buff_done(uint ep_num, bool in) {
     }
 }
 
-// Handle a "buffer status" irq, meaning one or more buffers have been sent/received
-// notify each endpoint where this is the case
+// Notify the given endpoints that a transfer has completed
 static void usb_handle_buff_status() {
     uint32_t buffers = usb_hw->buf_status;
     uint32_t remaining_buffers = buffers;
-
     uint bit = 1u;
+
     for (uint i = 0; remaining_buffers && i < USB_NUM_ENDPOINTS * 2; i++) {
         if (remaining_buffers & bit) {
             usb_hw_clear->buf_status = bit; // Clear this in advance
-            usb_handle_buff_done(i >> 1u, !(i & 1u)); // IN transfer for even i, OUT transfer for odd i
+            usb_handle_buff_done(i >> 1u, !(i & 1u)); // even=IN, odd=OUT
             remaining_buffers &= ~bit;
         }
         bit <<= 1u;
@@ -461,7 +464,7 @@ static void usb_handle_buff_status() {
 
 // Reset USB bus
 void usb_bus_reset() {
-    device_address = 0; // Set address back to 0
+    device_address = 0; // Set address to zero
     usb_hw->dev_addr_ctrl = 0;
     should_set_address = false;
     configured = false;
@@ -515,8 +518,8 @@ void isr_usbctrl() {
 
     // Bus is reset
     if (status & USB_INTS_BUS_RESET_BITS) {
-        printf("BUS RESET\n");
         handled |= USB_INTS_BUS_RESET_BITS;
+        printf("BUS RESET\n");
         usb_hw_clear->sie_status = USB_SIE_STATUS_BUS_RESET_BITS;
         usb_bus_reset();
     }
