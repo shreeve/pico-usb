@@ -1,6 +1,6 @@
 // ==[ USB 2.0 ]===============================================================
 
-#include "usb_common.h" // Includes descriptor structs
+#include "usb_common.h"
 
 #define EP0_OUT_ADDR (USB_DIR_OUT | 0)
 #define EP0_IN_ADDR  (USB_DIR_IN  | 0)
@@ -46,10 +46,10 @@ static const struct usb_endpoint_descriptor ep2_in = {
 static const struct usb_interface_descriptor interface_descriptor = {
     .bLength            = sizeof(struct usb_interface_descriptor),
     .bDescriptorType    = USB_DT_INTERFACE,
-    .bInterfaceNumber   = 0,
+    .bInterfaceNumber   = 0,    // Starts at zero
     .bAlternateSetting  = 0,
-    .bNumEndpoints      = 2,    // Two endpoints
-    .bInterfaceClass    = 0xff, // Vendor specific endpoint
+    .bNumEndpoints      = 2,    // Two endpoints (EP0 doesn't count)
+    .bInterfaceClass    = 0xff, // Interface class (0xff = Vendor specific)
     .bInterfaceSubClass = 0,
     .bInterfaceProtocol = 0,
     .iInterface         = 5     // String #5
@@ -65,8 +65,8 @@ static const struct usb_configuration_descriptor config_descriptor = {
     .bNumInterfaces      = 1,    // One interface
     .bConfigurationValue = 1,    // Configuration 1
     .iConfiguration      = 4,    // String #4
-    .bmAttributes        = 0xc0, // attributes: self powered, no remote wakeup
-    .bMaxPower           = 0x32  // 100ma
+    .bmAttributes        = 0xc0, // Attributes: Self-powered, No remote wakeup
+    .bMaxPower           = 0x32  // 100ma (Expressed in 2mA units)
 };
 
 static const struct usb_device_descriptor device_descriptor = {
@@ -76,10 +76,10 @@ static const struct usb_device_descriptor device_descriptor = {
     .bDeviceClass       = 0,      // Defer to interface descriptor
     .bDeviceSubClass    = 0,      // No subclass
     .bDeviceProtocol    = 0,      // No protocol
-    .bMaxPacketSize0    = 64,     // Max packet size for ep0
-    .idVendor           = 0x0000, // Your vendor id (bogus)
-    .idProduct          = 0x0001, // Your product id (bogus)
-    .bcdDevice          = 0x0001, // No device revision number
+    .bMaxPacketSize0    = 64,     // Max packet size for EP0
+    .idVendor           = 0x0000, // Vendor id
+    .idProduct          = 0x0001, // Product id
+    .bcdDevice          = 0x0001, // Device release number (xx.yy)
     .iManufacturer      = 1,      // String #1
     .iProduct           = 2,      // String #2
     .iSerialNumber      = 3,      // String #3
@@ -115,7 +115,7 @@ struct usb_endpoint {
     volatile uint32_t *buffer_control;
     volatile uint8_t  *data_buffer;
 
-    uint8_t next_datapid; // toggle datapid (DATA0/DATA1) after each packet
+    uint8_t next_datapid; // Toggle datapid (DATA0/DATA1) after each packet
 };
 
 struct usb_device {
@@ -129,8 +129,8 @@ struct usb_device {
 
 static const unsigned char lang_descriptor[] = {
     4,         // bLength
-    0x03,      // bDescriptorType == String Descriptor
-    0x09, 0x04 // language id = us english
+    0x03,      // bDescriptorType == String descriptor
+    0x09, 0x04 // Language id = US English
 };
 
 static const unsigned char *descriptor_strings[] = {
@@ -151,39 +151,39 @@ static struct usb_device device = {
         {
             .descriptor       = &ep0_out,
             .handler          = &ep0_out_handler,
-            .endpoint_control = NULL, // NA for EP0
+            .endpoint_control = NULL, // Controls for EP0 come from SIE_CTRL
             .buffer_control   = &usb_dpram->ep_buf_ctrl[0].out,
-            .data_buffer      = &usb_dpram->ep0_buf_a[0], // EP0 in and out share
+            .data_buffer      = &usb_dpram->ep0_buf_a[0], // EP0 in/out share
         },
         {
             .descriptor       = &ep0_in,
             .handler          = &ep0_in_handler,
-            .endpoint_control = NULL, // NA for EP0,
+            .endpoint_control = NULL, // Controls for EP0 come from SIE_CTRL
             .buffer_control   = &usb_dpram->ep_buf_ctrl[0].in,
-            .data_buffer      = &usb_dpram->ep0_buf_a[0], // EP0 in and out share
+            .data_buffer      = &usb_dpram->ep0_buf_a[0], // EP0 in/out share
         },
         {
             .descriptor       = &ep1_out,
             .handler          = &ep1_out_handler,
-            .endpoint_control = &usb_dpram->ep_ctrl[0].out, // EP1 starts at offset 0
+            .endpoint_control = &usb_dpram->ep_ctrl[0].out, // EP1 uses index 0
             .buffer_control   = &usb_dpram->ep_buf_ctrl[1].out,
-            .data_buffer      = &usb_dpram->epx_data[0 * 64], // First free EPX buffer
+            .data_buffer      = &usb_dpram->epx_data[0 * 64], // First buffer
         },
         {
             .descriptor       = &ep2_in,
             .handler          = &ep2_in_handler,
-            .endpoint_control = &usb_dpram->ep_ctrl[1].in,
+            .endpoint_control = &usb_dpram->ep_ctrl[1].in, // EP2 uses index 1
             .buffer_control   = &usb_dpram->ep_buf_ctrl[2].in,
-            .data_buffer      = &usb_dpram->epx_data[1 * 64], // Second free EPX buffer
+            .data_buffer      = &usb_dpram->epx_data[1 * 64], // Second buffer
         }
     }
 };
 
 // Globals
-static bool should_set_address = false;
-static uint8_t dev_addr = 0;
-static volatile bool configured = false;
 static uint8_t ep0_buf[64];
+static uint8_t dev_addr = 0;
+static bool should_set_address = false;
+static volatile bool configured = false;
 
 // ==[ Endpoints ]=============================================================
 
