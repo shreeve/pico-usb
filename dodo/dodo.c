@@ -14,8 +14,8 @@
 #define usb_hw_set   ((usb_hw_t *)hw_set_alias_untyped  (usb_hw))
 #define usb_hw_clear ((usb_hw_t *)hw_clear_alias_untyped(usb_hw))
 
-#define EP0_IN_ADDR  (USB_DIR_IN  | 0)
 #define EP0_OUT_ADDR (USB_DIR_OUT | 0)
+#define EP0_IN_ADDR  (USB_DIR_IN  | 0)
 #define EP1_OUT_ADDR (USB_DIR_OUT | 1)
 #define EP2_IN_ADDR  (USB_DIR_IN  | 2)
 
