@@ -266,20 +266,21 @@ void ep0_in_handler(uint8_t *buf, uint16_t len) {
         usb_hw->dev_addr_ctrl = device_address; // Set hardware device address
         should_set_address = false;
     } else { // Receive a ZLSP from the host on EP0 OUT
-        struct usb_endpoint *ep = usb_get_endpoint(EP0_OUT_ADDR);
+        struct usb_endpoint *ep = usb_get_endpoint(EP0_OUT_ADDR); // From host
         usb_start_transfer(ep, NULL, 0);
     }
 }
 
 void ep1_out_handler(uint8_t *buf, uint16_t len) {
-    printf("RX %d bytes from host\n", len);
-    struct usb_endpoint *ep = usb_get_endpoint(EP2_IN_ADDR); // Send data back to host
+    printf("Received %d bytes from host\n", len);
+    struct usb_endpoint *ep = usb_get_endpoint(EP2_IN_ADDR); // To host
     usb_start_transfer(ep, buf, len);
 }
 
 void ep2_in_handler(uint8_t *buf, uint16_t len) {
     printf("Sent %d bytes to host\n", len);
-    usb_start_transfer(usb_get_endpoint(EP1_OUT_ADDR), NULL, 64); // Get ready to rx again from host
+    struct usb_endpoint *ep = usb_get_endpoint(EP1_OUT_ADDR); // From host
+    usb_start_transfer(ep, NULL, 64);
 }
 
 // ==[ Setup ]=================================================================
