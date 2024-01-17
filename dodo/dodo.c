@@ -203,7 +203,7 @@ void usb_setup_endpoint(const struct usb_endpoint *ep) {
     }
 }
 
-// set up ep_ctrl register for all endpoints (not EP0)
+// Set up all endpoints
 void usb_setup_endpoints() {
     const struct usb_endpoint *endpoints = device.endpoints;
     for (int i = 0; i < USB_NUM_ENDPOINTS; i++) {
@@ -213,8 +213,8 @@ void usb_setup_endpoints() {
     }
 }
 
-// ep addr -> &endpoints[i]
 struct usb_endpoint *usb_get_endpoint_configuration(uint8_t addr) {
+// Get the endpoint for an endpoint address
     struct usb_endpoint *endpoints = device.endpoints;
     for (int i = 0; i < USB_NUM_ENDPOINTS; i++) {
         if (endpoints[i].descriptor &&
@@ -335,7 +335,7 @@ uint8_t usb_prepare_string_descriptor(const unsigned char *str) {
     return bLength;
 }
 
-// send string descriptor to host
+// Send string descriptor to host
 void usb_handle_string_descriptor(volatile struct usb_setup_packet *pkt) {
     uint8_t i = pkt->wValue & 0xff;
     uint8_t len = 0;
@@ -353,12 +353,12 @@ void usb_handle_string_descriptor(volatile struct usb_setup_packet *pkt) {
 
 // ==[ Commands ]==============================================================
 
-// send a ZLSP to host
+// Send a ZLSP to host
 void usb_acknowledge_out_request(void) {
     usb_start_transfer(usb_get_endpoint_configuration(EP0_IN_ADDR), NULL, 0);
 }
 
-// handle SET_ADDR request from the host
+// Handle SET_ADDR request from the host
 // Actually set in ep0_in_handler since we must acknowledge the request first as a device with address zero
 void usb_set_device_address(volatile struct usb_setup_packet *pkt) {
     dev_addr = (pkt->wValue & 0xff); // set address is goofy because we have to send a ZLSP first with address 0
@@ -367,14 +367,14 @@ void usb_set_device_address(volatile struct usb_setup_packet *pkt) {
     usb_acknowledge_out_request();
 }
 
-// handle SET_CONFIGURATION request from the host
+// Handle SET_CONFIGURATION request from the host
 void usb_set_device_configuration(volatile struct usb_setup_packet *pkt) {
     printf("Device Enumerated!\n"); // Only one configuration so just acknowledge the request
     usb_acknowledge_out_request();
     configured = true;
 }
 
-// respond to a setup packet from the host
+// Respond to a setup packet from the host
 void usb_handle_setup_packet(void) {
     volatile struct usb_setup_packet *pkt = (volatile struct usb_setup_packet *) &usb_dpram->setup_packet;
     uint8_t req_direction = pkt->bmRequestType;
@@ -418,14 +418,14 @@ void usb_handle_setup_packet(void) {
 
 // ==[ Buffers ]===============================================================
 
-// notify an endpoint that a transfer has completed
+// Notify an endpoint that a transfer has completed
 static void usb_handle_ep_buff_done(struct usb_endpoint *ep) {
     uint32_t buffer_control = *ep->buffer_control;
     uint16_t len = buffer_control & USB_BUF_CTRL_LEN_MASK; // get the ep's transfer length
     ep->handler((uint8_t *) ep->data_buffer, len); // call ep's buffer done handler
 }
 
-// find ep configuration for an ep_num and directio and notify of transfer completion
+// Find ep configuration for an ep_num and directio and notify of transfer completion
 static void usb_handle_buff_done(uint ep_num, bool in) {
     uint8_t ep_addr = ep_num | (in ? USB_DIR_IN : 0);
     printf("EP %d (%s) done\n", ep_num, in ? "IN" : "OUT");
@@ -440,7 +440,7 @@ static void usb_handle_buff_done(uint ep_num, bool in) {
     }
 }
 
-// handle a "buffer status" irq, meaning one or more buffers have been sent/received
+// Handle a "buffer status" irq, meaning one or more buffers have been sent/received
 // notify each endpoint where this is the case
 static void usb_handle_buff_status() {
     uint32_t buffers = usb_hw->buf_status;
@@ -459,7 +459,7 @@ static void usb_handle_buff_status() {
 
 // ==[ Interrupt ]=============================================================
 
-// bus reset from the host by setting the device address back to 0
+// Bus reset from the host by setting the device address back to 0
 void usb_bus_reset(void) {
     dev_addr = 0; // set address back to 0
     should_set_address = false;
@@ -467,7 +467,7 @@ void usb_bus_reset(void) {
     configured = false;
 }
 
-// usb interrupt handler
+// Interrupt handler
 void isr_usbctrl(void) {
     uint32_t status = usb_hw->ints;
     uint32_t handled = 0;
@@ -500,7 +500,7 @@ void isr_usbctrl(void) {
 
 // ==[ Hardware reset ]========================================================
 
-// reset USB device
+// Reset USB device
 void usb_device_init() {
 
     // Reset controller
