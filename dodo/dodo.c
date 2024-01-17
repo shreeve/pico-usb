@@ -248,8 +248,9 @@ void usb_start_transfer(struct usb_endpoint *ep, uint8_t *buf, uint16_t len) {
     *ep->buffer_control = val;
 }
 
-// Send a ZLSP (zero length status packet) to host
-void usb_acknowledge_out_request() {
+// Send a ZLSP (zero length status packet) to host (an "ack")
+void usb_ack() {
+    printf("Send usb_ack\n");
     usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), NULL, 0);
 }
 
@@ -265,7 +266,7 @@ void ep0_in_handler(uint8_t *buf, uint16_t len) {
     if (should_set_address) {
         usb_hw->dev_addr_ctrl = device_address; // Set hardware device address
         should_set_address = false;
-    } else { // Receive a ZLSP from the host on EP0_OUT
+    } else { // Receive a ZLSP from host on EP0_OUT
         usb_start_transfer(usb_get_endpoint(EP0_OUT_ADDR), NULL, 0);
     }
 }
@@ -299,6 +300,8 @@ void usb_handle_config_descriptor(volatile struct usb_setup_packet *pkt) {
     memcpy((void *) buf, cd, sizeof(struct usb_configuration_descriptor));
     buf += sizeof(struct usb_configuration_descriptor);
 
+    printf("one: %d, two: %d\n", pkt->wLength, cd->wTotalLength);
+
     // If more than the config descriptor is requested, send everything
     if (pkt->wLength >= cd->wTotalLength) { // TODO: should this just be ">"?
         memcpy((void *) buf, device.interface_descriptor,
@@ -316,9 +319,9 @@ void usb_handle_config_descriptor(volatile struct usb_setup_packet *pkt) {
         }
     }
 
-    // Send data: get len by working out end of buffer subtract start of buffer
     uint32_t len = (uint32_t) buf - (uint32_t) &ep0_buf[0];
-    usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), &ep0_buf[0], MIN(len, pkt->wLength));
+    len = MIN(len, pkt->wLength);
+    usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), &ep0_buf[0], len);
 }
 
 // Helper to convert a C string to a unicode string descriptor
@@ -358,25 +361,23 @@ void usb_handle_string_descriptor(volatile struct usb_setup_packet *pkt) {
     usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), &ep0_buf[0], MIN(len, pkt->wLength));
 }
 
-// Handle SET_ADDR request from the host
+// Handle SET_ADDR request from host
 void usb_set_device_address(volatile struct usb_setup_packet *pkt) {
     // This is a little weird because we must first acknowledge the request
     // using a device address of zero. We do that here and then set a flag
     // to perform the actual update in the ep0_in_handler.
     device_address = (pkt->wValue & 0xff);
-    printf("Set address to %d\n", device_address);
     should_set_address = true; // Will set address in the callback phase
-    usb_acknowledge_out_request();
+    usb_ack();
 }
 
-// Handle SET_CONFIGURATION request from the host
+// Handle SET_CONFIGURATION request from host
 void usb_set_device_configuration(volatile struct usb_setup_packet *pkt) {
-    printf("Device Enumerated!\n"); // Only one configuration so just acknowledge the request
-    usb_acknowledge_out_request();
+    usb_ack();
     configured = true;
 }
 
-// Respond to a setup packet from the host
+// Respond to a setup packet from host
 void usb_handle_setup_packet() {
     volatile struct usb_setup_packet *pkt = (volatile struct usb_setup_packet *) &usb_dpram->setup_packet;
     uint8_t req_direction = pkt->bmRequestType;
@@ -386,12 +387,14 @@ void usb_handle_setup_packet() {
 
     if (req_direction == USB_DIR_OUT) {
         if (req == USB_REQUEST_SET_ADDRESS) {
+            printf("SET ADDRESS to %d\n", (pkt->wValue & 0xff));
             usb_set_device_address(pkt);
         } else if (req == USB_REQUEST_SET_CONFIGURATION) {
+            printf("SET CONFIGURATION to %d => Device enumerated!\n", (pkt->wValue & 0xff));
             usb_set_device_configuration(pkt);
         } else {
-            usb_acknowledge_out_request();
             printf("Other OUT request (0x%02x)\n", pkt->bRequest);
+            usb_ack();
         }
     } else if (req_direction == USB_DIR_IN) {
         if (req == USB_REQUEST_GET_DESCRIPTOR) {
@@ -399,16 +402,16 @@ void usb_handle_setup_packet() {
 
             switch (descriptor_type) {
                 case USB_DT_DEVICE:
-                    usb_handle_device_descriptor(pkt);
                     printf("GET DEVICE DESCRIPTOR\n");
+                    usb_handle_device_descriptor(pkt);
                     break;
                 case USB_DT_CONFIG:
-                    usb_handle_config_descriptor(pkt);
                     printf("GET CONFIG DESCRIPTOR\n");
+                    usb_handle_config_descriptor(pkt);
                     break;
                 case USB_DT_STRING:
-                    usb_handle_string_descriptor(pkt);
                     printf("GET STRING DESCRIPTOR\n");
+                    usb_handle_string_descriptor(pkt);
                     break;
                 default:
                     printf("Unhandled GET_DESCRIPTOR type 0x%04x\n", descriptor_type);
@@ -496,6 +499,7 @@ void usb_device_reset() {
 
     usb_setup_endpoints();
     usb_hw_set->sie_ctrl = USB_SIE_CTRL_PULLUP_EN_BITS;
+    printf("USB device attached\n");
 }
 
 // ==[ Interrupt ]=============================================================
