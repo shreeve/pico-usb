@@ -250,7 +250,6 @@ void usb_start_transfer(struct usb_endpoint *ep, uint8_t *buf, uint16_t len) {
 
 // Send a ZLSP (zero length status packet) to host (an "ack")
 void usb_ack() {
-    printf("Send usb_ack\n");
     usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), NULL, 0);
 }
 
@@ -300,10 +299,8 @@ void usb_handle_config_descriptor(volatile struct usb_setup_packet *pkt) {
     memcpy((void *) buf, cd, sizeof(struct usb_configuration_descriptor));
     buf += sizeof(struct usb_configuration_descriptor);
 
-    printf("one: %d, two: %d\n", pkt->wLength, cd->wTotalLength);
-
     // If more than the config descriptor is requested, send everything
-    if (pkt->wLength >= cd->wTotalLength) { // TODO: should this just be ">"?
+    if (pkt->wLength >= cd->wTotalLength) {
         memcpy((void *) buf, device.interface_descriptor,
                sizeof(struct usb_interface_descriptor));
         buf += sizeof(struct usb_interface_descriptor);
@@ -539,7 +536,7 @@ void isr_usbctrl() {
 
 int main() {
     stdio_init_all();
-    printf("USB Device example\n");
+    printf("USB device example\n");
     usb_device_reset();
 
     // Wait until configured
