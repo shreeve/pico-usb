@@ -294,21 +294,23 @@ void usb_handle_device_descriptor(volatile struct usb_setup_packet *pkt) {
 void usb_handle_config_descriptor(volatile struct usb_setup_packet *pkt) {
     uint8_t *buf = &ep0_buf[0];
 
-    // First request will want just the config descriptor
+    // Always include the config descriptor
     const struct usb_configuration_descriptor *cd = device.config_descriptor;
     memcpy((void *) buf, cd, sizeof(struct usb_configuration_descriptor));
     buf += sizeof(struct usb_configuration_descriptor);
 
-    // If we more need than just the config descriptor copy it all
-    if (pkt->wLength >= cd->wTotalLength) {
-        memcpy((void *) buf, device.interface_descriptor, sizeof(struct usb_interface_descriptor));
+    // If more than the config descriptor is requested, send everything
+    if (pkt->wLength >= cd->wTotalLength) { // TODO: should this just be ">"?
+        memcpy((void *) buf, device.interface_descriptor,
+               sizeof(struct usb_interface_descriptor));
         buf += sizeof(struct usb_interface_descriptor);
-        const struct usb_endpoint *ep = device.endpoints;
 
         // Copy all the endpoint descriptors starting from EP1
+        const struct usb_endpoint *ep = device.endpoints;
         for (uint i = 2; i < USB_NUM_ENDPOINTS; i++) {
             if (ep[i].descriptor) {
-                memcpy((void *) buf, ep[i].descriptor, sizeof(struct usb_endpoint_descriptor));
+                memcpy((void *) buf, ep[i].descriptor,
+                       sizeof(struct usb_endpoint_descriptor));
                 buf += sizeof(struct usb_endpoint_descriptor);
             }
         }
