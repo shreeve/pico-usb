@@ -213,8 +213,8 @@ void usb_setup_endpoints() {
     }
 }
 
-struct usb_endpoint *usb_get_endpoint_configuration(uint8_t addr) {
 // Get the endpoint for an endpoint address
+struct usb_endpoint *usb_get_endpoint(uint8_t addr) {
     struct usb_endpoint *endpoints = device.endpoints;
     for (int i = 0; i < USB_NUM_ENDPOINTS; i++) {
         if (endpoints[i].descriptor &&
@@ -259,20 +259,20 @@ void ep0_in_handler(uint8_t *buf, uint16_t len) {
         usb_hw->dev_addr_ctrl = dev_addr; // Set actual device address in hardware
         should_set_address = false;
     } else { // Receive a ZLSP from the host on EP0 OUT
-        struct usb_endpoint *ep = usb_get_endpoint_configuration(EP0_OUT_ADDR);
+        struct usb_endpoint *ep = usb_get_endpoint(EP0_OUT_ADDR);
         usb_start_transfer(ep, NULL, 0);
     }
 }
 
 void ep1_out_handler(uint8_t *buf, uint16_t len) {
     printf("RX %d bytes from host\n", len);
-    struct usb_endpoint *ep = usb_get_endpoint_configuration(EP2_IN_ADDR); // Send data back to host
+    struct usb_endpoint *ep = usb_get_endpoint(EP2_IN_ADDR); // Send data back to host
     usb_start_transfer(ep, buf, len);
 }
 
 void ep2_in_handler(uint8_t *buf, uint16_t len) {
     printf("Sent %d bytes to host\n", len);
-    usb_start_transfer(usb_get_endpoint_configuration(EP1_OUT_ADDR), NULL, 64); // Get ready to rx again from host
+    usb_start_transfer(usb_get_endpoint(EP1_OUT_ADDR), NULL, 64); // Get ready to rx again from host
 }
 
 // ==[ Descriptors ]===========================================================
@@ -280,7 +280,7 @@ void ep2_in_handler(uint8_t *buf, uint16_t len) {
 // send device descriptor to host
 void usb_handle_device_descriptor(volatile struct usb_setup_packet *pkt) {
     const struct usb_device_descriptor *dd = device.device_descriptor;
-    struct usb_endpoint *ep = usb_get_endpoint_configuration(EP0_IN_ADDR); // EP0 in
+    struct usb_endpoint *ep = usb_get_endpoint(EP0_IN_ADDR); // EP0 in
     ep->next_datapid = 1; // force datapid to 1
     usb_start_transfer(ep, (uint8_t *) dd, MIN(sizeof(struct usb_device_descriptor), pkt->wLength));
 }
@@ -311,7 +311,7 @@ void usb_handle_config_descriptor(volatile struct usb_setup_packet *pkt) {
 
     // Send data: get len by working out end of buffer subtract start of buffer
     uint32_t len = (uint32_t) buf - (uint32_t) &ep0_buf[0];
-    usb_start_transfer(usb_get_endpoint_configuration(EP0_IN_ADDR), &ep0_buf[0], MIN(len, pkt->wLength));
+    usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), &ep0_buf[0], MIN(len, pkt->wLength));
 }
 
 // Helper to convert a C string to a unicode string descriptor
@@ -348,14 +348,14 @@ void usb_handle_string_descriptor(volatile struct usb_setup_packet *pkt) {
         len = usb_prepare_string_descriptor(device.descriptor_strings[i - 1]);
     }
 
-    usb_start_transfer(usb_get_endpoint_configuration(EP0_IN_ADDR), &ep0_buf[0], MIN(len, pkt->wLength));
+    usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), &ep0_buf[0], MIN(len, pkt->wLength));
 }
 
 // ==[ Commands ]==============================================================
 
 // Send a ZLSP to host
 void usb_acknowledge_out_request(void) {
-    usb_start_transfer(usb_get_endpoint_configuration(EP0_IN_ADDR), NULL, 0);
+    usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), NULL, 0);
 }
 
 // Handle SET_ADDR request from the host
@@ -379,7 +379,7 @@ void usb_handle_setup_packet(void) {
     volatile struct usb_setup_packet *pkt = (volatile struct usb_setup_packet *) &usb_dpram->setup_packet;
     uint8_t req_direction = pkt->bmRequestType;
     uint8_t req = pkt->bRequest;
-    usb_get_endpoint_configuration(EP0_IN_ADDR)->next_datapid = 1; // reset to DATA1 for EP0 IN
+    usb_get_endpoint(EP0_IN_ADDR)->next_datapid = 1; // reset to DATA1 for EP0 IN
 
     if (req_direction == USB_DIR_OUT) {
         if (req == USB_REQUEST_SET_ADDRESS) {
@@ -537,7 +537,7 @@ int main(void) {
     while (!configured) { tight_loop_contents(); }
 
     // Get ready to rx from host
-    usb_start_transfer(usb_get_endpoint_configuration(EP1_OUT_ADDR), NULL, 64);
+    usb_start_transfer(usb_get_endpoint(EP1_OUT_ADDR), NULL, 64);
 
     // Everything is interrupt driven so just loop here
     while (1) { tight_loop_contents(); }
