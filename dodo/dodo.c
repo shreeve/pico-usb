@@ -1,60 +1,11 @@
-#include <stdio.h> // For printf
-#include <string.h> // For memcpy
-
-#include "pico/stdlib.h" // Pico stdlib
-#include "hardware/regs/usb.h" // USB registers from pico-sdk
-#include "hardware/structs/usb.h" // USB hardware structs from pico-sdk
-#include "hardware/irq.h" // For interrupt enable and numbers
-#include "hardware/resets.h" // For resetting the USB controller
+// ==[ USB 2.0 ]===============================================================
 
 #include "usb_common.h" // Includes descriptor structs
-
-// ==[ Declarations ]==========================================================
-
-#define usb_hw_set   ((usb_hw_t *)hw_set_alias_untyped  (usb_hw))
-#define usb_hw_clear ((usb_hw_t *)hw_clear_alias_untyped(usb_hw))
 
 #define EP0_OUT_ADDR (USB_DIR_OUT | 0)
 #define EP0_IN_ADDR  (USB_DIR_IN  | 0)
 #define EP1_OUT_ADDR (USB_DIR_OUT | 1)
 #define EP2_IN_ADDR  (USB_DIR_IN  | 2)
-
-void ep0_out_handler(uint8_t *buf, uint16_t len);
-void ep0_in_handler (uint8_t *buf, uint16_t len);
-void ep1_out_handler(uint8_t *buf, uint16_t len);
-void ep2_in_handler (uint8_t *buf, uint16_t len);
-
-typedef void (*usb_ep_handler)(uint8_t *buf, uint16_t len);
-
-// Global device address
-static bool should_set_address = false;
-static uint8_t dev_addr = 0;
-static volatile bool configured = false;
-
-// Global data buffer for EP0
-static uint8_t ep0_buf[64];
-
-struct usb_endpoint {
-    const struct usb_endpoint_descriptor *descriptor;
-    usb_ep_handler handler;
-
-    volatile uint32_t *endpoint_control;
-    volatile uint32_t *buffer_control;
-    volatile uint8_t  *data_buffer;
-
-    uint8_t next_datapid; // toggle datapid (DATA0/DATA1) after each packet
-};
-
-struct usb_device {
-    const struct usb_device_descriptor        *device_descriptor;
-    const unsigned char                       *lang_descriptor;
-    const unsigned char                       **descriptor_strings;
-    const struct usb_configuration_descriptor *config_descriptor;
-    const struct usb_interface_descriptor     *interface_descriptor;
-    struct usb_endpoint                       endpoints[USB_NUM_ENDPOINTS];
-};
-
-// ==[ Configuration ]=========================================================
 
 static const struct usb_endpoint_descriptor ep0_out = {
     .bLength          = sizeof(struct usb_endpoint_descriptor),
@@ -113,7 +64,7 @@ static const struct usb_configuration_descriptor config_descriptor = {
                             sizeof(ep2_in)),
     .bNumInterfaces      = 1,    // One interface
     .bConfigurationValue = 1,    // Configuration 1
-    .iConfiguration      = 0,    // No string
+    .iConfiguration      = 4,    // No string
     .bmAttributes        = 0xc0, // attributes: self powered, no remote wakeup
     .bMaxPower           = 0x32  // 100ma
 };
@@ -122,22 +73,58 @@ static const struct usb_device_descriptor device_descriptor = {
     .bLength            = sizeof(struct usb_device_descriptor),
     .bDescriptorType    = USB_DT_DEVICE,
     .bcdUSB             = 0x0110, // USB 1.1 device
-    .bDeviceClass       = 0,      // Specified in interface descriptor
+    .bDeviceClass       = 0,      // Defer to interface descriptor
     .bDeviceSubClass    = 0,      // No subclass
     .bDeviceProtocol    = 0,      // No protocol
     .bMaxPacketSize0    = 64,     // Max packet size for ep0
-    .idVendor           = 0x0000, // Your vendor id
-    .idProduct          = 0x0001, // Your product ID
-    .bcdDevice          = 0,      // No device revision number
+    .idVendor           = 0x0000, // Your vendor id (bogus)
+    .idProduct          = 0x0001, // Your product id (bogus)
+    .bcdDevice          = 0x0001, // No device revision number
     .iManufacturer      = 1,      // Manufacturer string index
     .iProduct           = 2,      // Product string index
-    .iSerialNumber      = 0,      // No serial number
+    .iSerialNumber      = 3,      // No serial number
     .bNumConfigurations = 1       // One configuration
 };
 
-static const unsigned char *descriptor_strings[] = {
-    (unsigned char *) "Raspberry Pi",    // Vendor
-    (unsigned char *) "Pico Test Device" // Product
+// ==[ PicoUSB ]===============================================================
+
+#include <stdio.h> // For printf
+#include <string.h> // For memcpy
+
+#include "pico/stdlib.h" // Pico stdlib
+#include "hardware/regs/usb.h" // USB registers from pico-sdk
+#include "hardware/structs/usb.h" // USB hardware structs from pico-sdk
+#include "hardware/irq.h" // For interrupt enable and numbers
+#include "hardware/resets.h" // For resetting the USB controller
+
+#define usb_hw_set   ((usb_hw_t *)hw_set_alias_untyped  (usb_hw))
+#define usb_hw_clear ((usb_hw_t *)hw_clear_alias_untyped(usb_hw))
+
+void ep0_out_handler(uint8_t *buf, uint16_t len);
+void ep0_in_handler (uint8_t *buf, uint16_t len);
+void ep1_out_handler(uint8_t *buf, uint16_t len);
+void ep2_in_handler (uint8_t *buf, uint16_t len);
+
+typedef void (*usb_ep_handler)(uint8_t *buf, uint16_t len);
+
+struct usb_endpoint {
+    const struct usb_endpoint_descriptor *descriptor;
+    usb_ep_handler handler;
+
+    volatile uint32_t *endpoint_control;
+    volatile uint32_t *buffer_control;
+    volatile uint8_t  *data_buffer;
+
+    uint8_t next_datapid; // toggle datapid (DATA0/DATA1) after each packet
+};
+
+struct usb_device {
+    const struct usb_device_descriptor        *device_descriptor;
+    const struct usb_configuration_descriptor *config_descriptor;
+    const struct usb_interface_descriptor     *interface_descriptor;
+    const unsigned char                       *lang_descriptor;
+    const unsigned char                       **descriptor_strings;
+    struct usb_endpoint                       endpoints[USB_NUM_ENDPOINTS];
 };
 
 static const unsigned char lang_descriptor[] = {
@@ -146,10 +133,17 @@ static const unsigned char lang_descriptor[] = {
     0x09, 0x04 // language id = us english
 };
 
+static const unsigned char *descriptor_strings[] = {
+    (unsigned char *) "PicoUSB", // Vendor
+    (unsigned char *) "Demo"   , // Product
+    (unsigned char *) "12345"  , // Serial
+    (unsigned char *) "Simple"   // Configuration
+};
+
 static struct usb_device device = {
     .device_descriptor    = &device_descriptor,
-    .interface_descriptor = &interface_descriptor,
     .config_descriptor    = &config_descriptor,
+    .interface_descriptor = &interface_descriptor,
     .lang_descriptor      = lang_descriptor,
     .descriptor_strings   = descriptor_strings,
     .endpoints = {
@@ -183,6 +177,12 @@ static struct usb_device device = {
         }
     }
 };
+
+// Globals
+static bool should_set_address = false;
+static uint8_t dev_addr = 0;
+static volatile bool configured = false;
+static uint8_t ep0_buf[64];
 
 // ==[ Endpoints ]=============================================================
 
