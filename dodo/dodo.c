@@ -285,9 +285,9 @@ void ep2_in_handler(uint8_t *buf, uint16_t len) {
 // Send device descriptor to host
 void usb_handle_device_descriptor(volatile struct usb_setup_packet *pkt) {
     const struct usb_device_descriptor *dd = device.device_descriptor;
-    struct usb_endpoint *ep = usb_get_endpoint(EP0_IN_ADDR); // EP0_IN
-    ep->next_datapid = 1; // Reset to DATA1
-    usb_start_transfer(ep, (uint8_t *) dd, MIN(sizeof(struct usb_device_descriptor), pkt->wLength));
+    uint16_t len = MIN(sizeof(struct usb_device_descriptor), pkt->wLength);
+    usb_get_endpoint(EP0_IN_ADDR)->next_datapid = 1; // Reset to DATA1
+    usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), (uint8_t *) dd, len);
 }
 
 // Send config descriptor to host
