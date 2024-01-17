@@ -181,7 +181,7 @@ static struct usb_device device = {
 
 // Globals
 static uint8_t ep0_buf[64];
-static uint8_t dev_addr = 0;
+static uint8_t device_address = 0;
 static bool should_set_address = false;
 static volatile bool configured = false;
 
@@ -263,7 +263,7 @@ void ep0_out_handler(uint8_t *buf, uint16_t len) {
 // Finish the SET_ADDRESS or receive a ZLSP from host
 void ep0_in_handler(uint8_t *buf, uint16_t len) {
     if (should_set_address) {
-        usb_hw->dev_addr_ctrl = dev_addr; // Set actual device address in hardware
+        usb_hw->dev_addr_ctrl = device_address; // Set actual device address in hardware
         should_set_address = false;
     } else { // Receive a ZLSP from the host on EP0 OUT
         struct usb_endpoint *ep = usb_get_endpoint(EP0_OUT_ADDR);
@@ -363,8 +363,8 @@ void usb_set_device_address(volatile struct usb_setup_packet *pkt) {
     // This is a little weird because we must first acknowledge the request
     // using a device address of zero. We do that here and then set a flag
     // to perform the actual update in the ep0_in_handler.
-    dev_addr = (pkt->wValue & 0xff);
-    printf("Set address to %d\n", dev_addr);
+    device_address = (pkt->wValue & 0xff);
+    printf("Set address to %d\n", device_address);
     should_set_address = true; // Will set address in the callback phase
     usb_acknowledge_out_request();
 }
@@ -463,7 +463,7 @@ static void usb_handle_buff_status() {
 
 // Bus reset from the host by setting the device address back to 0
 void usb_bus_reset(void) {
-    dev_addr = 0; // Set address back to 0
+    device_address = 0; // Set address back to 0
     should_set_address = false;
     usb_hw->dev_addr_ctrl = 0;
     configured = false;
