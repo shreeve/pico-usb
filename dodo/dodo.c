@@ -2,12 +2,12 @@
 #include <string.h> // For memcpy
 
 #include "pico/stdlib.h" // Pico stdlib
-#include "hardware/regs/usb.h" // USB register definitions from pico-sdk
-#include "hardware/structs/usb.h" // USB hardware struct definitions from pico-sdk
+#include "hardware/regs/usb.h" // USB registers from pico-sdk
+#include "hardware/structs/usb.h" // USB hardware structs from pico-sdk
 #include "hardware/irq.h" // For interrupt enable and numbers
 #include "hardware/resets.h" // For resetting the USB controller
 
-#include "../include/usb_common.h" // Include descriptor struct definitions
+#include "../include/usb_common.h" // Includes descriptor structs
 
 // ==[ Declarations ]==========================================================
 
