@@ -26,4 +26,4 @@ target_link_libraries(${project_name} PRIVATE
 )
 
 # uncomment to create uf2 files
-pico_add_extra_outputs(${project_name})
+# pico_add_extra_outputs(${project_name})
