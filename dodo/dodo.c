@@ -517,9 +517,9 @@ void usb_device_init() {
                         USB_USB_PWR_VBUS_DETECT_OVERRIDE_EN_BITS;
     usb_hw->main_ctrl = USB_MAIN_CTRL_CONTROLLER_EN_BITS        ;
     usb_hw->sie_ctrl  = USB_SIE_CTRL_EP0_INT_1BUF_BITS          ;
-    usb_hw->inte      = USB_INTS_BUFF_STATUS_BITS               |
-                        USB_INTS_BUS_RESET_BITS                 |
-                        USB_INTS_SETUP_REQ_BITS                 ;
+    usb_hw->inte      = USB_INTE_BUFF_STATUS_BITS               |
+                        USB_INTE_BUS_RESET_BITS                 |
+                        USB_INTE_SETUP_REQ_BITS                 ;
 
     usb_setup_endpoints();
     usb_hw_set->sie_ctrl = USB_SIE_CTRL_PULLUP_EN_BITS;
