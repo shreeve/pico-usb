@@ -30,32 +30,32 @@ typedef void (*usb_ep_handler)(uint8_t *buf, uint16_t len);
 // static bool should_set_address = false;
 // static uint8_t dev_addr = 0;
 // static volatile bool configured = false;
-//
-// // Global data buffer for EP0
-// static uint8_t ep0_buf[64];
-//
-// struct usb_endpoint {
-//     const struct usb_endpoint_descriptor *descriptor;
-//     usb_ep_handler handler;
-//
-//     volatile uint32_t *endpoint_control;
-//     volatile uint32_t *buffer_control;
-//     volatile uint8_t  *data_buffer;
-//
-//     uint8_t next_datapid; // toggle datapid (DATA0/DATA1) after each packet
-// };
-//
-// struct usb_device {
-//     const struct usb_device_descriptor        *device_descriptor;
-//     const unsigned char                       *lang_descriptor;
-//     const unsigned char                       **descriptor_strings;
-//     const struct usb_configuration_descriptor *config_descriptor;
-//     const struct usb_interface_descriptor     *interface_descriptor;
-//     struct usb_endpoint                       endpoints[USB_NUM_ENDPOINTS];
-// };
-//
-// // ==[ Configuration ]=========================================================
-//
+
+// Global data buffer for EP0
+static uint8_t ep0_buf[64];
+
+struct usb_endpoint {
+    const struct usb_endpoint_descriptor *descriptor;
+    usb_ep_handler handler;
+
+    volatile uint32_t *endpoint_control;
+    volatile uint32_t *buffer_control;
+    volatile uint8_t  *data_buffer;
+
+    uint8_t next_datapid; // toggle datapid (DATA0/DATA1) after each packet
+};
+
+struct usb_device {
+    const struct usb_device_descriptor        *device_descriptor;
+    const unsigned char                       *lang_descriptor;
+    const unsigned char                       **descriptor_strings;
+    const struct usb_configuration_descriptor *config_descriptor;
+    const struct usb_interface_descriptor     *interface_descriptor;
+    struct usb_endpoint                       endpoints[USB_NUM_ENDPOINTS];
+};
+
+// ==[ Configuration ]=========================================================
+
 // static const struct usb_endpoint_descriptor ep0_out = {
 //     .bLength          = sizeof(struct usb_endpoint_descriptor),
 //     .bDescriptorType  = USB_DT_ENDPOINT,
