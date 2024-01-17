@@ -516,10 +516,10 @@ bool usb_host_init() {
                         USB_USB_PWR_VBUS_DETECT_OVERRIDE_EN_BITS;
     usb_hw->main_ctrl = USB_MAIN_CTRL_CONTROLLER_EN_BITS        |
                         USB_MAIN_CTRL_HOST_NDEVICE_BITS         ;
-    usb_hw->sie_ctrl  = USB_SIE_CTRL_SOF_EN_BITS                |
+    usb_hw->sie_ctrl  = USB_SIE_CTRL_EP0_INT_1BUF_BITS          |
+                        USB_SIE_CTRL_SOF_EN_BITS                |
                         USB_SIE_CTRL_KEEP_ALIVE_EN_BITS         |
-                        USB_SIE_CTRL_PULLDOWN_EN_BITS           |
-                        USB_SIE_CTRL_EP0_INT_1BUF_BITS          ;
+                        USB_SIE_CTRL_PULLDOWN_EN_BITS           ;
     usb_hw->inte      = USB_INTE_BUFF_STATUS_BITS               |
                         USB_INTE_HOST_CONN_DIS_BITS             |
                         USB_INTE_HOST_RESUME_BITS               |
