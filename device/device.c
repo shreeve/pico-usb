@@ -231,6 +231,36 @@ struct usb_endpoint *usb_get_endpoint(uint8_t addr) {
 
 // ==[ Transfers ]=============================================================
 
+void hexdump(const void* data, size_t size) {
+    const unsigned char* byte = (const unsigned char*) data;
+    size_t i, j;
+
+    for (i = 0; i < size; i += 16) {
+        printf("  %08zx  ", i); // Print the offset
+
+        // Print hex values
+        for (j = 0; j < 16; j++) {
+            if (i + j < size) {
+                printf("%02x ", byte[i + j]);
+            } else {
+                printf("   "); // Pad if less than 16 bytes in the line
+            }
+        }
+
+        printf("  ");
+
+        // Print ASCII values
+        for (j = 0; j < 16; j++) {
+            if (i + j < size) {
+                unsigned char ch = byte[i + j];
+                printf("%c", (ch >= 32 && ch <= 126) ? ch : '.');
+            }
+        }
+
+        printf("\n");
+    }
+}
+
 // Start a transfer on an endpoint
 void usb_start_transfer(struct usb_endpoint *ep, uint8_t *buf, uint16_t len) {
     assert(len <= 64);
