@@ -179,7 +179,6 @@ static struct usb_device device = {
     }
 };
 
-// Globals
 static uint8_t ep0_buf[64];
 static uint8_t device_address = 0;
 static bool should_set_address = false;
