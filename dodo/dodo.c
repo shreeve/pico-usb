@@ -259,8 +259,8 @@ void usb_start_transfer(struct usb_endpoint *ep, uint8_t *buf, uint16_t len) {
     *ep->buffer_control = val;
 }
 
-// Send a ZLSP (zero length status packet) to host (an "ack")
-void usb_ack() {
+// Send a ZLP (zero length packet) to host
+void usb_send_zlp() {
     usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), NULL, 0);
 }
 
@@ -276,7 +276,7 @@ void ep0_in_handler(uint8_t *buf, uint16_t len) {
     if (should_set_address) {
         usb_hw->dev_addr_ctrl = device_address; // Set hardware device address
         should_set_address = false;
-    } else { // Receive a ZLSP from host on EP0_OUT
+    } else { // Receive a ZLP from host on EP0_OUT
         usb_start_transfer(usb_get_endpoint(EP0_OUT_ADDR), NULL, 0);
     }
 }
@@ -376,12 +376,10 @@ void usb_set_device_address(volatile struct usb_setup_packet *pkt) {
     // to perform the actual update in the ep0_in_handler.
     device_address = (pkt->wValue & 0xff);
     should_set_address = true; // Will set address in the callback phase
-    usb_ack();
 }
 
 // Handle SET_CONFIGURATION request from host
 void usb_set_device_configuration(volatile struct usb_setup_packet *pkt) {
-    usb_ack();
     configured = true;
 }
 
@@ -402,8 +400,8 @@ void usb_handle_setup_packet() {
             usb_set_device_configuration(pkt);
         } else {
             printf("Other OUT request (0x%02x)\n", pkt->bRequest);
-            usb_ack();
         }
+        usb_send_zlp(); // TODO: Confirm how we should handle
     } else if (req_direction == USB_DIR_IN) {
         if (req == USB_REQUEST_GET_DESCRIPTOR) {
             uint16_t descriptor_type = pkt->wValue >> 8;
@@ -426,6 +424,7 @@ void usb_handle_setup_packet() {
             }
         } else {
             printf("Other IN request (0x%02x)\n", pkt->bRequest);
+            usb_send_zlp(); // TODO: Confirm how we should handle
         }
     }
 }
