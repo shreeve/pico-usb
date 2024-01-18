@@ -406,22 +406,22 @@ void usb_handle_setup_packet() {
 
             switch (descriptor_type) {
                 case USB_DT_DEVICE:
-                    printf("GET DEVICE DESCRIPTOR\n");
+                    printf("GET DEVICE DESCRIPTOR [0x%02x, %d, %d, %d, %d]\n", pkt->bmRequestType, pkt->bRequest, pkt->wValue, pkt->wIndex, pkt->wLength);
                     usb_handle_device_descriptor(pkt);
                     break;
                 case USB_DT_CONFIG:
-                    printf("GET CONFIG DESCRIPTOR\n");
+                    printf("GET CONFIG DESCRIPTOR [0x%02x, %d, %d, %d, %d]\n", pkt->bmRequestType, pkt->bRequest, pkt->wValue, pkt->wIndex, pkt->wLength);
                     usb_handle_config_descriptor(pkt);
                     break;
                 case USB_DT_STRING:
-                    printf("GET STRING DESCRIPTOR\n");
+                    printf("GET STRING DESCRIPTOR [0x%02x, %d, 0x%04x, 0x%04x, %d] (%d bytes)\n", pkt->bmRequestType, pkt->bRequest, pkt->wValue, pkt->wIndex, pkt->wLength, (pkt->wLength - 2) / 2);
                     usb_handle_string_descriptor(pkt);
                     break;
                 default:
                     printf("Unhandled GET_DESCRIPTOR type 0x%04x\n", descriptor_type);
             }
         } else {
-            printf("Other IN request (0x%02x)\n", pkt->bRequest);
+            printf("Unhandled IN request [0x%02x, 0x%02x, 0x%04x, 0x%04x, 0x%04x]\n", pkt->bmRequestType, pkt->bRequest, pkt->wValue, pkt->wIndex, pkt->wLength);
             usb_send_zlp(); // TODO: Confirm how we should handle
         }
     }
@@ -440,8 +440,6 @@ static void usb_handle_ep_buff_done(struct usb_endpoint *ep) {
 // Notify an endpoint that a transfer has completed
 static void usb_handle_buff_done(uint ep_num, bool in) {
     uint8_t ep_addr = ep_num | (in ? USB_DIR_IN : USB_DIR_OUT);
-
-    printf("EP%d_%s done\n", ep_num, in ? "IN" : "OUT");
 
     for (uint i = 0; i < USB_NUM_ENDPOINTS; i++) {
         struct usb_endpoint *ep = &device.endpoints[i];
@@ -518,6 +516,7 @@ void isr_usbctrl() {
     if (status & USB_INTS_SETUP_REQ_BITS) {
         handled |= USB_INTS_SETUP_REQ_BITS;
         usb_hw_clear->sie_status = USB_SIE_STATUS_SETUP_REC_BITS;
+        printf("SETUP PACKET: ");
         usb_handle_setup_packet();
     }
 
@@ -544,7 +543,7 @@ void isr_usbctrl() {
 
 int main() {
     stdio_init_all();
-    printf("USB device example\n");
+    printf("\n==[ USB device example]==\n\n");
     usb_device_reset();
 
     // Wait until configured
