@@ -26,21 +26,21 @@ it seems the name pico-usb is fitting.
 
 ## Contents
 
-There is a directory called `dodo` which contains the simplified
-USB Device example and a directory called `hoho` which contains
+There is a directory called `device` which contains the simplified
+USB Device example and a directory called `host` which contains
 the simplified USB Host example. Hopefully, the contents of these
 two directories will be very similar and have as similar code as
 possible.
 
 ## Status
 
-Currently, the code in `dodo` is basically just a streamlined version
+Currently, the code in `device` is basically just a streamlined version
 of the low level USB device from [pico-examples](https://github.com/raspberrypi/pico-examples/tree/master/usb/device/dev_lowlevel). The CMakeLists.txt
 files in this repo are written to be very minimal. They work in VScode
 when opening these two directories. There is probably a way to create
 a top-level CMakeLists.txt file so that each directory doesn't need
 one, if someone can submit a way to open the top-level directory and
-build either directory that would be great. The code in `hoho` is being
+build either directory that would be great. The code in `host` is being
 put together now, based on trying to read the spec from the datasheet.
 If anyone has some minimal code for USB Host, it would be great to add
 it to build out the USB Host example.
