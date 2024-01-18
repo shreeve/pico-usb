@@ -66,7 +66,7 @@ static const struct usb_configuration_descriptor config_descriptor = {
     .bConfigurationValue = 1,    // Configuration 1
     .iConfiguration      = 4,    // String #4
     .bmAttributes        = 0xc0, // Attributes: Self-powered, No remote wakeup
-    .bMaxPower           = 0x32  // 100ma (Expressed in 2mA units)
+    .bMaxPower           = 50    // 100ma (Expressed in 2mA units)
 };
 
 static const struct usb_device_descriptor device_descriptor = {
