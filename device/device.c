@@ -270,11 +270,12 @@ void usb_start_transfer(struct usb_endpoint *ep, uint8_t *buf, uint16_t len) {
     uint8_t ep_num = ep_addr & 0x0f;
     bool in = ep_addr & USB_DIR_IN;
     if (len == 0) {
-        printf("Transfer on EP%d_%s (0x%02x) [ZLP]\n",
+        printf("  [Transfer on EP%d_%s (0x%02x) ZLP]\n",
                 ep_num, in ? "IN " : "OUT", ep_addr);
     } else {
-        printf("Transfer on EP%d_%s (0x%02x) [%d byte%s]\n",
+        printf("  [Transfer on EP%d_%s (0x%02x) %d byte%s]\n",
                 ep_num, in ? "IN " : "OUT", ep_addr, len, len == 1 ? "" : "s");
+        hexdump((const void*) buf, (size_t) len);
     }
 
     // Set the buffer control register and copy the buffer if needed
@@ -415,6 +416,9 @@ void usb_handle_setup_packet() {
     uint8_t req_direction = pkt->bmRequestType;
     uint8_t req = pkt->bRequest;
 
+    // Log the setup packet
+    hexdump((const void*) pkt, sizeof(struct usb_setup_packet));
+
     usb_get_endpoint(EP0_IN_ADDR)->next_datapid = 1; // Reset to DATA1
 
     if (req_direction == USB_DIR_OUT) {
@@ -422,10 +426,10 @@ void usb_handle_setup_packet() {
             printf("SET ADDRESS to %d\n", (pkt->wValue & 0xff));
             usb_set_device_address(pkt);
         } else if (req == USB_REQUEST_SET_CONFIGURATION) {
-            printf("SET CONFIGURATION to %d => Device enumerated!\n", (pkt->wValue & 0xff));
+            printf("SET CONFIGURATION to %d\n", (pkt->wValue & 0xff));
             usb_set_device_configuration(pkt);
         } else {
-            printf("Other OUT request (0x%02x)\n", pkt->bRequest);
+            printf("Other OUT request\n");
         }
         usb_send_zlp(); // TODO: Confirm how we should handle
     } else if (req_direction == USB_DIR_IN) {
@@ -434,22 +438,22 @@ void usb_handle_setup_packet() {
 
             switch (descriptor_type) {
                 case USB_DT_DEVICE:
-                    printf("GET DEVICE DESCRIPTOR [0x%02x, %d, %d, %d, %d]\n", pkt->bmRequestType, pkt->bRequest, pkt->wValue, pkt->wIndex, pkt->wLength);
+                    printf("GET DEVICE DESCRIPTOR\n");
                     usb_handle_device_descriptor(pkt);
                     break;
                 case USB_DT_CONFIG:
-                    printf("GET CONFIG DESCRIPTOR [0x%02x, %d, %d, %d, %d]\n", pkt->bmRequestType, pkt->bRequest, pkt->wValue, pkt->wIndex, pkt->wLength);
+                    printf("GET CONFIG DESCRIPTOR\n");
                     usb_handle_config_descriptor(pkt);
                     break;
                 case USB_DT_STRING:
-                    printf("GET STRING DESCRIPTOR [0x%02x, %d, 0x%04x, 0x%04x, %d] (%d bytes)\n", pkt->bmRequestType, pkt->bRequest, pkt->wValue, pkt->wIndex, pkt->wLength, (pkt->wLength - 2) / 2);
+                    printf("GET STRING DESCRIPTOR\n");
                     usb_handle_string_descriptor(pkt);
                     break;
                 default:
-                    printf("Unhandled GET_DESCRIPTOR type 0x%04x\n", descriptor_type);
+                    printf("Unhandled GET_DESCRIPTOR\n");
             }
         } else {
-            printf("Unhandled IN request [0x%02x, 0x%02x, 0x%04x, 0x%04x, 0x%04x]\n", pkt->bmRequestType, pkt->bRequest, pkt->wValue, pkt->wIndex, pkt->wLength);
+            printf("Unhandled IN request\n");
             usb_send_zlp(); // TODO: Confirm how we should handle
         }
     }
@@ -554,7 +558,7 @@ void isr_usbctrl() {
     if (status & USB_INTS_SETUP_REQ_BITS) {
         handled |= USB_INTS_SETUP_REQ_BITS;
         usb_hw_clear->sie_status = USB_SIE_STATUS_SETUP_REC_BITS;
-        printf("SETUP PACKET: ");
+        printf("SETUP PACKET:\n");
         usb_handle_setup_packet();
     }
 
