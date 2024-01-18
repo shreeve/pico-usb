@@ -248,17 +248,14 @@ void usb_start_transfer(struct usb_endpoint *ep, uint8_t *buf, uint16_t len) {
                 ep_num, in ? "IN " : "OUT", ep_addr, len, len == 1 ? "" : "s");
     }
 
-    // Prepare buffer control register value
+    // Set the buffer control register and copy the buffer if needed
     uint32_t val = len | USB_BUF_CTRL_AVAIL;
-
-    if (ep->descriptor->bEndpointAddress & USB_DIR_IN) {
+    if (in) {
         memcpy((void *) ep->data_buffer, (void *) buf, len);
         val |= USB_BUF_CTRL_FULL; // Mark buffer as full
     }
-
     val |= ep->next_datapid ? USB_BUF_CTRL_DATA1_PID : USB_BUF_CTRL_DATA0_PID;
     ep->next_datapid ^= 1; // Flip for the next transfer
-
     *ep->buffer_control = val;
 }
 
