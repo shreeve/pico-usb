@@ -34,16 +34,17 @@ possible.
 
 ## Status
 
-Currently, the code in `device` is basically just a streamlined version
-of the low level USB device from [pico-examples](https://github.com/raspberrypi/pico-examples/tree/master/usb/device/dev_lowlevel). The CMakeLists.txt
-files in this repo are written to be very minimal. They work in VScode
-when opening these two directories. There is probably a way to create
-a top-level CMakeLists.txt file so that each directory doesn't need
-one, if someone can submit a way to open the top-level directory and
-build either directory that would be great. The code in `host` is being
-put together now, based on trying to read the spec from the datasheet.
-If anyone has some minimal code for USB Host, it would be great to add
-it to build out the USB Host example.
+Currently, the code in `device` is a streamlined version
+of the low level USB device from [pico-examples](https://github.com/raspberrypi/pico-examples/tree/master/usb/device/dev_lowlevel).
+It's a simple example that will echo anything received on EP1 to EP2.
+The CMakeLists.txt files in this repo are written to be very minimal.
+They work in VScode when opening these two directories. There is probably
+a way to create a top-level CMakeLists.txt file so that each directory
+doesn't need one, if someone can submit a way to open the top-level
+directory and build either directory that would be great. The code
+in `host` is being put together now, based on trying to read the spec
+from the datasheet. If anyone has some minimal code for USB Host, it
+would be great to add it to build out the USB Host example.
 
 ## Disable TinyUSB
 
