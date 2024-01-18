@@ -329,9 +329,8 @@ void usb_handle_config_descriptor(volatile struct usb_setup_packet *pkt) {
     usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), &ep0_buf[0], len);
 }
 
-// Helper to convert a C string to a unicode string descriptor
+// Helper to convert a C string to a unicode string descriptor (2 + strlen * 2)
 uint8_t usb_prepare_string_descriptor(const unsigned char *str) {
-    // 2 for bLength + bDescriptorType + strlen * 2 because string is unicode. i.e. other byte will be 0
     uint8_t bLength = 2 + (strlen((const char *)str) * 2);
     static const uint8_t bDescriptorType = 0x03;
 
