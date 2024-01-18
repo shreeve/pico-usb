@@ -189,8 +189,13 @@ static volatile bool configured = false;
 
 // Set up an endpoint's control register (except EP0)
 void usb_setup_endpoint(const struct usb_endpoint *ep) {
-    printf("Set up endpoint 0x%02x with buffer address 0x%p\n",
-           ep->descriptor->bEndpointAddress, ep->data_buffer);
+
+    // Grok the desired endpoint
+    uint8_t ep_addr = ep->descriptor->bEndpointAddress;
+    uint8_t ep_num = ep_addr & 0x0f;
+    bool in = ep_addr & USB_DIR_IN;
+    printf("Initialized EP%d_%s (0x%02x) with buffer address 0x%p\n",
+           ep_num, in ? "IN " : "OUT", ep_addr, ep->data_buffer);
 
     // Set ep_ctrl register for this endpoint (skip EP0 since it uses SIE_CTRL)
     if (ep->endpoint_control) {
@@ -231,8 +236,17 @@ struct usb_endpoint *usb_get_endpoint(uint8_t addr) {
 void usb_start_transfer(struct usb_endpoint *ep, uint8_t *buf, uint16_t len) {
     assert(len <= 64);
 
-    printf("Start transfer EP addr 0x%02x of %d byte%s\n",
-            ep->descriptor->bEndpointAddress, len, len == 1 ? "" : "s");
+    // Grok the desired endpoint
+    uint8_t ep_addr = ep->descriptor->bEndpointAddress;
+    uint8_t ep_num = ep_addr & 0x0f;
+    bool in = ep_addr & USB_DIR_IN;
+    if (len == 0) {
+        printf("Transfer on EP%d_%s (0x%02x) [ZLP]\n",
+                ep_num, in ? "IN " : "OUT", ep_addr);
+    } else {
+        printf("Transfer on EP%d_%s (0x%02x) [%d byte%s]\n",
+                ep_num, in ? "IN " : "OUT", ep_addr, len, len == 1 ? "" : "s");
+    }
 
     // Prepare buffer control register value
     uint32_t val = len | USB_BUF_CTRL_AVAIL;
