@@ -495,9 +495,9 @@ void usb_device_reset() {
                         USB_USB_PWR_VBUS_DETECT_OVERRIDE_EN_BITS;
     usb_hw->main_ctrl = USB_MAIN_CTRL_CONTROLLER_EN_BITS        ;
     usb_hw->sie_ctrl  = USB_SIE_CTRL_EP0_INT_1BUF_BITS          ;
-    usb_hw->inte      = USB_INTE_BUFF_STATUS_BITS               |
-                        USB_INTE_BUS_RESET_BITS                 |
-                        USB_INTE_SETUP_REQ_BITS                 ;
+    usb_hw->inte      = USB_INTE_BUS_RESET_BITS                 |
+                        USB_INTE_SETUP_REQ_BITS                 |
+                        USB_INTE_BUFF_STATUS_BITS               ;
 
     usb_setup_endpoints();
     usb_hw_set->sie_ctrl = USB_SIE_CTRL_PULLUP_EN_BITS;
@@ -511,6 +511,16 @@ void isr_usbctrl() {
     uint32_t status = usb_hw->ints;
     uint32_t handled = 0;
 
+    // TODO: Does the order of processing these matter?
+
+    // Bus is reset
+    if (status & USB_INTS_BUS_RESET_BITS) {
+        handled |= USB_INTS_BUS_RESET_BITS;
+        printf("BUS RESET\n");
+        usb_hw_clear->sie_status = USB_SIE_STATUS_BUS_RESET_BITS;
+        usb_bus_reset();
+    }
+
     // Setup packet received
     if (status & USB_INTS_SETUP_REQ_BITS) {
         handled |= USB_INTS_SETUP_REQ_BITS;
@@ -523,14 +533,6 @@ void isr_usbctrl() {
     if (status & USB_INTS_BUFF_STATUS_BITS) {
         handled |= USB_INTS_BUFF_STATUS_BITS;
         usb_handle_buff_status();
-    }
-
-    // Bus is reset
-    if (status & USB_INTS_BUS_RESET_BITS) {
-        handled |= USB_INTS_BUS_RESET_BITS;
-        printf("BUS RESET\n");
-        usb_hw_clear->sie_status = USB_SIE_STATUS_BUS_RESET_BITS;
-        usb_bus_reset();
     }
 
     if (status ^ handled) {
