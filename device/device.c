@@ -481,7 +481,7 @@ inline static void usb_handle_ep_buff_done(struct usb_endpoint *ep) {
     uint32_t buffer_control = *ep->buffer_control;
     uint16_t len = buffer_control & USB_BUF_CTRL_LEN_MASK; // Get buffer length
 
-    // FIXME: Move all logging out of ISR contexts
+    // TODO: Move all logging out of ISR contexts
     if (len) {
         uint8_t ep_addr = ep->descriptor->bEndpointAddress;
         uint8_t ep_num = ep_addr & 0x0f;
