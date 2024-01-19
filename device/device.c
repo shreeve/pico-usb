@@ -151,16 +151,16 @@ static struct usb_device device = {
         {
             .descriptor       = &ep0_out,
             .handler          = &ep0_out_handler,
-            .endpoint_control = NULL, // Controls for EP0 come from SIE_CTRL
+            .endpoint_control = NULL, // EP0 controlled via SIE_CTRL
             .buffer_control   = &usb_dpram->ep_buf_ctrl[0].out,
-            .data_buffer      = &usb_dpram->ep0_buf_a[0], // EP0 in/out share
+            .data_buffer      = &usb_dpram->ep0_buf_a[0], // EP0 shares in/out
         },
         {
             .descriptor       = &ep0_in,
             .handler          = &ep0_in_handler,
-            .endpoint_control = NULL, // Controls for EP0 come from SIE_CTRL
+            .endpoint_control = NULL, //  EP0 controlled via SIE_CTRL
             .buffer_control   = &usb_dpram->ep_buf_ctrl[0].in,
-            .data_buffer      = &usb_dpram->ep0_buf_a[0], // EP0 in/out share
+            .data_buffer      = &usb_dpram->ep0_buf_a[0], // EP0 shares in/out // TODO: Why not use ep0_buf_b here?
         },
         {
             .descriptor       = &ep1_out,
