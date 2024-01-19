@@ -409,7 +409,9 @@ void usb_send_string_descriptor(volatile struct usb_setup_packet *pkt) {
 
 // Send configuration value to host
 void usb_send_configuration(volatile struct usb_setup_packet *pkt) {
-    usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), "\x01", 1); // Always 1
+    usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR),
+        (uint8_t *) &config_descriptor.bConfigurationValue,
+        sizeof(config_descriptor.bConfigurationValue));
 }
 
 // Handle SET_CONFIGURATION request from host
