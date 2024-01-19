@@ -462,19 +462,20 @@ void usb_handle_setup_packet() {
         usb_send_zlp(); // TODO: Confirm how we should handle
     } else if (brt == USB_DIR_IN) { // Standard device request
         if (req == USB_REQUEST_GET_DESCRIPTOR) {
-            uint16_t descriptor_type = pkt->wValue >> 8;
+            uint8_t descriptor_type = pkt->wValue >> 8;
+            uint8_t index = pkt->wValue & 0xff;
 
             switch (descriptor_type) {
                 case USB_DT_DEVICE:
-                    printf("\t=> GET DEVICE DESCRIPTOR\n");
+                    printf("\t=> GET DEVICE DESCRIPTOR %d\n", index);
                     usb_send_device_descriptor(pkt);
                     break;
                 case USB_DT_CONFIG:
-                    printf("\t=> GET CONFIG DESCRIPTOR\n");
+                    printf("\t=> GET CONFIG DESCRIPTOR %d\n", index);
                     usb_send_config_descriptor(pkt);
                     break;
                 case USB_DT_STRING:
-                    printf("\t=> GET STRING DESCRIPTOR\n");
+                    printf("\t=> GET STRING DESCRIPTOR %d\n", index);
                     usb_send_string_descriptor(pkt);
                     break;
                 default:
