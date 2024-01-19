@@ -316,12 +316,28 @@ void ep0_in_handler(uint8_t *buf, uint16_t len) {
 void ep1_out_handler(uint8_t *buf, uint16_t len) {
     printf("Received %d bytes from host\n", len);
 
+    // TODO: Unify this elsewhere...
+    uint8_t ep_addr = 0x01;
+    uint8_t ep_num = ep_addr & 0x0f;
+    bool in = ep_addr & USB_DIR_IN;
+    printf("\t[Transfer on EP%d_%s (0x%02x) %d byte%s]\n",
+            ep_num, in ? "IN " : "OUT", ep_addr, len, len == 1 ? "" : "s");
+    hexdump(buf, len);
+
     // In this example, we just echo the data back to host
     usb_start_transfer(usb_get_endpoint(EP2_IN_ADDR), buf, len);
 }
 
 void ep2_in_handler(uint8_t *buf, uint16_t len) {
     printf("Sent %d bytes to host\n", len);
+
+    // TODO: Unify this elsewhere...
+    uint8_t ep_addr = 0x82;
+    uint8_t ep_num = ep_addr & 0x0f;
+    bool in = ep_addr & USB_DIR_IN;
+    printf("\t[Transfer on EP%d_%s (0x%02x) %d byte%s]\n",
+            ep_num, in ? "IN " : "OUT", ep_addr, len, len == 1 ? "" : "s");
+    hexdump(buf, len);
 
     // Prepare for up to 64 bytes from host on EP1_OUT
     usb_start_transfer(usb_get_endpoint(EP1_OUT_ADDR), NULL, 64);
