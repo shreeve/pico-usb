@@ -486,9 +486,8 @@ inline static void usb_handle_ep_buff_done(struct usb_endpoint *ep) {
         uint8_t ep_addr = ep->descriptor->bEndpointAddress;
         uint8_t ep_num = ep_addr & 0x0f;
         bool in = ep_addr & USB_DIR_IN;
-        // printf("%c 0x%02x\tEP%d_%s   %d byte%s\n", in ? '>' : '<', ep_addr,
-        //         ep_num, in ? "IN " : "OUT", len, len == 1 ? "" : "s");
 
+        // Show the communication details
         printf("%c 0x%02x", in ? '>' : '<', ep_addr);
         hexdump((uint8_t *) ep->data_buffer, len, 1);
     }
