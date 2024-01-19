@@ -97,8 +97,8 @@ static const struct usb_device_descriptor device_descriptor = {
 #include "hardware/irq.h" // For interrupt enable and numbers
 #include "hardware/resets.h" // For resetting the native USB controller
 
-#define usb_hw_set   ((usb_hw_t *)hw_set_alias_untyped  (usb_hw))
-#define usb_hw_clear ((usb_hw_t *)hw_clear_alias_untyped(usb_hw))
+#define usb_hw_set   ((usb_hw_t *) hw_set_alias_untyped  (usb_hw))
+#define usb_hw_clear ((usb_hw_t *) hw_clear_alias_untyped(usb_hw))
 
 typedef void (*usb_ep_handler)(uint8_t *buf, uint16_t len);
 
@@ -400,7 +400,7 @@ void usb_send_config_descriptor(volatile struct usb_setup_packet *pkt) {
 
 // Helper to convert a C string to a unicode string descriptor (2 + strlen * 2)
 uint8_t usb_prepare_string_descriptor(const unsigned char *str) {
-    uint8_t bLength = 2 + (strlen((const char *)str) * 2);
+    uint8_t bLength = 2 + (strlen((const char *) str) * 2);
     static const uint8_t bDescriptorType = 0x03;
 
     volatile uint8_t *buf = ep0_buf;
