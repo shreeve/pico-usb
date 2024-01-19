@@ -372,7 +372,7 @@ void usb_handle_device_descriptor(volatile struct usb_setup_packet *pkt) {
 
 // Send config descriptor to host
 void usb_handle_config_descriptor(volatile struct usb_setup_packet *pkt) {
-    uint8_t *buf = &ep0_buf[0];
+    uint8_t *buf = ep0_buf;
 
     // Always include the config descriptor
     const struct usb_configuration_descriptor *cd = device.config_descriptor;
@@ -397,9 +397,9 @@ void usb_handle_config_descriptor(volatile struct usb_setup_packet *pkt) {
     }
 
     // TODO: Fix so we can send more than 64 bytes at a time
-    uint32_t len = (uint32_t) buf - (uint32_t) &ep0_buf[0];
+    uint32_t len = (uint32_t) buf - (uint32_t) ep0_buf;
     len = MIN(len, pkt->wLength);
-    usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), &ep0_buf[0], len);
+    usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), ep0_buf, len);
 }
 
 // Helper to convert a C string to a unicode string descriptor (2 + strlen * 2)
@@ -407,7 +407,7 @@ uint8_t usb_prepare_string_descriptor(const unsigned char *str) {
     uint8_t bLength = 2 + (strlen((const char *)str) * 2);
     static const uint8_t bDescriptorType = 0x03;
 
-    volatile uint8_t *buf = &ep0_buf[0];
+    volatile uint8_t *buf = ep0_buf;
     *buf++ = bLength;
     *buf++ = bDescriptorType;
 
@@ -429,7 +429,7 @@ void usb_handle_string_descriptor(volatile struct usb_setup_packet *pkt) {
 
     if (i == 0) {
         len = 4;
-        memcpy(&ep0_buf[0], device.lang_descriptor, len);
+        memcpy(ep0_buf, device.lang_descriptor, len);
     } else {
         // Prepare fills in ep0_buf
         len = usb_prepare_string_descriptor(device.descriptor_strings[i - 1]);
@@ -437,7 +437,7 @@ void usb_handle_string_descriptor(volatile struct usb_setup_packet *pkt) {
 
     // TODO: Fix so we can send more than 64 bytes at a time
     len = MIN(len, pkt->wLength);
-    usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), &ep0_buf[0], len);
+    usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), ep0_buf, len);
 }
 
 // Send configuration value to host
