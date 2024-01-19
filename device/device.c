@@ -47,11 +47,11 @@ static const struct usb_interface_descriptor interface_descriptor = {
     .bLength            = sizeof(struct usb_interface_descriptor),
     .bDescriptorType    = USB_DT_INTERFACE,
     .bInterfaceNumber   = 0,    // Starts at zero
-    .bAlternateSetting  = 0,
+    .bAlternateSetting  = 0,    // No alternate
     .bNumEndpoints      = 2,    // Two endpoints (EP0 doesn't count)
     .bInterfaceClass    = 0xff, // Interface class (0xff = Vendor specific)
-    .bInterfaceSubClass = 0,
-    .bInterfaceProtocol = 0,
+    .bInterfaceSubClass = 0,    // No subclass
+    .bInterfaceProtocol = 0,    // No protocol
     .iInterface         = 5     // String #5
 };
 
