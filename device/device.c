@@ -274,18 +274,6 @@ void usb_start_transfer(struct usb_endpoint *ep, uint8_t *buf, uint16_t len) {
     uint8_t ep_num = ep_addr & 0x0f;
     bool in = ep_addr & USB_DIR_IN;
 
-    // Log the behavior
-    const char *type = in ? "Transfer on" : "Prepare for";
-    if (len == 0) {
-        printf("\t[%s EP%d_%s (0x%02x) ZLP]\n", type,
-               ep_num, in ? "IN " : "OUT", ep_addr);
-    } else {
-        printf("%s\t[%s EP%d_%s (0x%02x) %d byte%s]\n",
-               in ? ">" : "<", type,
-               ep_num, in ? "IN " : "OUT", ep_addr, len, len == 1 ? "" : "s");
-        if (in) hexdump((const void *) buf, (size_t) len);
-    }
-
     // Set the buffer control register and copy the buffer if needed
     uint32_t val = len | USB_BUF_CTRL_AVAIL;
     if (in) {
@@ -320,14 +308,6 @@ void ep0_in_handler(uint8_t *buf, uint16_t len) {
 }
 
 void ep1_out_handler(uint8_t *buf, uint16_t len) {
-
-    // TODO: Unify this elsewhere...
-    uint8_t ep_addr = 0x01;
-    uint8_t ep_num = ep_addr & 0x0f;
-    bool in = ep_addr & USB_DIR_IN;
-    printf("<\t[Transfer on EP%d_%s (0x%02x) %d byte%s]\n",
-            ep_num, in ? "IN " : "OUT", ep_addr, len, len == 1 ? "" : "s");
-    hexdump(buf, len);
 
     // In this example, we just echo the data back to host
     usb_start_transfer(usb_get_endpoint(EP2_IN_ADDR), buf, len);
@@ -443,21 +423,21 @@ void usb_handle_setup_packet() {
     uint8_t brt = pkt->bmRequestType;
     uint8_t req = pkt->bRequest;
 
-    // Log the setup packet
-    printf("< Setup");
-    hexdump((const void *) pkt, sizeof(struct usb_setup_packet));
+    // Log the behavior
+    printf("< 0x00");
+    hexdump((const void *) pkt, sizeof(struct usb_setup_packet), 2);
 
-    usb_get_endpoint(EP0_IN_ADDR)->next_datapid = 1; // Reset to DATA1
-
+    // Force a reset to DATA1 and handle the setup packet
+    usb_get_endpoint(EP0_IN_ADDR)->next_datapid = 1;
     if (brt == USB_DIR_OUT) { // Standard device command
         if (req == USB_REQUEST_SET_ADDRESS) {
-            printf("\t=> SET ADDRESS to %d\n", (pkt->wValue & 0xff));
+            printf("Set address to %d\n", (pkt->wValue & 0xff));
             usb_set_device_address(pkt);
         } else if (req == USB_REQUEST_SET_CONFIGURATION) {
-            printf("\t=> SET CONFIGURATION to %d\n", (pkt->wValue & 0xff));
+            printf("Set configuration to %d\n", (pkt->wValue & 0xff));
             usb_set_device_configuration(pkt);
         } else {
-            printf("\t=> Unhandled device command\n");
+            printf("Unhandled device command\n");
         }
         usb_send_zlp(); // TODO: Confirm how we should handle
     } else if (brt == USB_DIR_IN) { // Standard device request
@@ -467,29 +447,29 @@ void usb_handle_setup_packet() {
 
             switch (descriptor_type) {
                 case USB_DT_DEVICE:
-                    printf("\t=> GET DEVICE DESCRIPTOR %d\n", index);
+                    printf("Get device descriptor %d\n", index);
                     usb_send_device_descriptor(pkt);
                     break;
                 case USB_DT_CONFIG:
-                    printf("\t=> GET CONFIG DESCRIPTOR %d\n", index);
+                    printf("Get config descriptor %d\n", index);
                     usb_send_config_descriptor(pkt);
                     break;
                 case USB_DT_STRING:
-                    printf("\t=> GET STRING DESCRIPTOR %d\n", index);
+                    printf("Get string descriptor %d\n", index);
                     usb_send_string_descriptor(pkt);
                     break;
                 default:
-                    printf("\t=> Unhandled GET_DESCRIPTOR\n");
+                    printf("Unhandled get descriptor\n");
             }
         } else if (req == USB_REQUEST_GET_CONFIGURATION) {
-            printf("\t=> GET CONFIGURATION\n");
+            printf("Get configuration\n");
             usb_send_configuration(pkt);
         } else {
-            printf("\t=> Unhandled device request\n");
+            printf("Unhandled device request\n");
             // TODO: Confirm how we should handle
         }
     } else {
-        printf("\t=> Unhandled setup packet\n");
+        printf("Unhandled setup packet\n");
         // TODO: Confirm how we should handle
     }
 }
@@ -500,6 +480,18 @@ void usb_handle_setup_packet() {
 inline static void usb_handle_ep_buff_done(struct usb_endpoint *ep) {
     uint32_t buffer_control = *ep->buffer_control;
     uint16_t len = buffer_control & USB_BUF_CTRL_LEN_MASK; // Get buffer length
+
+    // FIXME: Move all logging out of ISR contexts
+    if (len) {
+        uint8_t ep_addr = ep->descriptor->bEndpointAddress;
+        uint8_t ep_num = ep_addr & 0x0f;
+        bool in = ep_addr & USB_DIR_IN;
+        // printf("%c 0x%02x\tEP%d_%s   %d byte%s\n", in ? '>' : '<', ep_addr,
+        //         ep_num, in ? "IN " : "OUT", len, len == 1 ? "" : "s");
+
+        printf("%c 0x%02x", in ? '>' : '<', ep_addr);
+        hexdump((uint8_t *) ep->data_buffer, len, 1);
+    }
 
     ep->handler((uint8_t *) ep->data_buffer, len); // Call buffer done handler
 }
@@ -604,6 +596,7 @@ int main() {
     // Wait until configured
     while (!configured) { tight_loop_contents(); }
     sleep_ms(500); // brief pause
+
     printf("\nUSB device configured\n\n");
 
     // Prepare for up to 64 bytes from host on EP1_OUT
