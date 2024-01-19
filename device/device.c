@@ -235,7 +235,7 @@ struct usb_endpoint *usb_get_endpoint(uint8_t ep_addr) {
 // ==[ Transfers ]=============================================================
 
 void hexdump(const void* data, size_t size) {
-    const unsigned char* byte = (const unsigned char*) data;
+    const unsigned char* byte = (const unsigned char *) data;
     size_t i, j;
 
     for (i = 0; i < size; i += 16) {
@@ -281,7 +281,7 @@ void usb_start_transfer(struct usb_endpoint *ep, uint8_t *buf, uint16_t len) {
     } else {
         printf("\t[%s EP%d_%s (0x%02x) %d byte%s]\n", type,
                ep_num, in ? "IN " : "OUT", ep_addr, len, len == 1 ? "" : "s");
-        if (in) hexdump((const void*) buf, (size_t) len);
+        if (in) hexdump((const void *) buf, (size_t) len);
     }
 
     // Set the buffer control register and copy the buffer if needed
@@ -452,7 +452,7 @@ void usb_handle_setup_packet() {
     uint8_t req = pkt->bRequest;
 
     // Log the setup packet
-    hexdump((const void*) pkt, sizeof(struct usb_setup_packet));
+    hexdump((const void *) pkt, sizeof(struct usb_setup_packet));
 
     usb_get_endpoint(EP0_IN_ADDR)->next_datapid = 1; // Reset to DATA1
 
