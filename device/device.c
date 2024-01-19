@@ -318,7 +318,7 @@ void ep1_out_handler(uint8_t *buf, uint16_t len) {
 
 void ep2_in_handler(uint8_t *buf, uint16_t len) {
     printf("Sent %d bytes to host\n", len);
-    usb_start_transfer(usb_get_endpoint(EP1_OUT_ADDR), NULL, 0); // FIXME!?
+    usb_start_transfer(usb_get_endpoint(EP1_OUT_ADDR), NULL, 0);
 }
 
 // ==[ Setup ]=================================================================
