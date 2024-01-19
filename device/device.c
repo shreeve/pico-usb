@@ -463,6 +463,9 @@ void usb_handle_setup_packet() {
                 default:
                     printf("\t=> Unhandled GET_DESCRIPTOR\n");
             }
+        } else if (req == USB_REQUEST_GET_CONFIGURATION) {
+            printf("\t=> GET CONFIGURATION\n");
+            usb_handle_get_configuration(pkt);
         } else {
             printf("\t=> Unhandled IN request\n");
             usb_send_zlp(); // TODO: Confirm how we should handle
