@@ -179,10 +179,13 @@ static struct usb_device device = {
     }
 };
 
-static uint8_t ep0_buf[64];
+// Device state management
 static uint8_t device_address = 0;
 static bool should_set_address = false;
 static volatile bool configured = false;
+
+// Buffer for preparing output to send to host
+static uint8_t ep0_buf[64];
 
 // ==[ Endpoints ]=============================================================
 
