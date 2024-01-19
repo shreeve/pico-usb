@@ -422,7 +422,8 @@ void usb_handle_get_configuration(volatile struct usb_setup_packet *pkt) {
 
 // Respond to a setup packet from host
 void usb_handle_setup_packet() {
-    volatile struct usb_setup_packet *pkt = (volatile struct usb_setup_packet *) &usb_dpram->setup_packet;
+    volatile struct usb_setup_packet *pkt =
+        (volatile struct usb_setup_packet *) &usb_dpram->setup_packet;
     uint8_t req_direction = pkt->bmRequestType;
     uint8_t req = pkt->bRequest;
 
