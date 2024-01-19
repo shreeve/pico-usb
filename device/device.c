@@ -304,6 +304,7 @@ void usb_send_zlp() {
 
 void ep0_out_handler(uint8_t *buf, uint16_t len) {
     ; // Nothing to do
+    // TODO: Find out when this is called...
 }
 
 void ep0_in_handler(uint8_t *buf, uint16_t len) {
