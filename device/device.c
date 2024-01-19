@@ -441,7 +441,7 @@ void usb_handle_setup_packet() {
         } else {
             printf("Unhandled device command\n");
         }
-        usb_send_zlp(); // TODO: Confirm how we should handle
+        usb_send_zlp();
     } else if (brt == USB_DIR_IN) { // Standard device request
         if (req == USB_REQUEST_GET_DESCRIPTOR) {
             uint8_t descriptor_type = pkt->wValue >> 8;
