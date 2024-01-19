@@ -448,7 +448,7 @@ void usb_set_device_configuration(volatile struct usb_setup_packet *pkt) {
 void usb_handle_setup_packet() {
     volatile struct usb_setup_packet *pkt =
         (volatile struct usb_setup_packet *) &usb_dpram->setup_packet;
-    uint8_t req_direction = pkt->bmRequestType;
+    uint8_t brt = pkt->bmRequestType;
     uint8_t req = pkt->bRequest;
 
     // Log the setup packet
@@ -456,7 +456,7 @@ void usb_handle_setup_packet() {
 
     usb_get_endpoint(EP0_IN_ADDR)->next_datapid = 1; // Reset to DATA1
 
-    if (req_direction == USB_DIR_OUT) {
+    if (brt == USB_DIR_OUT) { // Standard device command
         if (req == USB_REQUEST_SET_ADDRESS) {
             printf("\t=> SET ADDRESS to %d\n", (pkt->wValue & 0xff));
             usb_set_device_address(pkt);
@@ -464,10 +464,10 @@ void usb_handle_setup_packet() {
             printf("\t=> SET CONFIGURATION to %d\n", (pkt->wValue & 0xff));
             usb_set_device_configuration(pkt);
         } else {
-            printf("\t=> Unhandled OUT request\n");
+            printf("\t=> Unhandled device command\n");
         }
         usb_send_zlp(); // TODO: Confirm how we should handle
-    } else if (req_direction == USB_DIR_IN) {
+    } else if (brt == USB_DIR_IN) { // Standard device request
         if (req == USB_REQUEST_GET_DESCRIPTOR) {
             uint16_t descriptor_type = pkt->wValue >> 8;
 
@@ -491,8 +491,8 @@ void usb_handle_setup_packet() {
             printf("\t=> GET CONFIGURATION\n");
             usb_send_configuration(pkt);
         } else {
-            printf("\t=> Unhandled IN request\n");
             usb_send_zlp(); // TODO: Confirm how we should handle
+            printf("\t=> Unhandled device request\n");
         }
     }
 }
