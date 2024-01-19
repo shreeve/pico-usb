@@ -583,6 +583,8 @@ int main() {
     // Wait until configured
     while (!configured) { tight_loop_contents(); }
 
+    busy_wait_us(1000000); // brief pause
+
     // Get ready to rx from host
     usb_start_transfer(usb_get_endpoint(EP1_OUT_ADDR), NULL, 64);
 
