@@ -599,8 +599,7 @@ int main() {
 
     busy_wait_us(1000000); // brief pause
 
-    // Get ready to rx from host
-    usb_start_transfer(usb_get_endpoint(EP1_OUT_ADDR), NULL, 64);
+    usb_start_transfer(usb_get_endpoint(EP1_OUT_ADDR), NULL, 0);
 
     // Everything is interrupt driven so just loop here
     while (1) { tight_loop_contents(); }
