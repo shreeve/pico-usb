@@ -280,7 +280,8 @@ void usb_start_transfer(struct usb_endpoint *ep, uint8_t *buf, uint16_t len) {
         printf("\t[%s EP%d_%s (0x%02x) ZLP]\n", type,
                ep_num, in ? "IN " : "OUT", ep_addr);
     } else {
-        printf("\t[%s EP%d_%s (0x%02x) %d byte%s]\n", type,
+        printf("%s\t[%s EP%d_%s (0x%02x) %d byte%s]\n",
+               in ? ">" : "<", type,
                ep_num, in ? "IN " : "OUT", ep_addr, len, len == 1 ? "" : "s");
         if (in) hexdump((const void *) buf, (size_t) len);
     }
@@ -324,17 +325,15 @@ void ep1_out_handler(uint8_t *buf, uint16_t len) {
     uint8_t ep_addr = 0x01;
     uint8_t ep_num = ep_addr & 0x0f;
     bool in = ep_addr & USB_DIR_IN;
-    printf("\t[Transfer on EP%d_%s (0x%02x) %d byte%s]\n",
+    printf("<\t[Transfer on EP%d_%s (0x%02x) %d byte%s]\n",
             ep_num, in ? "IN " : "OUT", ep_addr, len, len == 1 ? "" : "s");
     hexdump(buf, len);
 
     // In this example, we just echo the data back to host
-    printf("Recv %d bytes from host\n", len);
     usb_start_transfer(usb_get_endpoint(EP2_IN_ADDR), buf, len);
 }
 
 void ep2_in_handler(uint8_t *buf, uint16_t len) {
-    printf("Sent %d bytes to host\n", len);
 
     // Prepare for up to 64 bytes from host on EP1_OUT
     usb_start_transfer(usb_get_endpoint(EP1_OUT_ADDR), NULL, 64);
