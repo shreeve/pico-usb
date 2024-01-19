@@ -323,6 +323,20 @@ void ep2_in_handler(uint8_t *buf, uint16_t len) {
 
 // ==[ Setup ]=================================================================
 
+// Handle SET_ADDR request from host
+void usb_set_device_address(volatile struct usb_setup_packet *pkt) {
+    // This is a little weird because we must first acknowledge the request
+    // using a device address of zero. We do that here and then set a flag
+    // to perform the actual update in the ep0_in_handler.
+    device_address = (pkt->wValue & 0xff);
+    should_set_address = true; // Will set address in the callback phase
+}
+
+// Handle SET_CONFIGURATION request from host
+void usb_set_device_configuration(volatile struct usb_setup_packet *pkt) {
+    configured = true;
+}
+
 // Send device descriptor to host
 void usb_handle_device_descriptor(volatile struct usb_setup_packet *pkt) {
     const struct usb_device_descriptor *dd = device.device_descriptor;
@@ -395,21 +409,14 @@ void usb_handle_string_descriptor(volatile struct usb_setup_packet *pkt) {
         len = usb_prepare_string_descriptor(device.descriptor_strings[i - 1]);
     }
 
-    usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), &ep0_buf[0], MIN(len, pkt->wLength));
+    // TODO: Fix so we can send more than 64 bytes at a time
+    len = MIN(len, pkt->wLength);
+    usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), &ep0_buf[0], len);
 }
 
-// Handle SET_ADDR request from host
-void usb_set_device_address(volatile struct usb_setup_packet *pkt) {
-    // This is a little weird because we must first acknowledge the request
-    // using a device address of zero. We do that here and then set a flag
-    // to perform the actual update in the ep0_in_handler.
-    device_address = (pkt->wValue & 0xff);
-    should_set_address = true; // Will set address in the callback phase
-}
-
-// Handle SET_CONFIGURATION request from host
-void usb_set_device_configuration(volatile struct usb_setup_packet *pkt) {
-    configured = true;
+// Send configuration value to host
+void usb_handle_get_configuration(volatile struct usb_setup_packet *pkt) {
+    usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), "\x01", 1); // Always 1
 }
 
 // Respond to a setup packet from host
