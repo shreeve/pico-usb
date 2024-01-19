@@ -534,7 +534,7 @@ void usb_device_reset() {
 
     usb_setup_endpoints();
     usb_hw_set->sie_ctrl = USB_SIE_CTRL_PULLUP_EN_BITS;
-    printf("USB device attached\n");
+    printf("\nUSB device attached\n");
 }
 
 // ==[ Interrupt ]=============================================================
