@@ -597,7 +597,9 @@ int main() {
     // Wait until configured
     while (!configured) { tight_loop_contents(); }
 
-    busy_wait_us(1000000); // brief pause
+    busy_wait_us(500); // brief pause
+
+    printf("\nUSB device configured\n\n");
 
     usb_start_transfer(usb_get_endpoint(EP1_OUT_ADDR), NULL, 0);
 
