@@ -129,8 +129,8 @@ struct usb_device {
 
 static const unsigned char lang_descriptor[] = {
     4,         // bLength
-    0x03,      // bDescriptorType == String descriptor
-    0x09, 0x04 // Language id = US English
+    0x03,      // bDescriptorType: string descriptor
+    0x09, 0x04 // Language id: US English
 };
 
 static const unsigned char *descriptor_strings[] = {
