@@ -445,6 +445,7 @@ void usb_handle_setup_packet() {
     uint8_t req = pkt->bRequest;
 
     // Log the setup packet
+    printf("< Setup");
     hexdump((const void *) pkt, sizeof(struct usb_setup_packet));
 
     usb_get_endpoint(EP0_IN_ADDR)->next_datapid = 1; // Reset to DATA1
@@ -592,7 +593,6 @@ void isr_usbctrl() {
     if (status & USB_INTS_SETUP_REQ_BITS) {
         handled |= USB_INTS_SETUP_REQ_BITS;
         usb_hw_clear->sie_status = USB_SIE_STATUS_SETUP_REC_BITS;
-        printf("Setup");
         usb_handle_setup_packet();
     }
 
