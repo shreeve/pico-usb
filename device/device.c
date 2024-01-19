@@ -371,6 +371,7 @@ void usb_handle_config_descriptor(volatile struct usb_setup_packet *pkt) {
         }
     }
 
+    // TODO: Fix so we can send more than 64 bytes at a time
     uint32_t len = (uint32_t) buf - (uint32_t) &ep0_buf[0];
     len = MIN(len, pkt->wLength);
     usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), &ep0_buf[0], len);
