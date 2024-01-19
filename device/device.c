@@ -504,31 +504,18 @@ static void usb_handle_ep_buff_done(struct usb_endpoint *ep) {
     ep->handler((uint8_t *) ep->data_buffer, len); // Call buffer done handler
 }
 
-// Notify an endpoint that a transfer has completed
-static void usb_handle_buff_done(uint ep_num, bool in) {
-    uint8_t ep_addr = ep_num | (in ? USB_DIR_IN : USB_DIR_OUT);
-
-    for (uint i = 0; i < USB_NUM_ENDPOINTS; i++) {
-        struct usb_endpoint *ep = &device.endpoints[i];
-        if (ep->descriptor && ep->handler) {
-            if (ep->descriptor->bEndpointAddress == ep_addr) {
-                usb_handle_ep_buff_done(ep);
-                return;
-            }
-        }
-    }
-}
-
 // Notify the given endpoints that a transfer has completed
 static void usb_handle_buff_status() {
     uint32_t buffers = usb_hw->buf_status;
     uint32_t remaining_buffers = buffers;
-    uint bit = 1u;
+    uint32_t bit = 1u;
+    uint8_t ep_addr;
 
     for (uint i = 0; remaining_buffers && i < USB_NUM_ENDPOINTS * 2; i++) {
         if (remaining_buffers & bit) {
             usb_hw_clear->buf_status = bit; // Clear this in advance
-            usb_handle_buff_done(i >> 1u, !(i & 1u)); // even=IN, odd=OUT
+            ep_addr = (i >> 1u) | (i & 1u ? USB_DIR_OUT : USB_DIR_IN);
+            usb_handle_ep_buff_done(usb_get_endpoint(ep_addr));
             remaining_buffers &= ~bit;
         }
         bit <<= 1u;
