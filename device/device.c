@@ -423,13 +423,13 @@ void usb_handle_setup_packet() {
 
     if (req_direction == USB_DIR_OUT) {
         if (req == USB_REQUEST_SET_ADDRESS) {
-            printf("SET ADDRESS to %d\n", (pkt->wValue & 0xff));
+            printf("  => SET ADDRESS to %d\n", (pkt->wValue & 0xff));
             usb_set_device_address(pkt);
         } else if (req == USB_REQUEST_SET_CONFIGURATION) {
-            printf("SET CONFIGURATION to %d\n", (pkt->wValue & 0xff));
+            printf("  => SET CONFIGURATION to %d\n", (pkt->wValue & 0xff));
             usb_set_device_configuration(pkt);
         } else {
-            printf("Other OUT request\n");
+            printf("  => Other OUT request\n");
         }
         usb_send_zlp(); // TODO: Confirm how we should handle
     } else if (req_direction == USB_DIR_IN) {
@@ -438,22 +438,22 @@ void usb_handle_setup_packet() {
 
             switch (descriptor_type) {
                 case USB_DT_DEVICE:
-                    printf("GET DEVICE DESCRIPTOR\n");
+                    printf("  => GET DEVICE DESCRIPTOR\n");
                     usb_handle_device_descriptor(pkt);
                     break;
                 case USB_DT_CONFIG:
-                    printf("GET CONFIG DESCRIPTOR\n");
+                    printf("  => GET CONFIG DESCRIPTOR\n");
                     usb_handle_config_descriptor(pkt);
                     break;
                 case USB_DT_STRING:
-                    printf("GET STRING DESCRIPTOR\n");
+                    printf("  => GET STRING DESCRIPTOR\n");
                     usb_handle_string_descriptor(pkt);
                     break;
                 default:
-                    printf("Unhandled GET_DESCRIPTOR\n");
+                    printf("  => Unhandled GET_DESCRIPTOR\n");
             }
         } else {
-            printf("Unhandled IN request\n");
+            printf("  => Unhandled IN request\n");
             usb_send_zlp(); // TODO: Confirm how we should handle
         }
     }
