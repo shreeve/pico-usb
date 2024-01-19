@@ -484,8 +484,8 @@ void usb_handle_setup_packet() {
             printf("\t=> GET CONFIGURATION\n");
             usb_send_configuration(pkt);
         } else {
-            usb_send_zlp(); // TODO: Confirm how we should handle
             printf("\t=> Unhandled device request\n");
+            // TODO: Confirm how we should handle
         }
     } else {
         printf("\t=> Unhandled setup packet\n");
