@@ -46,6 +46,14 @@ in `host` is being put together now, based on trying to read the spec
 from the datasheet. If anyone has some minimal code for USB Host, it
 would be great to add it to build out the USB Host example.
 
+## TODO
+
+- [x] Initial version of `device.c` (a simpler `dev_lowlevel.c` from `pico-example`).
+- [ ] Improved `device.c` with larger packet size (more than 64 bytes).
+- [ ] Initial version of `host.c` (I can't find a good reference example).
+- [ ] Add double-buffering support to `device.c`
+- [ ] Add double-buffering support to `host.c`
+
 ## Disable TinyUSB
 
 Since this repo doesn't use TinyUSB at all, we need to disable it from the
