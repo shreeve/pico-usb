@@ -304,7 +304,7 @@ void ep0_in_handler(uint8_t *buf, uint16_t len) {
     if (should_set_address) {
         usb_hw->dev_addr_ctrl = device_address; // Set hardware device address
         should_set_address = false;
-    } else { // Receive a ZLP from host on EP0_OUT (// TODO: Why?!)
+    } else { // Receive a ZLP from host on EP0_OUT
         usb_start_transfer(usb_get_endpoint(EP0_OUT_ADDR), NULL, 0);
     }
 }
