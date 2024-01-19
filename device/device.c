@@ -92,10 +92,10 @@ static const struct usb_device_descriptor device_descriptor = {
 #include <string.h> // For memcpy
 
 #include "pico/stdlib.h" // Pico stdlib
-#include "hardware/regs/usb.h" // USB registers from pico-sdk
+#include "hardware/regs/usb.h" // USB hardware registers from pico-sdk
 #include "hardware/structs/usb.h" // USB hardware structs from pico-sdk
 #include "hardware/irq.h" // For interrupt enable and numbers
-#include "hardware/resets.h" // For resetting the USB controller
+#include "hardware/resets.h" // For resetting the native USB controller
 
 #define usb_hw_set   ((usb_hw_t *)hw_set_alias_untyped  (usb_hw))
 #define usb_hw_clear ((usb_hw_t *)hw_clear_alias_untyped(usb_hw))
