@@ -468,11 +468,9 @@ void usb_handle_setup_packet() {
             usb_send_configuration(pkt);
         } else {
             printf("Unhandled device request\n");
-            // TODO: Confirm how we should handle
         }
     } else {
         printf("Unhandled setup packet\n");
-        // TODO: Confirm how we should handle
     }
 }
 
