@@ -426,7 +426,7 @@ void usb_handle_setup_packet() {
     uint8_t req = pkt->bRequest;
 
     // Log the behavior
-    printf("< 0x00");
+    printf("< Setup");
     hexdump((const void *) pkt, sizeof(struct usb_setup_packet), 2);
 
     // Force a reset to DATA1 and handle the setup packet
