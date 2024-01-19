@@ -359,7 +359,7 @@ void usb_set_device_address(volatile struct usb_setup_packet *pkt) {
 }
 
 // Send device descriptor to host
-void usb_handle_device_descriptor(volatile struct usb_setup_packet *pkt) {
+void usb_send_device_descriptor(volatile struct usb_setup_packet *pkt) {
     const struct usb_device_descriptor *dd = device.device_descriptor;
     uint16_t len = MIN(sizeof(struct usb_device_descriptor), pkt->wLength);
     usb_get_endpoint(EP0_IN_ADDR)->next_datapid = 1; // Reset to DATA1
@@ -367,7 +367,7 @@ void usb_handle_device_descriptor(volatile struct usb_setup_packet *pkt) {
 }
 
 // Send config descriptor to host
-void usb_handle_config_descriptor(volatile struct usb_setup_packet *pkt) {
+void usb_send_config_descriptor(volatile struct usb_setup_packet *pkt) {
     uint8_t *buf = ep0_buf;
 
     // Always include the config descriptor
@@ -419,7 +419,7 @@ uint8_t usb_prepare_string_descriptor(const unsigned char *str) {
 }
 
 // Send string descriptor to host
-void usb_handle_string_descriptor(volatile struct usb_setup_packet *pkt) {
+void usb_send_string_descriptor(volatile struct usb_setup_packet *pkt) {
     uint8_t i = pkt->wValue & 0xff;
     uint8_t len = 0;
 
@@ -437,7 +437,7 @@ void usb_handle_string_descriptor(volatile struct usb_setup_packet *pkt) {
 }
 
 // Send configuration value to host
-void usb_handle_get_configuration(volatile struct usb_setup_packet *pkt) {
+void usb_send_configuration(volatile struct usb_setup_packet *pkt) {
     usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), "\x01", 1); // Always 1
 }
 
@@ -476,22 +476,22 @@ void usb_handle_setup_packet() {
             switch (descriptor_type) {
                 case USB_DT_DEVICE:
                     printf("\t=> GET DEVICE DESCRIPTOR\n");
-                    usb_handle_device_descriptor(pkt);
+                    usb_send_device_descriptor(pkt);
                     break;
                 case USB_DT_CONFIG:
                     printf("\t=> GET CONFIG DESCRIPTOR\n");
-                    usb_handle_config_descriptor(pkt);
+                    usb_send_config_descriptor(pkt);
                     break;
                 case USB_DT_STRING:
                     printf("\t=> GET STRING DESCRIPTOR\n");
-                    usb_handle_string_descriptor(pkt);
+                    usb_send_string_descriptor(pkt);
                     break;
                 default:
                     printf("\t=> Unhandled GET_DESCRIPTOR\n");
             }
         } else if (req == USB_REQUEST_GET_CONFIGURATION) {
             printf("\t=> GET CONFIGURATION\n");
-            usb_handle_get_configuration(pkt);
+            usb_send_configuration(pkt);
         } else {
             printf("\t=> Unhandled IN request\n");
             usb_send_zlp(); // TODO: Confirm how we should handle
