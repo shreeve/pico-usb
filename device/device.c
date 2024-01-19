@@ -398,22 +398,20 @@ void usb_send_config_descriptor(volatile struct usb_setup_packet *pkt) {
     usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), ep0_buf, len);
 }
 
-// Helper to convert a C string to a unicode string descriptor (2 + strlen * 2)
+// Helper to convert a C string to a unicode string descriptor
 uint8_t usb_prepare_string_descriptor(const unsigned char *str) {
     uint8_t bLength = 2 + (strlen((const char *) str) * 2);
     static const uint8_t bDescriptorType = 0x03;
+    uint8_t ch;
 
     volatile uint8_t *buf = ep0_buf;
     *buf++ = bLength;
     *buf++ = bDescriptorType;
-
-    uint8_t c;
-
     do {
-        c = *str++;
-        *buf++ = c;
+        ch = *str++;
+        *buf++ = ch;
         *buf++ = 0;
-    } while (c != '\0');
+    } while (ch);
 
     return bLength;
 }
