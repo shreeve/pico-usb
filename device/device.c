@@ -235,12 +235,12 @@ struct usb_endpoint *usb_get_endpoint(uint8_t ep_addr) {
 
 // ==[ Transfers ]=============================================================
 
-void hexdump(const void* data, size_t size) {
+void hexdump(const void* data, size_t size, uint mode) {
     const unsigned char* byte = (const unsigned char *) data;
     size_t i, j;
 
     for (i = 0; i < size; i += 16) {
-        printf("\t%08zx  ", i); // Print the offset
+        printf("\t| %08zx | ", i); // Print the offset
 
         // Print hex values
         for (j = 0; j < 16; j++) {
@@ -251,13 +251,17 @@ void hexdump(const void* data, size_t size) {
             }
         }
 
-        printf("  ");
+        printf(" | ");
+
+        if (mode > 1) return;
 
         // Print ASCII values
-        for (j = 0; j < 16; j++) {
-            if (i + j < size) {
-                unsigned char ch = byte[i + j];
-                printf("%c", (ch >= 32 && ch <= 126) ? ch : '.');
+        if (mode == 1) {
+            for (j = 0; j < 16; j++) {
+                if (i + j < size) {
+                    unsigned char ch = byte[i + j];
+                    printf("%c", (ch >= 32 && ch <= 126) ? ch : '.');
+                }
             }
         }
 
