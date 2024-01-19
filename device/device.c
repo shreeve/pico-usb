@@ -221,11 +221,11 @@ void usb_setup_endpoints() {
 }
 
 // Get the endpoint for an endpoint address (EP number + direction)
-struct usb_endpoint *usb_get_endpoint(uint8_t addr) {
+struct usb_endpoint *usb_get_endpoint(uint8_t ep_addr) {
     struct usb_endpoint *endpoints = device.endpoints;
     for (int i = 0; i < USB_NUM_ENDPOINTS; i++) {
         if (endpoints[i].descriptor &&
-           (endpoints[i].descriptor->bEndpointAddress == addr)) {
+           (endpoints[i].descriptor->bEndpointAddress == ep_addr)) {
             return &endpoints[i];
         }
     }
