@@ -137,8 +137,8 @@ static const unsigned char *descriptor_strings[] = {
     (unsigned char *) "PicoUSB", // String #1: Vendor
     (unsigned char *) "Demo"   , // String #2: Product
     (unsigned char *) "12345"  , // String #3: Serial
-    (unsigned char *) "Simple" , // String #4: Configuration
-    (unsigned char *) "Basic"    // String #5: Interface
+    (unsigned char *) "Easy"   , // String #4: Configuration
+    (unsigned char *) "Simple"   // String #5: Interface
 };
 
 static struct usb_device device = {
