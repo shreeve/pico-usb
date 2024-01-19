@@ -497,7 +497,7 @@ void usb_handle_setup_packet() {
 // ==[ Buffers ]===============================================================
 
 // Notify an endpoint that a transfer has completed
-static void usb_handle_ep_buff_done(struct usb_endpoint *ep) {
+inline static void usb_handle_ep_buff_done(struct usb_endpoint *ep) {
     uint32_t buffer_control = *ep->buffer_control;
     uint16_t len = buffer_control & USB_BUF_CTRL_LEN_MASK; // Get buffer length
 
