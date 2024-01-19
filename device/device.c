@@ -351,11 +351,11 @@ void ep2_in_handler(uint8_t *buf, uint16_t len) {
 
 // Handle SET_ADDR request from host
 void usb_set_device_address(volatile struct usb_setup_packet *pkt) {
-    // This is a little weird because we must first acknowledge the request
-    // using a device address of zero. We do that here and then set a flag
-    // to perform the actual update in the ep0_in_handler.
+    // We can't set the hardware device address yet because we still need to
+    // acknowledge the request using a device address of zero. So, we store
+    // new the address temporarily and later set it in the ep0_in_handler.
     device_address = (pkt->wValue & 0xff);
-    should_set_address = true; // Will set address in the callback phase
+    should_set_address = true;
 }
 
 // Send device descriptor to host
