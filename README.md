@@ -49,7 +49,7 @@ would be great to add it to build out the USB Host example.
 ## TODO
 
 - [x] Initial version of [`device.c`](https://github.com/shreeve/pico-usb/blob/f6c648e3a4bfbfedd53296ae70b41596cf719e3e/device/device.c) (a simpler [`dev_lowlevel.c`](https://github.com/raspberrypi/pico-examples/tree/master/usb/device/dev_lowlevel) from `pico-examples`).
-- [ ] Improved `device.c` with larger packet size (more than 64 bytes).
+- [ ] Improved `device.c` with larger transfer size (more than 1 packet of 64 bytes).
 - [ ] Initial version of `host.c` (I can't find a good reference example).
 - [ ] Add double-buffering support to `device.c`
 - [ ] Add double-buffering support to `host.c`
