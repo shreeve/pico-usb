@@ -72,6 +72,66 @@ easiest way to program the board and test things out is by using a
 picodebug unit. These can be purchased from numerous sources. The .vscode
 directory contains some configuration for this setup.
 
+## Example
+
+With a picodebug unit to flash the code to the device and also communicate
+with the UART, I build the code and then deploy and test it like this:
+
+```
+$ openocd -f interface/cmsis-dap.cfg -f target/rp2040.cfg -c "adapter speed 5000" -c "program build/device.elf verify reset exit"
+
+==[ USB device example]==
+
+Initialized EP0_OUT (0x00) with buffer address 0x50100100
+Initialized EP0_IN  (0x80) with buffer address 0x50100100
+Initialized EP1_OUT (0x01) with buffer address 0x50100180
+Initialized EP2_IN  (0x82) with buffer address 0x501001C0
+
+USB device attached
+Bus reset
+< Setup | 00000000 | 00 05 76 00 00 00 00 00                          | Set address to 118
+< Setup | 00000000 | 80 06 00 01 00 00 08 00                          | Get device descriptor 0
+> 0x80  | 00000000 | 12 01 00 02 00 00 00 40                          | .......@
+< Setup | 00000000 | 80 06 00 01 00 00 12 00                          | Get device descriptor 0
+> 0x80  | 00000000 | 12 01 00 02 00 00 00 40 00 00 01 00 01 00 01 02  | .......@........
+        | 00000010 | 03 01                                            | ..
+< Setup | 00000000 | 80 06 02 03 09 04 02 00                          | Get string descriptor 2
+> 0x80  | 00000000 | 0a 03                                            | ..
+< Setup | 00000000 | 80 06 02 03 09 04 0a 00                          | Get string descriptor 2
+> 0x80  | 00000000 | 0a 03 44 00 65 00 6d 00 6f 00                    | ..D.e.m.o.
+< Setup | 00000000 | 80 06 01 03 09 04 02 00                          | Get string descriptor 1
+> 0x80  | 00000000 | 10 03                                            | ..
+< Setup | 00000000 | 80 06 01 03 09 04 10 00                          | Get string descriptor 1
+> 0x80  | 00000000 | 10 03 50 00 69 00 63 00 6f 00 55 00 53 00 42 00  | ..P.i.c.o.U.S.B.
+< Setup | 00000000 | 80 06 03 03 09 04 02 00                          | Get string descriptor 3
+> 0x80  | 00000000 | 0c 03                                            | ..
+< Setup | 00000000 | 80 06 03 03 09 04 0c 00                          | Get string descriptor 3
+> 0x80  | 00000000 | 0c 03 31 00 32 00 33 00 34 00 35 00              | ..1.2.3.4.5.
+< Setup | 00000000 | 80 06 00 02 00 00 09 00                          | Get config descriptor 0
+> 0x80  | 00000000 | 09 02 20 00 01 01 04 c0 32                       | .. .....2
+< Setup | 00000000 | 80 06 00 02 00 00 20 00                          | Get config descriptor 0
+> 0x80  | 00000000 | 09 02 20 00 01 01 04 c0 32 09 04 00 00 02 ff 00  | .. .....2.......
+        | 00000010 | 00 05 07 05 01 02 40 00 00 07 05 82 02 40 00 00  | ......@......@..
+< Setup | 00000000 | 00 09 01 00 00 00 00 00                          | Set configuration to 1
+< Setup | 00000000 | 80 06 05 03 09 04 02 00                          | Get string descriptor 5
+> 0x80  | 00000000 | 0e 03                                            | ..
+< Setup | 00000000 | 80 06 05 03 09 04 0e 00                          | Get string descriptor 5
+> 0x80  | 00000000 | 0e 03 53 00 69 00 6d 00 70 00 6c 00 65 00        | ..S.i.m.p.l.e.
+< Setup | 00000000 | 80 06 00 03 00 00 ff 00                          | Get string descriptor 0
+> 0x80  | 00000000 | 04 03 09 04                                      | ....
+
+USB device configured
+
+$ verify.py
+
+< Setup | 00000000 | 80 06 00 03 00 00 fe 00                          | Get string descriptor 0
+> 0x80  | 00000000 | 04 03 09 04                                      | ....
+< Setup | 00000000 | 80 06 04 03 09 04 fe 00                          | Get string descriptor 4
+> 0x80  | 00000000 | 0a 03 45 00 61 00 73 00 79 00                    | ..E.a.s.y.
+< 0x01  | 00000000 | 48 65 6c 6c 6f 20 57 6f 72 6c 64 21              | Hello World!
+> 0x82  | 00000000 | 48 65 6c 6c 6f 20 57 6f 72 6c 64 21              | Hello World!
+```
+
 ## License
 
 BSD-3-Clause license, the same as code in [pico-examples](https://github.com/raspberrypi/pico-examples/tree/master/usb/device/dev_lowlevel).
