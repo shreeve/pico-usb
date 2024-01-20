@@ -130,6 +130,55 @@ $ verify.py
 > 0x80  | 00000000 | 0a 03 45 00 61 00 73 00 79 00                    | ..E.a.s.y.
 < 0x01  | 00000000 | 48 65 6c 6c 6f 20 57 6f 72 6c 64 21              | Hello World!
 > 0x82  | 00000000 | 48 65 6c 6c 6f 20 57 6f 72 6c 64 21              | Hello World!
+
+$ usbdiagnose
+
+Full Speed device @ 118 (0x02400000): .............................................   Composite device: "Demo"
+    Port Information:   0x001a
+           Not Captive
+           Attached to Root Hub
+           External Device
+           Connected
+           Enabled
+    Number Of Endpoints (includes EP0):
+        Total Endpoints for Configuration 1 (current):   3
+    Device Descriptor
+        Descriptor Version Number:   0x0200
+        Device Class:   0   (Composite)
+        Device Subclass:   0
+        Device Protocol:   0
+        Device MaxPacketSize:   64
+        Device VendorID/ProductID:   0x0000/0x0001   (unknown vendor)
+        Device Version Number:   0x0001
+        Number of Configurations:   1
+        Manufacturer String:   1 "PicoUSB"
+        Product String:   2 "Demo"
+        Serial Number String:   3 "12345"
+    Configuration Descriptor (current config): ......................   "Easy"
+        Length (and contents):   32
+            Raw Descriptor (hex)    0000: 09 02 20 00 01 01 04 C0  32 09 04 00 00 02 FF 00
+            Raw Descriptor (hex)    0010: 00 05 07 05 01 02 40 00  00 07 05 82 02 40 00 00
+            Unknown Descriptor   0020:
+        Number of Interfaces:   1
+        Configuration Value:   1
+        Attributes:   0xC0 (self-powered)
+        MaxPower:   100 mA
+        Interface #0 - Vendor-specific ..............................................   "Simple"
+            Alternate Setting   0
+            Number of Endpoints   2
+            Interface Class:   255   (Vendor-specific)
+            Interface Subclass;   0   (Vendor-specific)
+            Interface Protocol:   0
+            Endpoint 0x01 - Bulk Output
+                Address:   0x01  (OUT)
+                Attributes:   0x02  (Bulk)
+                Max Packet Size:   64
+                Polling Interval:   0 ms
+            Endpoint 0x82 - Bulk Input
+                Address:   0x82  (IN)
+                Attributes:   0x02  (Bulk)
+                Max Packet Size:   64
+                Polling Interval:   0 ms
 ```
 
 ## License
