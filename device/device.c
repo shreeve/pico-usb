@@ -311,12 +311,12 @@ void ep0_in_handler(uint8_t *buf, uint16_t len) {
     }
 }
 
-// Receive a packet from the host on EP1_OUT and send back to host on EP2_IN
+// Receive a packet from the host on EP1_OUT and send it back to host on EP2_IN
 void ep1_out_handler(uint8_t *buf, uint16_t len) {
     usb_start_transfer(usb_get_endpoint(EP2_IN_ADDR), buf, len);
 }
 
-// Send a packet to the host on EP2_IN and prepare for next packet on EP1_OUT
+// After sending the packet to host, get ready to receive another on EP1_OUT
 void ep2_in_handler(uint8_t *buf, uint16_t len) {
     usb_start_transfer(usb_get_endpoint(EP1_OUT_ADDR), NULL, 64);
 }
