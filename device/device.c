@@ -234,6 +234,7 @@ struct usb_endpoint *usb_get_endpoint(uint8_t ep_addr) {
 
 // ==[ Transfers ]=============================================================
 
+// Hex dump (mode: 0 = hex; 1 = hex + ascii; 2 = hex + ascii + no newline)
 void hexdump(const void* data, size_t size, uint mode) {
     const unsigned char* byte = (const unsigned char *) data;
     size_t i, j;
