@@ -560,13 +560,12 @@ void isr_usbctrl() {
     uint32_t status = usb_hw->ints;
     uint32_t handled = 0;
 
-    // TODO: Does the order of processing these matter?
+    // SOF, start of frame
 
-    // Bus is reset
-    if (status & USB_INTS_BUS_RESET_BITS) {
-        handled |= USB_INTS_BUS_RESET_BITS;
-        usb_hw_clear->sie_status = USB_SIE_STATUS_BUS_RESET_BITS;
-        usb_bus_reset();
+    // Buffer status, one or more buffers have completed
+    if (status & USB_INTS_BUFF_STATUS_BITS) {
+        handled |= USB_INTS_BUFF_STATUS_BITS;
+        usb_handle_buff_status();
     }
 
     // Setup packet received
@@ -576,11 +575,16 @@ void isr_usbctrl() {
         usb_handle_setup_packet();
     }
 
-    // Buffer status, one or more buffers have completed
-    if (status & USB_INTS_BUFF_STATUS_BITS) {
-        handled |= USB_INTS_BUFF_STATUS_BITS;
-        usb_handle_buff_status();
+    // CONN_DIS, device (dis)connected
+
+    // Bus is reset
+    if (status & USB_INTS_BUS_RESET_BITS) {
+        handled |= USB_INTS_BUS_RESET_BITS;
+        usb_hw_clear->sie_status = USB_SIE_STATUS_BUS_RESET_BITS;
+        usb_bus_reset();
     }
+
+    // SUSPEND, bus suspended
 
     if (status ^ handled) {
         panic("Unhandled IRQ 0x%04x\n", (uint) (status ^ handled));
