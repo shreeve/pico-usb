@@ -291,6 +291,7 @@ void usb_start_transfer(struct usb_endpoint *ep, uint8_t *buf, uint16_t len) {
 
 // Send a ZLP (zero length packet) to host
 void usb_send_zlp() {
+    printf("> ZLP\n");
     usb_start_transfer(usb_get_endpoint(EP0_IN_ADDR), NULL, 0);
 }
 
@@ -534,6 +535,7 @@ void usb_device_reset() {
     unreset_block_wait(RESETS_RESET_USBCTRL_BITS);
 
     // Clear state
+    memset(usb_hw   , 0, sizeof(*usb_hw   ));
     memset(usb_dpram, 0, sizeof(*usb_dpram));
     irq_set_enabled(USBCTRL_IRQ, true);
 
@@ -544,13 +546,12 @@ void usb_device_reset() {
                         USB_USB_PWR_VBUS_DETECT_OVERRIDE_EN_BITS;
     usb_hw->main_ctrl = USB_MAIN_CTRL_CONTROLLER_EN_BITS        ;
     usb_hw->sie_ctrl  = USB_SIE_CTRL_EP0_INT_1BUF_BITS          ;
-    usb_hw->inte      = USB_INTE_BUS_RESET_BITS                 |
+    usb_hw->inte      = USB_INTE_BUFF_STATUS_BITS               |
                         USB_INTE_SETUP_REQ_BITS                 |
-                        USB_INTE_BUFF_STATUS_BITS               ;
-
+                        USB_INTE_BUS_RESET_BITS                 ;
     usb_setup_endpoints();
     usb_hw_set->sie_ctrl = USB_SIE_CTRL_PULLUP_EN_BITS;
-    printf("\nUSB device attached\n");
+    printf("\nUSB device reset\n");
 }
 
 // ==[ Interrupt ]=============================================================
@@ -585,6 +586,8 @@ void isr_usbctrl() {
     }
 
     // SUSPEND, bus suspended
+	
+    // RESUME, bus resumed
 
     if (status ^ handled) {
         panic("Unhandled IRQ 0x%04x\n", (uint) (status ^ handled));
