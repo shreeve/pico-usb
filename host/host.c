@@ -102,7 +102,7 @@ PU_ALWAYS_INLINE static inline bool is_host_mode(void) {
     return (usb_hw->main_ctrl & USB_MAIN_CTRL_HOST_NDEVICE_BITS);
 }
 
-PU_ALWAYS_INLINE static inline bool is_vbus_overcurr(void) {
+PU_ALWAYS_INLINE static inline bool is_vbus_over_current(void) {
     return (usb_hw->sie_status & USB_SIE_STATUS_VBUS_OVER_CURR_BITS);
 }
 
