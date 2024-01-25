@@ -586,7 +586,7 @@ void isr_usbctrl() {
     }
 
     // SUSPEND, bus suspended
-	
+
     // RESUME, bus resumed
 
     if (status ^ handled) {
