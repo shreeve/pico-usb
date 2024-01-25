@@ -1,7 +1,13 @@
-// ==[ Hardware reset ]========================================================
+// ==[ USB 2.0 ]===============================================================
 
-// reset USB host
-bool usb_host_init() {
+#include "usb_common.h"
+
+// ==[ PicoUSB ]===============================================================
+
+// ==[ Resets ]================================================================
+
+// Reset USB host
+void usb_host_reset() {
 
     // Reset controller
     reset_block       (RESETS_RESET_USBCTRL_BITS);
@@ -39,16 +45,16 @@ bool usb_host_init() {
 
 // ==[ Main ]==================================================================
 
-int main(void) {
+int main() {
     stdio_init_all();
-    printf("USB Host example\n");
-    usb_host_init();
+    printf("\033[2J\033[H\n==[ USB host example]==\n\n");
+    usb_host_reset();
 
     // Wait until configured
     while (!configured) { tight_loop_contents(); }
+    sleep_ms(500); // brief pause
 
-   // Perform some basic USB Host operation here...
-   // add some code here...
+    printf("\nUSB host configured\n\n");
 
     // Everything is interrupt driven so just loop here
     while (1) { tight_loop_contents(); }
