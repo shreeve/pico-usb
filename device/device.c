@@ -598,7 +598,7 @@ void isr_usbctrl() {
 
 int main() {
     stdio_init_all();
-    printf("\n==[ USB device example]==\n\n");
+    printf("\033[2J\033[H\n==[ USB device example]==\n\n");
     usb_device_reset();
 
     // Wait until configured
