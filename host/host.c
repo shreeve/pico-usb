@@ -116,6 +116,84 @@ PU_ALWAYS_INLINE static inline uint8_t line_state(void) {
                               >> USB_SIE_STATUS_LINE_STATE_LSB;
 }
 
+// ==[ Interrupt ]=============================================================
+
+// Interrupt handler
+void isr_usbctrl() {
+    uint32_t flags = usb_hw->ints;
+
+    // Connection event (attach or detach)
+    if (flags &  USB_INTS_HOST_CONN_DIS_BITS) {
+        flags ^= USB_INTS_HOST_CONN_DIS_BITS;
+
+        printf("device speed: 0b%02b\n", dev_speed());
+
+        // Clear speed change interrupt
+        usb_hw_clear->sie_status = USB_SIE_STATUS_SPEED_BITS;
+    }
+
+    // Stall detected (before buffer status)
+    if (flags &  USB_INTS_STALL_BITS) {
+        flags ^= USB_INTS_STALL_BITS;
+
+        printf("stall detected\n");
+
+        usb_hw_clear->sie_status = USB_SIE_STATUS_STALL_REC_BITS;
+        // hw_xfer_complete(&epx, XFER_RESULT_STALLED);
+    }
+
+    // Buffer ready
+    if (flags &  USB_INTS_BUFF_STATUS_BITS) {
+        flags ^= USB_INTS_BUFF_STATUS_BITS;
+
+        printf("buffer ready: 0b%032b\n", usb_hw->buf_status);
+
+        // hw_handle_buff_status();
+        usb_hw_clear->buf_status = (uint32_t) -1; // clear all buffers (DONT DO THIS)
+    }
+
+    // Transfer complete (last packet)
+    if (flags &  USB_INTS_TRANS_COMPLETE_BITS) {
+        flags ^= USB_INTS_TRANS_COMPLETE_BITS;
+
+        printf("transfer complete\n");
+
+        usb_hw_clear->sie_status = USB_SIE_STATUS_TRANS_COMPLETE_BITS;
+        // hw_trans_complete();
+    }
+
+    // Receive timeout (too long without an ACK)
+    if (flags &  USB_INTS_ERROR_RX_TIMEOUT_BITS) {
+        flags ^= USB_INTS_ERROR_RX_TIMEOUT_BITS;
+
+        printf("receive timeout\n");
+
+        usb_hw_clear->sie_status = USB_SIE_STATUS_RX_TIMEOUT_BITS;
+    }
+
+    // Data error (IN packet from device has wrong data PID)
+    if (flags &  USB_INTS_ERROR_DATA_SEQ_BITS) {
+        flags ^= USB_INTS_ERROR_DATA_SEQ_BITS;
+
+        printf("data error\n");
+
+        usb_hw_clear->sie_status = USB_SIE_STATUS_DATA_SEQ_ERROR_BITS;
+        panic("ERROR: USB Host data sequence error\n");
+    }
+
+    // Device resumed (device initiated)
+    if (flags &  USB_INTS_HOST_RESUME_BITS) {
+        flags ^= USB_INTS_HOST_RESUME_BITS;
+
+        printf("device resume\n");
+
+        usb_hw_clear->sie_status = USB_SIE_STATUS_RESUME_BITS;
+    }
+
+    // Any missed?
+    if (flags) {
+        panic("Unhandled IRQ 0x%x\n", flags);
+    }
 }
 
 // ==[ Main ]==================================================================
