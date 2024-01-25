@@ -94,6 +94,27 @@ void usb_host_reset() {
     // usb_setup_endpoints();
     irq_set_enabled(USBCTRL_IRQ, true); // irq_set_exclusive_handler(USBCTRL_IRQ, isr_usbctrl);
     printf("USB host reset\n\n");
+}
+
+// ==[ Helpers ]===============================================================
+
+PU_ALWAYS_INLINE static inline bool is_host_mode(void) {
+    return (usb_hw->main_ctrl & USB_MAIN_CTRL_HOST_NDEVICE_BITS);
+}
+
+PU_ALWAYS_INLINE static inline bool is_vbus_overcurr(void) {
+    return (usb_hw->sie_status & USB_SIE_STATUS_VBUS_OVER_CURR_BITS);
+}
+
+PU_ALWAYS_INLINE static inline uint8_t dev_speed(void) {
+    return (usb_hw->sie_status & USB_SIE_STATUS_SPEED_BITS) \
+                              >> USB_SIE_STATUS_SPEED_LSB;
+}
+
+PU_ALWAYS_INLINE static inline uint8_t line_state(void) {
+    return (usb_hw->sie_status & USB_SIE_STATUS_LINE_STATE_BITS) \
+                              >> USB_SIE_STATUS_LINE_STATE_LSB;
+}
 
 }
 
