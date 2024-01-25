@@ -520,7 +520,7 @@ static void usb_handle_buff_status() {
 
 // Reset USB bus
 void usb_bus_reset() {
-    printf("Bus reset\n");
+    printf("< Reset\n");
     device_address = 0; // Set address to zero
     usb_hw->dev_addr_ctrl = 0;
     should_set_address = false;
@@ -551,7 +551,7 @@ void usb_device_reset() {
                         USB_INTE_BUS_RESET_BITS                 ;
     usb_setup_endpoints();
     usb_hw_set->sie_ctrl = USB_SIE_CTRL_PULLUP_EN_BITS;
-    printf("\nUSB device reset\n");
+    printf("\nUSB device reset\n\n");
 }
 
 // ==[ Interrupt ]=============================================================
