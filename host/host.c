@@ -120,11 +120,11 @@ PU_ALWAYS_INLINE static inline uint8_t line_state(void) {
 
 // Interrupt handler
 void isr_usbctrl() {
-    uint32_t flags = usb_hw->ints;
+    uint32_t ints = usb_hw->ints;
 
     // Connection event (attach or detach)
-    if (flags &  USB_INTS_HOST_CONN_DIS_BITS) {
-        flags ^= USB_INTS_HOST_CONN_DIS_BITS;
+    if (ints &  USB_INTS_HOST_CONN_DIS_BITS) {
+        ints ^= USB_INTS_HOST_CONN_DIS_BITS;
 
         printf("device speed: 0b%02b\n", dev_speed());
 
@@ -133,8 +133,8 @@ void isr_usbctrl() {
     }
 
     // Stall detected (before buffer status)
-    if (flags &  USB_INTS_STALL_BITS) {
-        flags ^= USB_INTS_STALL_BITS;
+    if (ints &  USB_INTS_STALL_BITS) {
+        ints ^= USB_INTS_STALL_BITS;
 
         printf("stall detected\n");
 
@@ -143,8 +143,8 @@ void isr_usbctrl() {
     }
 
     // Buffer ready
-    if (flags &  USB_INTS_BUFF_STATUS_BITS) {
-        flags ^= USB_INTS_BUFF_STATUS_BITS;
+    if (ints &  USB_INTS_BUFF_STATUS_BITS) {
+        ints ^= USB_INTS_BUFF_STATUS_BITS;
 
         printf("buffer ready: 0b%032b\n", usb_hw->buf_status);
 
@@ -153,8 +153,8 @@ void isr_usbctrl() {
     }
 
     // Transfer complete (last packet)
-    if (flags &  USB_INTS_TRANS_COMPLETE_BITS) {
-        flags ^= USB_INTS_TRANS_COMPLETE_BITS;
+    if (ints &  USB_INTS_TRANS_COMPLETE_BITS) {
+        ints ^= USB_INTS_TRANS_COMPLETE_BITS;
 
         printf("transfer complete\n");
 
@@ -163,8 +163,8 @@ void isr_usbctrl() {
     }
 
     // Receive timeout (too long without an ACK)
-    if (flags &  USB_INTS_ERROR_RX_TIMEOUT_BITS) {
-        flags ^= USB_INTS_ERROR_RX_TIMEOUT_BITS;
+    if (ints &  USB_INTS_ERROR_RX_TIMEOUT_BITS) {
+        ints ^= USB_INTS_ERROR_RX_TIMEOUT_BITS;
 
         printf("receive timeout\n");
 
@@ -172,8 +172,8 @@ void isr_usbctrl() {
     }
 
     // Data error (IN packet from device has wrong data PID)
-    if (flags &  USB_INTS_ERROR_DATA_SEQ_BITS) {
-        flags ^= USB_INTS_ERROR_DATA_SEQ_BITS;
+    if (ints &  USB_INTS_ERROR_DATA_SEQ_BITS) {
+        ints ^= USB_INTS_ERROR_DATA_SEQ_BITS;
 
         printf("data error\n");
 
@@ -182,8 +182,8 @@ void isr_usbctrl() {
     }
 
     // Device resumed (device initiated)
-    if (flags &  USB_INTS_HOST_RESUME_BITS) {
-        flags ^= USB_INTS_HOST_RESUME_BITS;
+    if (ints &  USB_INTS_HOST_RESUME_BITS) {
+        ints ^= USB_INTS_HOST_RESUME_BITS;
 
         printf("device resume\n");
 
@@ -191,8 +191,8 @@ void isr_usbctrl() {
     }
 
     // Any missed?
-    if (flags) {
-        panic("Unhandled IRQ 0x%x\n", flags);
+    if (ints) {
+        panic("Unhandled IRQ 0x%x\n", ints);
     }
 }
 
