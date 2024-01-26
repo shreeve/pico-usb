@@ -281,7 +281,7 @@ void isr_usbctrl() {
 
     // Any missed?
     if (ints) {
-        panic("Unhandled IRQ 0x%x\n", ints);
+        panic("Unhandled IRQ 0x%04x\n", ints);
     }
 }
 
