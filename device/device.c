@@ -189,7 +189,7 @@ static uint8_t ep0_buf[64];
 
 // ==[ Endpoints ]=============================================================
 
-// Set up an endpoint's control register (except EP0)
+// Set up an endpoint's control register
 void usb_setup_endpoint(const struct usb_endpoint *ep) {
 
     // Grok the desired endpoint
@@ -203,10 +203,15 @@ void usb_setup_endpoint(const struct usb_endpoint *ep) {
     if (ep->endpoint_control) {
         uint32_t type = ep->descriptor->bmAttributes << EP_CTRL_BUFFER_TYPE_LSB;
         uint32_t offset = ((uint32_t) ep->data_buffer) ^ ((uint32_t) usb_dpram);
+        uint32_t interval = ep->descriptor->bInterval;
+        if (interval) {
+            interval = (interval - 1) << EP_CTRL_HOST_INTERRUPT_INTERVAL_LSB;
+        }
         *ep->endpoint_control = EP_CTRL_ENABLE_BITS          | // Enable EP
                                 EP_CTRL_INTERRUPT_PER_BUFFER | // One IRQ per
-                                type   | // Control, iso, bulk, or interrupt
-                                offset ; // Address base offset in DSPRAM
+                                type     | // Control, iso, bulk, or interrupt
+                                interval | // Interrupt interval in ms
+                                offset   ; // Address base offset in DSPRAM
     }
 }
 
