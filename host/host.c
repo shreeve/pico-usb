@@ -66,7 +66,7 @@ static const struct usb_endpoint epx = {
 
 // ==[ Endpoints ]=============================================================
 
-// Set up the EPX endpoint's control register
+// Set up an endpoint's control register
 void usb_setup_endpoint(const struct usb_endpoint *ep) {
 
     // Grok the desired endpoint
@@ -76,7 +76,7 @@ void usb_setup_endpoint(const struct usb_endpoint *ep) {
     printf("Initialized EP%d_%s (0x%02x) with buffer address 0x%p\n",
            ep_num, in ? "IN " : "OUT", ep_addr, ep->data_buffer);
 
-    // Set ep_ctrl register for this endpoint
+    // Set ep_ctrl register for this endpoint (skip EP0 since it uses SIE_CTRL)
     if (ep->endpoint_control) {
         uint32_t type = ep->descriptor->bmAttributes << EP_CTRL_BUFFER_TYPE_LSB;
         uint32_t offset = ((uint32_t) ep->data_buffer) ^ ((uint32_t) usb_dpram);
