@@ -563,20 +563,19 @@ void usb_device_reset() {
 
 // Interrupt handler
 void isr_usbctrl() {
-    uint32_t status = usb_hw->ints;
-    uint32_t handled = 0;
+    uint32_t ints = usb_hw->ints;
 
     // SOF, start of frame
 
     // Buffer status, one or more buffers have completed
-    if (status & USB_INTS_BUFF_STATUS_BITS) {
-        handled |= USB_INTS_BUFF_STATUS_BITS;
+    if (ints &  USB_INTS_BUFF_STATUS_BITS) {
+        ints ^= USB_INTS_BUFF_STATUS_BITS;
         usb_handle_buff_status();
     }
 
     // Setup packet received
-    if (status & USB_INTS_SETUP_REQ_BITS) {
-        handled |= USB_INTS_SETUP_REQ_BITS;
+    if (ints &  USB_INTS_SETUP_REQ_BITS) {
+        ints ^= USB_INTS_SETUP_REQ_BITS;
         usb_hw_clear->sie_status = USB_SIE_STATUS_SETUP_REC_BITS;
         usb_handle_setup_packet();
     }
@@ -584,8 +583,8 @@ void isr_usbctrl() {
     // CONN_DIS, device (dis)connected
 
     // Bus is reset
-    if (status & USB_INTS_BUS_RESET_BITS) {
-        handled |= USB_INTS_BUS_RESET_BITS;
+    if (ints &  USB_INTS_BUS_RESET_BITS) {
+        ints ^= USB_INTS_BUS_RESET_BITS;
         usb_hw_clear->sie_status = USB_SIE_STATUS_BUS_RESET_BITS;
         usb_bus_reset();
     }
@@ -594,8 +593,8 @@ void isr_usbctrl() {
 
     // RESUME, bus resumed
 
-    if (status ^ handled) {
-        panic("Unhandled IRQ 0x%04x\n", (uint) (status ^ handled));
+    if (ints) {
+        panic("Unhandled IRQ 0x%04x\n", ints);
     }
 }
 
