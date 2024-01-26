@@ -93,7 +93,7 @@ void usb_host_reset() {
 
     // usb_setup_endpoints();
     irq_set_enabled(USBCTRL_IRQ, true); // irq_set_exclusive_handler(USBCTRL_IRQ, isr_usbctrl);
-    printf("USB host reset\n\n");
+    printf("\nUSB host reset\n\n");
 }
 
 // ==[ Helpers ]===============================================================
