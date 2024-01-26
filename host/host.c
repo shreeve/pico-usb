@@ -129,6 +129,23 @@ void hexdump(const void* data, size_t size, uint mode) {
     }
 }
 
+// ==[ Handlers ]==============================================================
+
+void ep0_out_handler(uint8_t *buf, uint16_t len) {
+    ; // Nothing to do
+    // TODO: Find out when this is called...
+}
+
+void ep0_in_handler(uint8_t *buf, uint16_t len) {
+    if (should_set_address) {
+        usb_hw->dev_addr_ctrl = device_address; // Set hardware device address
+        should_set_address = false;
+    } else {
+        // Prepare for a ZLP from host on EP0_OUT
+        usb_start_transfer(usb_get_endpoint(EP0_OUT_ADDR), NULL, 0);
+    }
+}
+
 // ==[ Resets ]================================================================
 
 enum {
