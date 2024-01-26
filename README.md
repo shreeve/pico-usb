@@ -87,9 +87,11 @@ Initialized EP0_IN  (0x80) with buffer address 0x50100100
 Initialized EP1_OUT (0x01) with buffer address 0x50100180
 Initialized EP2_IN  (0x82) with buffer address 0x501001C0
 
-USB device attached
-Bus reset
-< Setup | 00000000 | 00 05 76 00 00 00 00 00                          | Set address to 118
+USB device reset
+
+< Reset
+< Setup | 00000000 | 00 05 03 00 00 00 00 00                          | Set address to 3
+> ZLP
 < Setup | 00000000 | 80 06 00 01 00 00 08 00                          | Get device descriptor 0
 > 0x80  | 00000000 | 12 01 00 02 00 00 00 40                          | .......@
 < Setup | 00000000 | 80 06 00 01 00 00 12 00                          | Get device descriptor 0
@@ -113,6 +115,7 @@ Bus reset
 > 0x80  | 00000000 | 09 02 20 00 01 01 04 c0 32 09 04 00 00 02 ff 00  | .. .....2.......
         | 00000010 | 00 05 07 05 01 02 40 00 00 07 05 82 02 40 00 00  | ......@......@..
 < Setup | 00000000 | 00 09 01 00 00 00 00 00                          | Set configuration to 1
+> ZLP
 < Setup | 00000000 | 80 06 05 03 09 04 02 00                          | Get string descriptor 5
 > 0x80  | 00000000 | 0e 03                                            | ..
 < Setup | 00000000 | 80 06 05 03 09 04 0e 00                          | Get string descriptor 5
@@ -128,8 +131,8 @@ $ verify.py
 > 0x80  | 00000000 | 04 03 09 04                                      | ....
 < Setup | 00000000 | 80 06 04 03 09 04 fe 00                          | Get string descriptor 4
 > 0x80  | 00000000 | 0a 03 45 00 61 00 73 00 79 00                    | ..E.a.s.y.
-< 0x01  | 00000000 | 48 65 6c 6c 6f 20 57 6f 72 6c 64 21              | Hello World!
-> 0x82  | 00000000 | 48 65 6c 6c 6f 20 57 6f 72 6c 64 21              | Hello World!
+< 0x01  | 00000000 | 48 65 6c 6c 6f 2c 20 77 6f 72 6c 64 21 0a        | Hello, world!.
+> 0x82  | 00000000 | 48 65 6c 6c 6f 2c 20 77 6f 72 6c 64 21 0a        | Hello, world!.
 
 $ usbdiagnose
 
