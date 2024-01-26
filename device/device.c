@@ -542,7 +542,6 @@ void usb_device_reset() {
     // Clear state
     memset(usb_hw   , 0, sizeof(*usb_hw   ));
     memset(usb_dpram, 0, sizeof(*usb_dpram));
-    irq_set_enabled(USBCTRL_IRQ, true);
 
     // Setup device mode
     usb_hw->muxing    = USB_USB_MUXING_TO_PHY_BITS              |
@@ -555,6 +554,7 @@ void usb_device_reset() {
                         USB_INTE_SETUP_REQ_BITS                 |
                         USB_INTE_BUS_RESET_BITS                 ;
     usb_setup_endpoints();
+    irq_set_enabled(USBCTRL_IRQ, true);
     usb_hw_set->sie_ctrl = USB_SIE_CTRL_PULLUP_EN_BITS;
     printf("\nUSB device reset\n\n");
 }
@@ -593,6 +593,7 @@ void isr_usbctrl() {
 
     // RESUME, bus resumed
 
+    // Any missed?
     if (ints) {
         panic("Unhandled IRQ 0x%04x\n", ints);
     }
