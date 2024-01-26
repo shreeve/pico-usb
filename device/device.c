@@ -218,6 +218,7 @@ void usb_setup_endpoints() {
             usb_setup_endpoint(&endpoints[i]);
         }
     }
+    printf("\n");
 }
 
 // Get the endpoint for an endpoint address (EP number + direction)
@@ -551,7 +552,7 @@ void usb_device_reset() {
                         USB_INTE_BUS_RESET_BITS                 ;
     usb_setup_endpoints();
     usb_hw_set->sie_ctrl = USB_SIE_CTRL_PULLUP_EN_BITS;
-    printf("\nUSB device reset\n\n");
+    printf("USB device reset\n\n");
 }
 
 // ==[ Interrupt ]=============================================================
