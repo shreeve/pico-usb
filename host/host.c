@@ -14,6 +14,15 @@ static const struct usb_endpoint_descriptor ep0_out = { // EP0, out to device
     .bInterval        = 0
 };
 
+static const struct usb_endpoint_descriptor ep0_in = { // EP0, in to host
+    .bLength          = sizeof(struct usb_endpoint_descriptor),
+    .bDescriptorType  = USB_DT_ENDPOINT,
+    .bEndpointAddress = EP0_IN_ADDR,
+    .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
+    .wMaxPacketSize   = 64,
+    .bInterval        = 0
+};
+
 
 // ==[ PicoUSB ]===============================================================
 
