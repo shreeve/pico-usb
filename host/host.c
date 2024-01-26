@@ -39,6 +39,11 @@ static const struct usb_endpoint_descriptor ep0_in = { // EP0, in to host
 #define usb_hw_set   ((usb_hw_t *) hw_set_alias_untyped  (usb_hw))
 #define usb_hw_clear ((usb_hw_t *) hw_clear_alias_untyped(usb_hw))
 
+typedef void (*usb_ep_handler)(uint8_t *buf, uint16_t len);
+
+void ep0_out_handler(uint8_t *buf, uint16_t len);
+void ep0_in_handler (uint8_t *buf, uint16_t len);
+
 struct usb_endpoint {
     const struct usb_endpoint_descriptor *descriptor;
     usb_ep_handler handler;
