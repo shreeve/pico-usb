@@ -14,9 +14,6 @@ static const struct usb_endpoint_descriptor ep0_out = { // EP0, out to device
     .bInterval        = 0
 };
 
-// usb_interface_descriptor
-// usb_configuration_descriptor
-// usb_device_descriptor
 
 // ==[ PicoUSB ]===============================================================
 
