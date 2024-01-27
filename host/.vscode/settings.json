@@ -8,9 +8,9 @@
         "debug":        { "statusBarVisibility": "hidden" }, // Launch in debugger (hide, since no lldb)
         "launch":       { "statusBarVisibility": "hidden" }, // Launch in terminal (hide, since not applicable)
     },
-    "cmake.buildBeforeRun": true,
     "cmake.configureOnOpen": false,
-    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "cmake.buildBeforeRun": true,
+    "cortex-debug.openocdPath": "openocd",
     "cortex-debug.variableUseNaturalFormat": false,
-    "cortex-debug.openocdPath": "openocd"
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
 }
