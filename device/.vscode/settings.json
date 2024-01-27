@@ -1,19 +1,15 @@
 {
-    "cmake.statusbar.advanced": {
-        "debug": {
-            "visibility": "hidden"
-        },
-        "launch": {
-            "visibility": "hidden"
-        },
-        "build": {
-            "visibility": "default"
-        },
-        "buildTarget": {
-            "visibility": "hidden"
-        }
+    "cmake.options.statusBarVisibility": "hidden",
+    "cmake.options.advanced": {
+        "variant":      { "statusBarVisibility": "icon"   }, // Debug, Release, MinSizeRel, RelWithDebInfo
+        "kit":          { "statusBarVisibility": "icon"   }, // Compiler kit to use
+        "build":        { "statusBarVisibility": "icon"   }, // Build target
+        "buildTarget":  { "statusBarVisibility": "visible"}, // Select build target
+        "debug":        { "statusBarVisibility": "hidden" }, // Launch in debugger (hide, since no lldb)
+        "launch":       { "statusBarVisibility": "hidden" }, // Launch in terminal (hide, since not applicable)
     },
     "cmake.buildBeforeRun": true,
+    "cmake.configureOnOpen": false,
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "cortex-debug.openocdPath": "openocd",
     "cortex-debug.variableUseNaturalFormat": false
