@@ -55,7 +55,7 @@ struct usb_endpoint {
     uint8_t next_datapid; // Toggle DATA0/DATA1 each packet
 };
 
-static const struct usb_endpoint epx = {
+static struct usb_endpoint epx = {
     .descriptor       = &ep0_out,
     .handler          = NULL,
     .endpoint_control = &usbh_dpram->epx_ctrl,
