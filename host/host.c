@@ -164,10 +164,14 @@ void usb_host_reset() {
     unreset_block_wait(RESETS_RESET_USBCTRL_BITS);
 
     // Clear state
-    memset(usb_hw   , 0, sizeof(*usb_hw   ));
-    memset(usb_dpram, 0, sizeof(*usb_dpram));
+    memset(usb_hw    , 0, sizeof(*usb_hw    ));
+    memset(usbh_dpram, 0, sizeof(*usbh_dpram));
 
-    // Setup host mode
+    // Setup endpoints
+    usb_setup_endpoint(&epx);
+    // usb_setup_endpoints();
+
+    // Configure USB host controller
     usb_hw->muxing    = USB_USB_MUXING_TO_PHY_BITS               | // Connect USB Phy
                         USB_USB_MUXING_SOFTCON_BITS              ; // TODO: What is this?
     usb_hw->pwr       = USB_USB_PWR_VBUS_DETECT_BITS             | // Enable VBUS detection
@@ -183,10 +187,8 @@ void usb_host_reset() {
                         USB_INTE_ERROR_DATA_SEQ_BITS             | // Data error
                         USB_INTE_ERROR_RX_TIMEOUT_BITS           ; // Receive timeout
 
-    usb_setup_endpoint(&epx);
-    // usb_setup_endpoints();
-    irq_set_enabled(USBCTRL_IRQ, true); // irq_set_exclusive_handler(USBCTRL_IRQ, isr_usbctrl);
     printf("\nUSB host reset\n\n");
+    irq_set_enabled(USBCTRL_IRQ, true);
 }
 
 // ==[ Helpers ]===============================================================

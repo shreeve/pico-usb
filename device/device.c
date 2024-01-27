@@ -523,6 +523,10 @@ static void usb_handle_buff_status() {
 
 // ==[ Resets ]================================================================
 
+enum {
+    USB_SIE_CTRL_BASE = USB_SIE_CTRL_EP0_INT_1BUF_BITS    // Interrupt on every buffer
+};
+
 // Reset USB bus
 void usb_bus_reset() {
     printf("< Reset\n");
@@ -543,20 +547,25 @@ void usb_device_reset() {
     memset(usb_hw   , 0, sizeof(*usb_hw   ));
     memset(usb_dpram, 0, sizeof(*usb_dpram));
 
-    // Setup device mode
-    usb_hw->muxing    = USB_USB_MUXING_TO_PHY_BITS              |
-                        USB_USB_MUXING_SOFTCON_BITS             ;
-    usb_hw->pwr       = USB_USB_PWR_VBUS_DETECT_BITS            |
-                        USB_USB_PWR_VBUS_DETECT_OVERRIDE_EN_BITS;
-    usb_hw->main_ctrl = USB_MAIN_CTRL_CONTROLLER_EN_BITS        ;
-    usb_hw->sie_ctrl  = USB_SIE_CTRL_EP0_INT_1BUF_BITS          ;
-    usb_hw->inte      = USB_INTE_BUFF_STATUS_BITS               |
-                        USB_INTE_SETUP_REQ_BITS                 |
-                        USB_INTE_BUS_RESET_BITS                 ;
+    // Setup endpoints
     usb_setup_endpoints();
-    irq_set_enabled(USBCTRL_IRQ, true);
-    usb_hw_set->sie_ctrl = USB_SIE_CTRL_PULLUP_EN_BITS;
+
+    // Configure USB device controller
+    usb_hw->muxing    = USB_USB_MUXING_TO_PHY_BITS               | // Connect USB Phy
+                        USB_USB_MUXING_SOFTCON_BITS              ; // TODO: What is this?
+    usb_hw->pwr       = USB_USB_PWR_VBUS_DETECT_BITS             | // Enable VBUS detection
+                        USB_USB_PWR_VBUS_DETECT_OVERRIDE_EN_BITS ; // Enable VBUS detection
+    usb_hw->main_ctrl = USB_MAIN_CTRL_CONTROLLER_EN_BITS         ; // Enable controller
+    usb_hw->sie_ctrl  = USB_SIE_CTRL_BASE                        ; // Default SIE_CTRL bits
+    usb_hw->inte      = USB_INTE_BUS_RESET_BITS                  | // Bus reset
+                        USB_INTE_SETUP_REQ_BITS                  | // Setup packet
+                        USB_INTE_BUFF_STATUS_BITS                | // Buffer ready
+                        USB_INTE_DEV_SUSPEND_BITS                | // Suspend signal
+                        USB_INTE_DEV_RESUME_FROM_HOST_BITS       ; // Resume signal
+
     printf("\nUSB device reset\n\n");
+    irq_set_enabled(USBCTRL_IRQ, true);
+    usb_hw_set->sie_ctrl = USB_SIE_CTRL_PULLUP_EN_BITS; // "Attach" the device
 }
 
 // ==[ Interrupt ]=============================================================
