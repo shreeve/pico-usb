@@ -12,5 +12,5 @@
     "cmake.configureOnOpen": false,
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "cortex-debug.variableUseNaturalFormat": false,
-    "cortex-debug.openocdPath": "openocd",
+    "cortex-debug.openocdPath": "openocd"
 }
