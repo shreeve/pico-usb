@@ -86,6 +86,33 @@ PU_ALWAYS_INLINE static inline uint8_t dev_speed() {
                               >> USB_SIE_STATUS_SPEED_LSB;
 }
 
+// ==[ Endpoints ]=============================================================
+
+// // Set up an endpoint's control register
+// void usb_setup_endpoint(const struct usb_endpoint *ep) {
+//
+//     // // Grok the desired endpoint
+//     // uint8_t ep_addr = ep->descriptor->bEndpointAddress;
+//     // uint8_t ep_num = ep_addr & 0x0f;
+//     // bool in = ep_addr & USB_DIR_IN;
+//     // printf("Initialized EP%d_%s (0x%02x) with buffer address 0x%p\n",
+//     //        ep_num, in ? "IN " : "OUT", ep_addr, ep->data_buffer);
+//
+//     // Set ep_ctrl register for this endpoint (skip EP0 since it uses SIE_CTRL)
+//     if (ep->endpoint_control) {
+//         uint32_t type = ep->descriptor->bmAttributes << EP_CTRL_BUFFER_TYPE_LSB;
+//         uint32_t offset = ((uint32_t) ep->data_buffer) ^ ((uint32_t) usbh_dpram);
+//         uint32_t interval = ep->descriptor->bInterval;
+//         if (interval) {
+//             interval = (interval - 1) << EP_CTRL_HOST_INTERRUPT_INTERVAL_LSB;
+//         }
+//         *ep->endpoint_control = EP_CTRL_ENABLE_BITS          | // Enable EP
+//                                 EP_CTRL_INTERRUPT_PER_BUFFER | // One IRQ per
+//                                 type     | // Control, iso, bulk, or interrupt
+//                                 interval | // Interrupt interval in ms
+//                                 offset   ; // Address base offset in DSPRAM
+//     }
+// }
 
 // ==[ Enumeration ]===========================================================
 
