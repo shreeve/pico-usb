@@ -232,16 +232,17 @@ void start_enumeration() {
 
 // Interrupt handler
 void isr_usbctrl() {
-    uint32_t ints = usb_hw->ints, x;
+    volatile uint32_t ints = usb_hw->ints, x;
     uint16_t size = 0;
     static event_t event;
 
-    printf("────────┬───────────────────────────────────────────────────────────────────────\n");
-    x = ints                    ; printf("IRQ\t│ %032b 0x%08x\n", x, x);
-    x = usb_hw->sie_status      ; printf("SIE\t│ %032b 0x%08x\n", x, x);
-    x = usb_hw->dev_addr_ctrl   ; printf("DEV\t│ %032b 0x%08x\n", x, x);
-    x = usbh_dpram->epx_ctrl    ; printf("ECR\t│ %032b 0x%08x\n", x, x);
-    x = usbh_dpram->epx_buf_ctrl; printf("BCR\t│ %032b 0x%08x\n", x, x);
+    printf("┌───────┬──────────────────────────────────────────────────────────────────────┐\n");
+    x = usb_hw->sof_rd          ; printf("│Frame\t│ %u\n", x);
+    x = ints                    ; printf("│IRQ\t│ %032b 0x%08x\n", x, x);
+    x = usb_hw->sie_status      ; printf("│SIE\t│ %032b 0x%08x\n", x, x);
+    x = usb_hw->dev_addr_ctrl   ; printf("│DEV\t│ %032b 0x%08x\n", x, x);
+    x = usbh_dpram->epx_ctrl    ; printf("│ECR\t│ %032b 0x%08x\n", x, x);
+    x = usbh_dpram->epx_buf_ctrl; printf("│BCR\t│ %032b 0x%08x\n", x, x);
 
     // Connection event (attach or detach)
     if (ints &  USB_INTS_HOST_CONN_DIS_BITS) {
@@ -250,13 +251,13 @@ void isr_usbctrl() {
         uint8_t speed = dev_speed();
 
         if (speed) {
-            printf("ISR: Device connected\n");
+            printf("│ISR\t│ Device connected\n");
             event.type = EVENT_CONNECTION;
             event.dev_addr = 0;
             event.conn.speed = speed;
             queue_add_blocking(queue, &event);
         } else {
-            printf("ISR: Device disconnected\n");
+            printf("│ISR\t│ Device disconnected\n");
         }
 
         // Clear speed change interrupt
@@ -267,7 +268,7 @@ void isr_usbctrl() {
     if (ints &  USB_INTS_STALL_BITS) {
         ints ^= USB_INTS_STALL_BITS;
 
-        printf("ISR: Stall detected\n");
+        printf("│ISR\t│ Stall detected\n");
 
         // Clear the stall
         usb_hw_clear->sie_status = USB_SIE_STATUS_STALL_REC_BITS;
@@ -279,17 +280,16 @@ void isr_usbctrl() {
         ints ^= USB_INTS_BUFF_STATUS_BITS;
 
         // Show buffer status
-        x = usb_hw->buf_status; printf("BUF\t| %032b 0x%08x\n", x, x);
+        x = usb_hw->buf_status; printf("│BUF\t| %032b 0x%08x\n", x, x);
 
         // For now, we know it's EP0_IN... (we're cheating)
         x = usbh_dpram->epx_buf_ctrl & USB_BUF_CTRL_LEN_MASK; // Buffer length
 
-        printf("Buffer status (%u bytes)\n", x);
         if (x) {
-            printf("> Data");
+            printf("│> Data");
             hexdump(usbh_dpram->epx_data, x, 1);
         } else {
-            printf("> ZLP\n");
+            printf("│> ZLP\n");
         }
 
         // hw_handle_buff_status();
@@ -302,7 +302,7 @@ void isr_usbctrl() {
     if (ints &  USB_INTS_TRANS_COMPLETE_BITS) {
         ints ^= USB_INTS_TRANS_COMPLETE_BITS;
 
-        printf("ISR: Transfer complete\n");
+        printf("│ISR\t│ Transfer complete\n");
 
         usb_hw_clear->sie_status = USB_SIE_STATUS_TRANS_COMPLETE_BITS;
         // hw_trans_complete();
@@ -312,7 +312,7 @@ void isr_usbctrl() {
     if (ints &  USB_INTS_ERROR_RX_TIMEOUT_BITS) {
         ints ^= USB_INTS_ERROR_RX_TIMEOUT_BITS;
 
-        printf("ISR: Receive timeout\n");
+        printf("│ISR\t│ Receive timeout\n");
 
         usb_hw_clear->sie_status = USB_SIE_STATUS_RX_TIMEOUT_BITS;
     }
@@ -321,7 +321,7 @@ void isr_usbctrl() {
     if (ints &  USB_INTS_ERROR_DATA_SEQ_BITS) {
         ints ^= USB_INTS_ERROR_DATA_SEQ_BITS;
 
-        printf("ISR: Data error\n");
+        printf("│ISR\t│ Data error\n");
 
         usb_hw_clear->sie_status = USB_SIE_STATUS_DATA_SEQ_ERROR_BITS;
         panic("ERROR: USB Host data sequence error\n");
@@ -331,15 +331,17 @@ void isr_usbctrl() {
     if (ints &  USB_INTS_HOST_RESUME_BITS) {
         ints ^= USB_INTS_HOST_RESUME_BITS;
 
-        printf("ISR: Device resume\n");
+        printf("│ISR\t│ Device resume\n");
 
         usb_hw_clear->sie_status = USB_SIE_STATUS_RESUME_BITS;
     }
 
     // Any missed?
     if (ints) {
-        panic("ISR: Unhandled IRQ 0x%04x\n", ints);
+        panic("│ISR\t│ Unhandled IRQ 0x%04x\n", ints);
     }
+
+    printf("└───────┴──────────────────────────────────────────────────────────────────────┘\n");
 }
 
 // ==[ Resets ]================================================================
