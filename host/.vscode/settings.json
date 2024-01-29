@@ -3,12 +3,12 @@
     "cmake.options.advanced": {
         "variant":      { "statusBarVisibility": "icon"   }, // Debug, Release, MinSizeRel, RelWithDebInfo
         "kit":          { "statusBarVisibility": "icon"   }, // Compiler kit to use
-        "build":        { "statusBarVisibility": "icon"   }, // Build target
+        "build":        { "statusBarVisibility": "visible"}, // Build target
         "buildTarget":  { "statusBarVisibility": "visible"}, // Select build target
         "debug":        { "statusBarVisibility": "hidden" }, // Launch in debugger (hide, since no lldb)
         "launch":       { "statusBarVisibility": "hidden" }, // Launch in terminal (hide, since not applicable)
     },
-    "cmake.configureOnOpen": false,
+    "cmake.configureOnOpen": true,
     "cmake.buildBeforeRun": true,
     "cortex-debug.openocdPath": "openocd",
     "cortex-debug.variableUseNaturalFormat": false,
