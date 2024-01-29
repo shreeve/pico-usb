@@ -142,6 +142,31 @@ void get_device_descriptor() {
     hexdump(&request, sizeof(request), 1);
 }
 
+// // Set device address
+// void enum_set_address() {
+//     const uint8_t data[] = "\x00\x05\x01\x00\x00\x00\x00\x00";
+//     const uint8_t size = 8;
+//     uint32_t bits;
+//
+//     printf("< Setup");
+//     hexdump(data, size, 2);
+//     printf("Set device address to 1\n");
+//
+//     memcpy((void *) usbh_dpram->setup_packet, data, size);
+//     usbh_dpram->epx_ctrl     = EP_CTRL_ENABLE_BITS          | // Enable EPX
+//                                EP_CTRL_INTERRUPT_PER_BUFFER | // One IRQ per buffer
+//                                0x180                        ; // Data buffer offset
+//     usbh_dpram->epx_buf_ctrl = 0x00007400  | // LAST, DATA1, SEL, AVAIL
+//                                size        ; // Size
+//     usb_hw->dev_addr_ctrl = (uint32_t) 0   ; // NOTE: 19:16=ep_num, 6:0=dev_addr
+//     bits = USB_SIE_CTRL_BASE               | // Default SIE_CTRL bits
+//         //    USB_SIE_CTRL_SEND_DATA_BITS  | // Request a response
+//            USB_SIE_CTRL_SEND_SETUP_BITS    ; // Send a SETUP packet
+//     usb_hw->sie_ctrl = bits                ; // TODO: Might need USB_SIE_CTRL_PREAMBLE_EN_BITS (LS on FS hub)
+//     busy_wait_at_least_cycles(12)          ; // TODO: Anything better? Why not 3 or 6 cycles? TinyUSB doesn't use this in hcd_edpt_xfer().
+//     usb_hw->sie_ctrl = bits | USB_SIE_CTRL_START_TRANS_BITS;
+// }
+
 void start_enumeration() {
     printf("Start enumeration\n");
 
