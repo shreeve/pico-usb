@@ -40,7 +40,8 @@ typedef struct usb_setup_packet             usb_setup_packet_t;
 #define PU_PACKED         __attribute__ ((packed))
 #define PU_WEAK           __attribute__ ((weak))
 
-#define SWAP_WORD(x)      (((x) >> 8) | ((x) << 8))
+#define MAKE_U16(x,y)    (((x) << 8) | ((y)     ))
+#define SWAP_U16(x)      (((x) >> 8) | ((x) << 8))
 
 static bool configured = false;
 
@@ -131,9 +132,9 @@ void get_device_descriptor() {
                        | USB_REQ_TYPE_STANDARD
                        | USB_REQ_TYPE_RECIPIENT_DEVICE,
         .bRequest      = USB_REQUEST_GET_DESCRIPTOR,
-        .wValue        = SWAP_WORD(USB_DT_DEVICE),
-        .wIndex        = SWAP_WORD(0),
-        .wLength       = SWAP_WORD(sizeof(usb_setup_packet_t)),
+        .wValue        = MAKE_U16(USB_DT_DEVICE, 0),
+        .wIndex        = 0,
+        .wLength       = sizeof(usb_setup_packet_t),
     };
 
     // Copy this request to the transfer buffer
