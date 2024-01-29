@@ -225,7 +225,6 @@ void start_enumeration() {
 
     // ==[ Send a ZLP, can't do here... we need to do after the XFER was completed... ]==
 
-
 }
 
 // ==[ Interrupt ]=============================================================
