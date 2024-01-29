@@ -234,20 +234,20 @@ void usb_host_reset() {
     // usb_setup_endpoints();
 
     // Configure USB host controller
-    usb_hw->muxing    = USB_USB_MUXING_TO_PHY_BITS               | // Connect USB Phy
-                        USB_USB_MUXING_SOFTCON_BITS              ; // TODO: What is this?
-    usb_hw->pwr       = USB_USB_PWR_VBUS_DETECT_BITS             | // Enable VBUS detection
-                        USB_USB_PWR_VBUS_DETECT_OVERRIDE_EN_BITS ; // Enable VBUS detection
-    usb_hw->main_ctrl = USB_MAIN_CTRL_CONTROLLER_EN_BITS         | // Enable controller
-                        USB_MAIN_CTRL_HOST_NDEVICE_BITS          ; // Enable USB Host mode
-    usb_hw->sie_ctrl  = USB_SIE_CTRL_BASE                        ; // Default SIE_CTRL bits
-    usb_hw->inte      = USB_INTE_HOST_CONN_DIS_BITS              | // Device connect/disconnect
-                        USB_INTE_STALL_BITS                      | // Stall detected
-                        USB_INTE_BUFF_STATUS_BITS                | // Buffer ready
-                        USB_INTE_TRANS_COMPLETE_BITS             | // Transfer complete
-                        USB_INTE_HOST_RESUME_BITS                | // Device resumed
-                        USB_INTE_ERROR_DATA_SEQ_BITS             | // Data error
-                        USB_INTE_ERROR_RX_TIMEOUT_BITS           ; // Receive timeout
+    usb_hw->muxing    = USB_USB_MUXING_TO_PHY_BITS                // Connect USB Phy
+                      | USB_USB_MUXING_SOFTCON_BITS;              // TODO: What is this?
+    usb_hw->pwr       = USB_USB_PWR_VBUS_DETECT_BITS              // Enable VBUS detection
+                      | USB_USB_PWR_VBUS_DETECT_OVERRIDE_EN_BITS; // Enable VBUS detection
+    usb_hw->main_ctrl = USB_MAIN_CTRL_CONTROLLER_EN_BITS          // Enable controller
+                      | USB_MAIN_CTRL_HOST_NDEVICE_BITS;          // Enable USB Host mode
+    usb_hw->sie_ctrl  = USB_SIE_CTRL_BASE;                        // Default SIE_CTRL bits
+    usb_hw->inte      = USB_INTE_HOST_CONN_DIS_BITS               // Device connect/disconnect
+                      | USB_INTE_STALL_BITS                       // Stall detected
+                      | USB_INTE_BUFF_STATUS_BITS                 // Buffer ready
+                      | USB_INTE_TRANS_COMPLETE_BITS              // Transfer complete
+                      | USB_INTE_HOST_RESUME_BITS                 // Device resumed
+                      | USB_INTE_ERROR_DATA_SEQ_BITS              // Data error
+                      | USB_INTE_ERROR_RX_TIMEOUT_BITS;           // Receive timeout
 
     printf("USB host reset\n");
     irq_set_enabled(USBCTRL_IRQ, true);
