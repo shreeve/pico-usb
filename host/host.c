@@ -25,13 +25,12 @@ typedef struct usb_setup_packet             usb_setup_packet_t;
 #define usb_hw_set   ((usb_hw_t *) hw_set_alias_untyped  (usb_hw))
 #define usb_hw_clear ((usb_hw_t *) hw_clear_alias_untyped(usb_hw))
 
-static bool configured = false;
-
-// Helpful macros
 #define PU_ALIGNED(bytes) __attribute__ ((aligned(bytes)))
 #define PU_ALWAYS_INLINE  __attribute__ ((always_inline))
 #define PU_PACKED         __attribute__ ((packed))
 #define PU_WEAK           __attribute__ ((weak))
+
+static bool configured = false;
 
 // ==[ Event queue ]===========================================================
 
