@@ -1,0 +1,34 @@
+// Hex dump (mode: 0 = hex; 1 = hex + ascii; 2 = hex + ascii + no newline)
+void hexdump(const void* data, size_t size, uint mode) {
+    const unsigned char* byte = (const unsigned char *) data;
+    size_t i, j;
+
+    for (i = 0; i < size; i += 16) {
+        printf("\t│ %08zx │ ", i); // Print the offset
+
+        // Print hex values
+        for (j = 0; j < 16; j++) {
+            if (i + j < size) {
+                printf("%02x ", byte[i + j]);
+            } else {
+                printf("   "); // Pad if less than 16 bytes in the line
+            }
+        }
+
+        printf(" │ ");
+
+        if (mode > 1) return;
+
+        // Print ASCII values
+        if (mode == 1) {
+            for (j = 0; j < 16; j++) {
+                if (i + j < size) {
+                    unsigned char ch = byte[i + j];
+                    printf("%c", (ch >= 32 && ch <= 126) ? ch : '.');
+                }
+            }
+        }
+
+        printf("\n");
+    }
+}
