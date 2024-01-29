@@ -1,3 +1,23 @@
+// ============================================================================
+// PicoUSB - A USB host and device library for the Raspberry Pi Pico/W
+//
+// Author: Steve Shreeve <steve.shreeve@gmail.com>
+//   Date: January 29, 2024
+//  Legal: Same license as the Raspberry Pi Pico SDK
+// Thanks: Thanks to the TinyUSB project for inspiration and code snippets!
+//  Notes: This is a work in progress. It is not yet functional.
+// ============================================================================
+
+#include <stdio.h>                // For printf
+#include <string.h>               // For memcpy
+
+#include "pico/stdlib.h"          // Pico stdlib
+#include "pico/util/queue.h"      // A beautifully simple queue
+#include "hardware/regs/usb.h"    // USB hardware registers from pico-sdk
+#include "hardware/structs/usb.h" // USB hardware structs from pico-sdk
+#include "hardware/irq.h"         // For interrupt enable and numbers
+#include "hardware/resets.h"      // For resetting the native USB controller
+
 // ==[ USB 2.0 ]===============================================================
 
 #include "usb_common.h"
@@ -12,16 +32,6 @@ typedef struct usb_setup_packet             usb_setup_packet_t;
 
 // ==[ PicoUSB ]===============================================================
 
-#include <stdio.h>                // For printf
-#include <string.h>               // For memcpy
-
-#include "pico/stdlib.h"          // Pico stdlib
-#include "pico/util/queue.h"      // A beautifully simple queue
-#include "hardware/regs/usb.h"    // USB hardware registers from pico-sdk
-#include "hardware/structs/usb.h" // USB hardware structs from pico-sdk
-#include "hardware/irq.h"         // For interrupt enable and numbers
-#include "hardware/resets.h"      // For resetting the native USB controller
-
 #define usb_hw_set   ((usb_hw_t *) hw_set_alias_untyped  (usb_hw))
 #define usb_hw_clear ((usb_hw_t *) hw_clear_alias_untyped(usb_hw))
 
@@ -29,6 +39,7 @@ typedef struct usb_setup_packet             usb_setup_packet_t;
 #define PU_ALWAYS_INLINE  __attribute__ ((always_inline))
 #define PU_PACKED         __attribute__ ((packed))
 #define PU_WEAK           __attribute__ ((weak))
+
 #define SWAP_WORD(x)      (((x) >> 8) | ((x) << 8))
 
 static bool configured = false;
@@ -68,47 +79,19 @@ static queue_t queue_struct, *queue = &queue_struct;
 
 // ==[ Helpers ]===============================================================
 
+#include "hexdump.h"
+
 PU_ALWAYS_INLINE static inline uint8_t dev_speed() {
     return (usb_hw->sie_status & USB_SIE_STATUS_SPEED_BITS) \
                               >> USB_SIE_STATUS_SPEED_LSB;
 }
 
-// Hex dump (mode: 0 = hex; 1 = hex + ascii; 2 = hex + ascii + no newline)
-void hexdump(const void* data, size_t size, uint mode) {
-    const unsigned char* byte = (const unsigned char *) data;
-    size_t i, j;
 
-    for (i = 0; i < size; i += 16) {
-        printf("\t│ %08zx │ ", i); // Print the offset
 
-        // Print hex values
-        for (j = 0; j < 16; j++) {
-            if (i + j < size) {
-                printf("%02x ", byte[i + j]);
-            } else {
-                printf("   "); // Pad if less than 16 bytes in the line
-            }
-        }
 
-        printf(" │ ");
 
-        if (mode > 1) return;
-
-        // Print ASCII values
-        if (mode == 1) {
-            for (j = 0; j < 16; j++) {
-                if (i + j < size) {
-                    unsigned char ch = byte[i + j];
-                    printf("%c", (ch >= 32 && ch <= 126) ? ch : '.');
-                }
-            }
-        }
-
-        printf("\n");
-    }
 }
 
-// ==[ Enumeration ]===========================================================
 
 enum {
     USB_SIE_CTRL_BASE = USB_SIE_CTRL_VBUS_EN_BITS       | // Supply VBUS to device
