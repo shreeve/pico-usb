@@ -139,19 +139,51 @@ void get_device_descriptor() {
     bool in = request.bmRequestType & USB_DIR_IN;
     uint16_t len = request.wLength;
 
-    // Execute the transfer (Do we need to delay after setting AVAIL? Or, does the wait on START_TRANS take care of this?)
-    usbh_dpram->epx_buf_ctrl = 0x00007000 | len;  // LAST, DATA1, SEL, !AVAIL | len
-    busy_wait_at_least_cycles(12); // TODO: Anything better? Why not 3 or 6 cycles? TinyUSB doesn't use this in hcd_edpt_xfer().
-    usbh_dpram->epx_buf_ctrl = 0x00007400 | len;  // LAST, DATA1, SEL,  AVAIL | len
-    printf("BCR: 0x%04x\n", usbh_dpram->epx_buf_ctrl);
+    // Execute the transfer
     usb_hw->dev_addr_ctrl = (uint32_t) 0; // NOTE: 19:16=ep_num, 6:0=dev_addr
-    uint32_t bits = USB_SIE_CTRL_BASE               // Default SIE_CTRL bits
-                  | USB_SIE_CTRL_SEND_SETUP_BITS   // Send a SETUP packet
-            | (in ? USB_SIE_CTRL_RECEIVE_DATA_BITS // IN to host is receive
-                  : USB_SIE_CTRL_SEND_DATA_BITS);  // OUT from host is send
-    usb_hw->sie_ctrl = bits; // TODO: Might need USB_SIE_CTRL_PREAMBLE_EN_BITS (LS on FS hub)
-    busy_wait_at_least_cycles(12); // TODO: Anything better? Why not 3 or 6 cycles? TinyUSB doesn't use this in hcd_edpt_xfer().
-    usb_hw->sie_ctrl = bits | USB_SIE_CTRL_START_TRANS_BITS;
+
+// Fix this later...
+uint32_t x;
+
+    // Endpoint control bits (No EP0, except for IRQ control via SIE_CTRL)
+    // #define EP_CTRL_ENABLE_BITS (1u << 31u)
+    // #define EP_CTRL_DOUBLE_BUFFERED_BITS (1u << 30)
+    // #define EP_CTRL_INTERRUPT_PER_BUFFER (1u << 29)
+    // #define EP_CTRL_INTERRUPT_PER_DOUBLE_BUFFER (1u << 28)
+    // #define EP_CTRL_INTERRUPT_ON_NAK (1u << 16)
+    // #define EP_CTRL_INTERRUPT_ON_STALL (1u << 17)
+    // #define EP_CTRL_BUFFER_TYPE_LSB 26u
+    // #define EP_CTRL_HOST_INTERRUPT_INTERVAL_LSB 16u
+
+    // Buffer control bits (all EPs are treated the same)
+    // #define USB_BUF_CTRL_FULL      0x00008000u
+    // #define USB_BUF_CTRL_LAST      0x00004000u
+    // #define USB_BUF_CTRL_DATA0_PID 0x00000000u
+    // #define USB_BUF_CTRL_DATA1_PID 0x00002000u
+    // #define USB_BUF_CTRL_SEL       0x00001000u
+    // #define USB_BUF_CTRL_STALL     0x00000800u
+    // #define USB_BUF_CTRL_AVAIL     0x00000400u
+    // #define USB_BUF_CTRL_LEN_MASK  0x000003FFu
+    // #define USB_BUF_CTRL_LEN_LSB   0
+
+    // // Values here are used on the IN transaction of the control transfer
+    // uint32_t ecr = ...
+
+    // Values here are used on the IN transaction of the control transfer
+    uint32_t bcr = USB_BUF_CTRL_LAST
+                 | USB_BUF_CTRL_DATA1_PID
+                 | USB_BUF_CTRL_SEL;
+    x = bcr; printf(" BCR\t│ %032b 0x%08x\n", x, x);
+    hw_set_wait_set(usbh_dpram->epx_buf_ctrl, bcr, 12, USB_BUF_CTRL_AVAIL);
+
+    // Send the setup request
+    uint32_t scr = USB_SIE_CTRL_BASE              // Default SIE_CTRL bits
+                 | USB_SIE_CTRL_SEND_SETUP_BITS   // Send a SETUP packet
+           | (in ? USB_SIE_CTRL_RECEIVE_DATA_BITS // IN to host is receive
+                 : USB_SIE_CTRL_SEND_DATA_BITS);  // OUT from host is send
+                                                  // TODO: preamble (LS on FS)
+    x = scr; printf(" SCR\t│ %032b 0x%08x\n", x, x);
+    hw_set_wait_set(usb_hw->sie_ctrl, scr, 12, USB_SIE_CTRL_START_TRANS_BITS);
 }
 
 // // Set device address
