@@ -29,6 +29,7 @@ typedef struct usb_setup_packet             usb_setup_packet_t;
 #define PU_ALWAYS_INLINE  __attribute__ ((always_inline))
 #define PU_PACKED         __attribute__ ((packed))
 #define PU_WEAK           __attribute__ ((weak))
+#define SWAP_WORD(x)      (((x) >> 8) | ((x) << 8))
 
 static bool configured = false;
 
@@ -266,14 +267,37 @@ void start_enumeration() {
 
     // Get device descriptor
     usb_setup_packet_t request = {
-        .bmRequestType = USB_DIR_IN            |
-                         USB_REQ_TYPE_STANDARD |
-                         USB_REQ_TYPE_RECIPIENT_DEVICE,
+        .bmRequestType = USB_DIR_IN
+                       | USB_REQ_TYPE_STANDARD
+                       | USB_REQ_TYPE_RECIPIENT_DEVICE,
         .bRequest      = USB_REQUEST_GET_DESCRIPTOR,
-        .wValue        = USB_DT_DEVICE,
-        .wIndex        = 0,
-        .wLength       = sizeof(usb_setup_packet_t),
+        .wValue        = SWAP_WORD(USB_DT_DEVICE),
+        .wIndex        = SWAP_WORD(0),
+        .wLength       = SWAP_WORD(sizeof(usb_setup_packet_t)),
     };
+
+    usbh_dpram->epx_ctrl =
+          EP_CTRL_ENABLE_BITS          // Enable EP
+        | EP_CTRL_INTERRUPT_PER_BUFFER // One IRQ per
+        | USB_TRANSFER_TYPE_CONTROL << EP_CTRL_BUFFER_TYPE_LSB // Control transfer
+        | 0x180;                       // Data buffer offset
+
+    // Copy this request to the transfer buffer
+    memcpy((void *) usbh_dpram->setup_packet, &request, sizeof(request));
+
+    printf("< Setup");
+    hexdump(&request, sizeof(request), 1);
+
+    usbh_dpram->epx_buf_ctrl = 0x00007400 | sizeof(request);  // LAST, DATA1, SEL,  AVAIL | len
+
+    // Execute the transfer
+    usb_hw->dev_addr_ctrl = (uint32_t) 0; // NOTE: 19:16=ep_num, 6:0=dev_addr
+    uint32_t bits = USB_SIE_CTRL_BASE               | // Default SIE_CTRL bits
+                    USB_SIE_CTRL_SEND_SETUP_BITS    | // Send a SETUP packet
+                    USB_SIE_CTRL_RECEIVE_DATA_BITS  ; // Ask for a response
+    usb_hw->sie_ctrl = bits; // TODO: Might need USB_SIE_CTRL_PREAMBLE_EN_BITS (LS on FS hub)
+    busy_wait_at_least_cycles(12); // TODO: Anything better? Why not 3 or 6 cycles? TinyUSB doesn't use this in hcd_edpt_xfer().
+    usb_hw->sie_ctrl = bits | USB_SIE_CTRL_START_TRANS_BITS;
 }
 
 void puh_task() {
