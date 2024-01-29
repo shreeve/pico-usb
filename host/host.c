@@ -141,10 +141,28 @@ void get_device_descriptor() {
     memcpy((void *) usbh_dpram->setup_packet, &request, sizeof(request));
     printf("< Setup");
     hexdump(&request, sizeof(request), 1);
+
+    // Pluck from the request
+    bool in = request.bmRequestType & USB_DIR_IN;
+    uint16_t len = request.wLength;
+
+    // Execute the transfer (Do we need to delay after setting AVAIL? Or, does the wait on START_TRANS take care of this?)
+    usbh_dpram->epx_buf_ctrl = 0x00007000 | len;  // LAST, DATA1, SEL, !AVAIL | len
+    busy_wait_at_least_cycles(12); // TODO: Anything better? Why not 3 or 6 cycles? TinyUSB doesn't use this in hcd_edpt_xfer().
+    usbh_dpram->epx_buf_ctrl = 0x00007400 | len;  // LAST, DATA1, SEL,  AVAIL | len
+    printf("BCR: 0x%04x\n", usbh_dpram->epx_buf_ctrl);
+    usb_hw->dev_addr_ctrl = (uint32_t) 0; // NOTE: 19:16=ep_num, 6:0=dev_addr
+    uint32_t bits = USB_SIE_CTRL_BASE               // Default SIE_CTRL bits
+                  | USB_SIE_CTRL_SEND_SETUP_BITS   // Send a SETUP packet
+            | (in ? USB_SIE_CTRL_RECEIVE_DATA_BITS // IN to host is receive
+                  : USB_SIE_CTRL_SEND_DATA_BITS);  // OUT from host is send
+    usb_hw->sie_ctrl = bits; // TODO: Might need USB_SIE_CTRL_PREAMBLE_EN_BITS (LS on FS hub)
+    busy_wait_at_least_cycles(12); // TODO: Anything better? Why not 3 or 6 cycles? TinyUSB doesn't use this in hcd_edpt_xfer().
+    usb_hw->sie_ctrl = bits | USB_SIE_CTRL_START_TRANS_BITS;
 }
 
 // // Set device address
-// void enum_set_address() {
+// void set_device_address() {
 //     const uint8_t data[] = "\x00\x05\x01\x00\x00\x00\x00\x00";
 //     const uint8_t size = 8;
 //     uint32_t bits;
@@ -180,22 +198,8 @@ void start_enumeration() {
 
     get_device_descriptor();
 
-    // Pluck from the request?
-    bool in = true;
-    uint16_t len = 8; // sizeof(usb_setup_packet_t); get the right size...
+    // ==[ Send a ZLP, can't do here... we need to do after the XFER was completed... ]==
 
-    // Execute the transfer (Do we need to delay after setting AVAIL? Or, does the wait on START_TRANS take care of this?)
-    usbh_dpram->epx_buf_ctrl = 0x00007000 | len;  // LAST, DATA1, SEL, !AVAIL | len
-    busy_wait_at_least_cycles(12); // TODO: Anything better? Why not 3 or 6 cycles? TinyUSB doesn't use this in hcd_edpt_xfer().
-    usbh_dpram->epx_buf_ctrl = 0x00007400 | len;  // LAST, DATA1, SEL,  AVAIL | len
-    usb_hw->dev_addr_ctrl = (uint32_t) 0; // NOTE: 19:16=ep_num, 6:0=dev_addr
-    uint32_t bits = USB_SIE_CTRL_BASE               // Default SIE_CTRL bits
-                  | USB_SIE_CTRL_SEND_SETUP_BITS   // Send a SETUP packet
-            | (in ? USB_SIE_CTRL_RECEIVE_DATA_BITS // IN to host is receive
-                  : USB_SIE_CTRL_SEND_DATA_BITS);  // OUT from host is send
-    usb_hw->sie_ctrl = bits; // TODO: Might need USB_SIE_CTRL_PREAMBLE_EN_BITS (LS on FS hub)
-    busy_wait_at_least_cycles(12); // TODO: Anything better? Why not 3 or 6 cycles? TinyUSB doesn't use this in hcd_edpt_xfer().
-    usb_hw->sie_ctrl = bits | USB_SIE_CTRL_START_TRANS_BITS;
 
 }
 
