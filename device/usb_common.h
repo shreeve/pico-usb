@@ -121,4 +121,12 @@ struct usb_setup_packet {
     uint16_t wLength;
 } __packed;
 
+typedef struct usb_descriptor               usb_descriptor_t;
+typedef struct usb_device_descriptor        usb_device_descriptor_t;
+typedef struct usb_configuration_descriptor usb_configuration_descriptor_t;
+typedef struct usb_interface_descriptor     usb_interface_descriptor_t;
+typedef struct usb_endpoint_descriptor      usb_endpoint_descriptor_t;
+typedef struct usb_endpoint_descriptor_long usb_endpoint_descriptor_long_t;
+typedef struct usb_setup_packet             usb_setup_packet_t;
+
 #endif
