@@ -5,14 +5,14 @@
 #include "hardware/structs/usb.h"
 
 #define USB_REQ_TYPE_STANDARD            0x00u
-#define USB_REQ_TYPE_TYPE_MASK           0x60u
 #define USB_REQ_TYPE_TYPE_CLASS          0x20u
 #define USB_REQ_TYPE_TYPE_VENDOR         0x40u
+#define USB_REQ_TYPE_TYPE_MASK           0x60u
 
-#define USB_REQ_TYPE_RECIPIENT_MASK      0x1fu
 #define USB_REQ_TYPE_RECIPIENT_DEVICE    0x00u
 #define USB_REQ_TYPE_RECIPIENT_INTERFACE 0x01u
 #define USB_REQ_TYPE_RECIPIENT_ENDPOINT  0x02u
+#define USB_REQ_TYPE_RECIPIENT_MASK      0x1fu
 
 #define USB_DIR_OUT                      0x00u
 #define USB_DIR_IN                       0x80u

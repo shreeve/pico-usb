@@ -2,12 +2,14 @@
 
 #include "usb_common.h"
 
+typedef struct usb_descriptor               usb_descriptor_t;
 // ==[ PicoUSB ]===============================================================
 
 #include <stdio.h>                // For printf
 #include <string.h>               // For memcpy
 
 #include "pico/stdlib.h"          // Pico stdlib
+#include "pico/util/queue.h"      // A beautifully simple queue
 #include "hardware/regs/usb.h"    // USB hardware registers from pico-sdk
 #include "hardware/structs/usb.h" // USB hardware structs from pico-sdk
 #include "hardware/irq.h"         // For interrupt enable and numbers
@@ -24,7 +26,38 @@ static bool configured = false;
 #define PU_PACKED         __attribute__ ((packed))
 #define PU_WEAK           __attribute__ ((weak))
 
-// ==[ Transfers ]=============================================================
+// ==[ Event queue ]===========================================================
+
+enum {
+    EVENT_CONNECTION,
+    EVENT_TRANSFER,
+    EVENT_FUNCTION,
+};
+
+typedef struct {
+    uint8_t type;
+    uint8_t dev_addr;
+
+    union {
+        struct {
+            uint8_t speed;
+        } conn;
+
+        struct {
+            uint8_t ep_addr;
+            uint8_t result;
+            uint16_t len;
+        } xfer;
+
+        struct {
+            void (*call) (void *);
+
+// ==[ Helpers ]===============================================================
+
+PU_ALWAYS_INLINE static inline uint8_t dev_speed() {
+    return (usb_hw->sie_status & USB_SIE_STATUS_SPEED_BITS) \
+                              >> USB_SIE_STATUS_SPEED_LSB;
+}
 
 // Hex dump (mode: 0 = hex; 1 = hex + ascii; 2 = hex + ascii + no newline)
 void hexdump(const void* data, size_t size, uint mode) {
