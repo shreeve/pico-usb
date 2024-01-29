@@ -31,6 +31,11 @@
 #define MAKE_U16(x,y)    (((x) << 8) | ((y)     ))
 #define SWAP_U16(x)      (((x) >> 8) | ((x) << 8))
 
+#define hw_set_wait_set(reg, value, cycles, or_mask) \
+    reg = (value); \
+    busy_wait_at_least_cycles(cycles); \
+    reg = (value) | (or_mask);
+
 static bool configured = false;
 
 // ==[ Event queue ]===========================================================
