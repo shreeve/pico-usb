@@ -12,13 +12,13 @@
 #include <string.h>               // For memcpy
 
 #include "pico/stdlib.h"          // Pico stdlib
-#include "pico/util/queue.h"      // A beautifully simple queue
+#include "pico/util/queue.h"      // Multicore and IRQ safe queue
 #include "hardware/regs/usb.h"    // USB hardware registers from pico-sdk
 #include "hardware/structs/usb.h" // USB hardware structs from pico-sdk
-#include "hardware/irq.h"         // For interrupt enable and numbers
-#include "hardware/resets.h"      // For resetting the native USB controller
+#include "hardware/irq.h"         // Interrupts and definitions
+#include "hardware/resets.h"      // Resetting the native USB controller
 
-#include "usb_common.h"
+#include "usb_common.h"           // USB 2.0 definitions
 
 #define usb_hw_set   ((usb_hw_t *) hw_set_alias_untyped  (usb_hw))
 #define usb_hw_clear ((usb_hw_t *) hw_clear_alias_untyped(usb_hw))
