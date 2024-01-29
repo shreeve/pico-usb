@@ -18,19 +18,7 @@
 #include "hardware/irq.h"         // For interrupt enable and numbers
 #include "hardware/resets.h"      // For resetting the native USB controller
 
-// ==[ USB 2.0 ]===============================================================
-
 #include "usb_common.h"
-
-typedef struct usb_descriptor               usb_descriptor_t;
-typedef struct usb_device_descriptor        usb_device_descriptor_t;
-typedef struct usb_configuration_descriptor usb_configuration_descriptor_t;
-typedef struct usb_interface_descriptor     usb_interface_descriptor_t;
-typedef struct usb_endpoint_descriptor      usb_endpoint_descriptor_t;
-typedef struct usb_endpoint_descriptor_long usb_endpoint_descriptor_long_t;
-typedef struct usb_setup_packet             usb_setup_packet_t;
-
-// ==[ PicoUSB ]===============================================================
 
 #define usb_hw_set   ((usb_hw_t *) hw_set_alias_untyped  (usb_hw))
 #define usb_hw_clear ((usb_hw_t *) hw_clear_alias_untyped(usb_hw))
