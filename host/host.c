@@ -172,6 +172,17 @@ void isr_usbctrl() {
         // Show buffer status
         x = usb_hw->buf_status; printf("BUF\t| %032b 0x%08x\n", x, x);
 
+        // For now, we know it's EP0_IN... (we're cheating)
+        x = usbh_dpram->epx_buf_ctrl & USB_BUF_CTRL_LEN_MASK; // Buffer length
+
+        printf("Buffer status (%u bytes)\n", x);
+        if (x) {
+            printf("> Data");
+            hexdump(usbh_dpram->epx_data, x, 1);
+        } else {
+            printf("> ZLP\n");
+        }
+
         // hw_handle_buff_status();
 
         // Clear all buffers
