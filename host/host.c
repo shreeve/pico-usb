@@ -88,18 +88,18 @@ PU_ALWAYS_INLINE static inline uint8_t dev_speed() {
 
 
 
+enum {
+    USB_SIE_CTRL_BASE = USB_SIE_CTRL_VBUS_EN_BITS       // Supply VBUS to device
+                      | USB_SIE_CTRL_SOF_EN_BITS        // Enable full speed bus
+                      | USB_SIE_CTRL_KEEP_ALIVE_EN_BITS // Enable low speed bus
+                      | USB_SIE_CTRL_PULLDOWN_EN_BITS   // Enable devices to connect
+                      | USB_SIE_CTRL_EP0_INT_1BUF_BITS  // Interrupt on every buffer
+};
 
 
 }
 
 
-enum {
-    USB_SIE_CTRL_BASE = USB_SIE_CTRL_VBUS_EN_BITS       | // Supply VBUS to device
-                        USB_SIE_CTRL_SOF_EN_BITS        | // Enable full speed bus
-                        USB_SIE_CTRL_KEEP_ALIVE_EN_BITS | // Enable low speed bus
-                        USB_SIE_CTRL_PULLDOWN_EN_BITS   | // Enable devices to connect
-                        USB_SIE_CTRL_EP0_INT_1BUF_BITS    // Interrupt on every buffer
-};
 
 
 // ==[ Interrupt ]=============================================================
