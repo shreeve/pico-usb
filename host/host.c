@@ -118,7 +118,6 @@ enum {
                         USB_SIE_CTRL_EP0_INT_1BUF_BITS    // Interrupt on every buffer
 };
 
-}
 
 // ==[ Interrupt ]=============================================================
 
