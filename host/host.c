@@ -262,6 +262,21 @@ void usb_host_reset() {
 
 // ==[ Main ]==================================================================
 
+void start_enumeration() {
+    printf("Will start enumeration now...\n");
+
+    // Get device descriptor
+    usb_setup_packet_t request = {
+        .bmRequestType = USB_DIR_IN            |
+                         USB_REQ_TYPE_STANDARD |
+                         USB_REQ_TYPE_RECIPIENT_DEVICE,
+        .bRequest      = USB_REQUEST_GET_DESCRIPTOR,
+        .wValue        = USB_DT_DEVICE,
+        .wIndex        = 0,
+        .wLength       = sizeof(usb_setup_packet_t),
+    };
+}
+
 void puh_task() {
     static event_t event;
 
