@@ -3,6 +3,13 @@
 #include "usb_common.h"
 
 typedef struct usb_descriptor               usb_descriptor_t;
+typedef struct usb_device_descriptor        usb_device_descriptor_t;
+typedef struct usb_configuration_descriptor usb_configuration_descriptor_t;
+typedef struct usb_interface_descriptor     usb_interface_descriptor_t;
+typedef struct usb_endpoint_descriptor      usb_endpoint_descriptor_t;
+typedef struct usb_endpoint_descriptor_long usb_endpoint_descriptor_long_t;
+typedef struct usb_setup_packet             usb_setup_packet_t;
+
 // ==[ PicoUSB ]===============================================================
 
 #include <stdio.h>                // For printf
@@ -51,6 +58,13 @@ typedef struct {
 
         struct {
             void (*call) (void *);
+            void *arg;
+        } fn;
+    };
+} event_t;
+
+// static event_t event_struct, *event = &event_struct;
+static queue_t queue_struct, *queue = &queue_struct;
 
 // ==[ Helpers ]===============================================================
 
@@ -94,13 +108,7 @@ void hexdump(const void* data, size_t size, uint mode) {
     }
 }
 
-// ==[ Helpers ]===============================================================
-
-PU_ALWAYS_INLINE uint8_t dev_speed() {
-    return (usb_hw->sie_status & USB_SIE_STATUS_SPEED_BITS) \
-                              >> USB_SIE_STATUS_SPEED_LSB;
-}
-
+// ==[ Enumeration ]===========================================================
 
 enum {
     USB_SIE_CTRL_BASE = USB_SIE_CTRL_VBUS_EN_BITS       | // Supply VBUS to device
@@ -118,6 +126,7 @@ enum {
 void isr_usbctrl() {
     uint32_t ints = usb_hw->ints, x;
     uint16_t size = 0;
+    static event_t event;
 
     printf("────────┬───────────────────────────────────────────────────────────────────────\n");
     x = ints                    ; printf("IRQ\t│ %032b 0x%08x\n", x, x);
@@ -133,7 +142,11 @@ void isr_usbctrl() {
         uint8_t speed = dev_speed();
 
         if (speed) {
-            printf("Device connected\n");
+            // printf("Device connected\n");
+            event.type = EVENT_CONNECTION;
+            event.dev_addr = 0;
+            event.conn.speed = speed;
+            queue_add_blocking(queue, &event);
         } else {
             printf("Device disconnected\n");
         }
@@ -249,11 +262,44 @@ void usb_host_reset() {
 
 // ==[ Main ]==================================================================
 
+void puh_task() {
+    static event_t event;
+
+    if (queue_try_remove(queue, &event)) {
+        switch (event.type) {
+            case EVENT_CONNECTION:
+                printf("Device connected\n");
+                printf("Speed: %u\n", event.conn.speed);
+                start_enumeration();
+                break;
+
+            case EVENT_TRANSFER:
+                printf("Transfer complete\n");
+                printf("EP: %u\n", event.xfer.ep_addr);
+                printf("Result: %u\n", event.xfer.result);
+                printf("Length: %u\n", event.xfer.len);
+                break;
+
+            case EVENT_FUNCTION:
+                printf("Function call\n");
+                event.fn.call(event.fn.arg);
+                break;
+
+            default:
+                printf("Unknown event type\n");
+                break;
+        }
+    }
+}
+
 int main() {
     stdio_init_all();
     printf("\033[2J\033[H\n==[ USB host example]==\n\n");
     usb_host_reset();
 
-    // Everything is interrupt driven so just loop here
-    while (1) { tight_loop_contents(); }
+    queue_init(queue, sizeof(event_t), 64);
+
+    while (1) {
+        puh_task();
+    }
 }
