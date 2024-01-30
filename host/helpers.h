@@ -4,7 +4,7 @@ void hexdump(const void* data, size_t size, uint mode) {
     size_t i, j;
 
     for (i = 0; i < size; i += 16) {
-        printf("\t│ %08zx │ ", i); // Print the offset
+        printf("\t│ %04x │ ", i); // Print the offset
 
         // Print hex values
         for (j = 0; j < 16; j++) {
@@ -38,7 +38,7 @@ void bindump(uint8_t *str, uint32_t val) {
     uint32_t bit = 1 << 31u;
     size_t i;
 
-    printf("%s\t│          │ ", str);
+    printf("%s\t│      │ ", str);
 
     for (i = 0; i < 32; i++) {
         printf("%c", val & bit ? '1' : '0');
@@ -46,5 +46,5 @@ void bindump(uint8_t *str, uint32_t val) {
         if (i % 8 == 7) printf(" ");
     }
 
-    printf("             │ %08x\n", val);
+    printf("             │ 0x%08x\n", val);
 }
