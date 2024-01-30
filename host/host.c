@@ -112,7 +112,7 @@ void epx_cb(uint8_t *buf, uint16_t len) {
     printf("Inside the EPX callback...\n");
 }
 
-// Hardware specific endpoint
+// Hardware endpoint
 typedef struct usb_endpoint {
     usb_endpoint_descriptor_t *usb; // USB descriptor
     volatile uint32_t *ecr; // Endpoint control register
@@ -593,21 +593,9 @@ void usb_host_reset() {
 //   memset(dev->itf2drv, TUSB_INDEX_INVALID_8, sizeof(dev->itf2drv)); // invalid mapping
 //   memset(dev->ep2drv , TUSB_INDEX_INVALID_8, sizeof(dev->ep2drv )); // invalid mapping
 // }
-
-// TODO: Host reset...
 //   tu_memclr(&_dev0, sizeof(_dev0));
 //   tu_memclr(_usbh_devices, sizeof(_usbh_devices));
 //   tu_memclr(&_ctrl_xfer, sizeof(_ctrl_xfer));
-//
-//   for(uint8_t i=0; i<TOTAL_DEVICES; i++) { clear_device(&_usbh_devices[i]); }
-//
-//   // Class drivers
-//   for (uint8_t drv_id = 0; drv_id < TOTAL_DRIVER_COUNT; drv_id++) {
-//     usbh_class_driver_t const* driver = get_driver(drv_id);
-//     if (driver) driver->init();
-//   }
-//   _usbh_controller = controller_id;;
-//   hcd_int_enable(controller_id);
 
     // Reset controller
     reset_block       (RESETS_RESET_USBCTRL_BITS);
