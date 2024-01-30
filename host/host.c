@@ -20,6 +20,32 @@
 
 #include "usb_common.h"           // USB 2.0 definitions
 
+// ==[ Helpers ]===============================================================
+
+#include "helpers.h"
+
+#define MAKE_U16(x, y) (((x) << 8) | ((y)     ))
+#define SWAP_U16(x)    (((x) >> 8) | ((x) << 8))
+
+#define SDK_ALIGNED(bytes) __attribute__ ((aligned(bytes)))
+#define SDK_ALWAYS_INLINE  __attribute__ ((always_inline))
+#define SDK_PACKED         __attribute__ ((packed))
+#define SDK_WEAK           __attribute__ ((weak))
+
+SDK_ALWAYS_INLINE static inline bool is_host_mode() {
+    return (usb_hw->main_ctrl & USB_MAIN_CTRL_HOST_NDEVICE_BITS);
+}
+
+SDK_ALWAYS_INLINE static inline uint8_t dev_speed() {
+    return (usb_hw->sie_status & USB_SIE_STATUS_SPEED_BITS) \
+                              >> USB_SIE_STATUS_SPEED_LSB;
+}
+
+SDK_ALWAYS_INLINE static inline uint8_t line_state() {
+    return (usb_hw->sie_status & USB_SIE_STATUS_LINE_STATE_BITS) \
+                              >> USB_SIE_STATUS_LINE_STATE_LSB;
+}
+
 #define usb_hw_set   ((usb_hw_t *) hw_set_alias_untyped  (usb_hw))
 #define usb_hw_clear ((usb_hw_t *) hw_clear_alias_untyped(usb_hw))
 
@@ -27,14 +53,6 @@
     reg = (value); \
     busy_wait_at_least_cycles(cycles); \
     reg = (value) | (or_mask);
-
-#define MAKE_U16(x, y) (((x) << 8) | ((y)     ))
-#define SWAP_U16(x)    (((x) >> 8) | ((x) << 8))
-
-#define PU_ALIGNED(bytes) __attribute__ ((aligned(bytes)))
-#define PU_ALWAYS_INLINE  __attribute__ ((always_inline))
-#define PU_PACKED         __attribute__ ((packed))
-#define PU_WEAK           __attribute__ ((weak))
 
 // ==[ Event queue ]===========================================================
 
@@ -69,16 +87,16 @@ typedef struct {
 // static event_t event_struct, *event = &event_struct;
 static queue_t queue_struct, *queue = &queue_struct;
 
-// ==[ Helpers ]===============================================================
 
-#include "hexdump.h"
 
-PU_ALWAYS_INLINE static inline uint8_t dev_speed() {
-    return (usb_hw->sie_status & USB_SIE_STATUS_SPEED_BITS) \
-                              >> USB_SIE_STATUS_SPEED_LSB;
-}
+enum {
+    USB_SIE_CTRL_BASE = USB_SIE_CTRL_VBUS_EN_BITS       // Supply VBUS to device
+                      | USB_SIE_CTRL_SOF_EN_BITS        // Enable full speed bus
+                      | USB_SIE_CTRL_KEEP_ALIVE_EN_BITS // Enable low speed bus
+                      | USB_SIE_CTRL_PULLDOWN_EN_BITS   // Enable devices to connect
+                      | USB_SIE_CTRL_EP0_INT_1BUF_BITS  // Interrupt on every buffer
+};
 
-// ==[ Endpoints ]=============================================================
 
 // // Set up an endpoint's control register
 // void usb_setup_endpoint(const struct usb_endpoint *ep) {
@@ -107,14 +125,6 @@ PU_ALWAYS_INLINE static inline uint8_t dev_speed() {
 // }
 
 // ==[ Enumeration ]===========================================================
-
-enum {
-    USB_SIE_CTRL_BASE = USB_SIE_CTRL_VBUS_EN_BITS       // Supply VBUS to device
-                      | USB_SIE_CTRL_SOF_EN_BITS        // Enable full speed bus
-                      | USB_SIE_CTRL_KEEP_ALIVE_EN_BITS // Enable low speed bus
-                      | USB_SIE_CTRL_PULLDOWN_EN_BITS   // Enable devices to connect
-                      | USB_SIE_CTRL_EP0_INT_1BUF_BITS  // Interrupt on every buffer
-};
 
 // Get device descriptor
 void get_device_descriptor() {
@@ -171,16 +181,15 @@ uint32_t x;
     uint32_t bcr = USB_BUF_CTRL_LAST
                  | USB_BUF_CTRL_DATA1_PID
                  | USB_BUF_CTRL_SEL;
-    x = bcr; printf(" BCR\t│ %032b 0x%08x\n", x, x);
+    bindump(" BCR", bcr);
     hw_set_wait_set(usbh_dpram->epx_buf_ctrl, bcr, 12, USB_BUF_CTRL_AVAIL);
 
-    // Send the setup request
+    // Send the setup request // TODO: preamble (LS on FS)
     uint32_t scr = USB_SIE_CTRL_BASE              // Default SIE_CTRL bits
                  | USB_SIE_CTRL_SEND_SETUP_BITS   // Send a SETUP packet
            | (in ? USB_SIE_CTRL_RECEIVE_DATA_BITS // IN to host is receive
                  : USB_SIE_CTRL_SEND_DATA_BITS);  // OUT from host is send
-                                                  // TODO: preamble (LS on FS)
-    x = scr; printf(" SCR\t│ %032b 0x%08x\n", x, x);
+    bindump(" SCR", scr);
     hw_set_wait_set(usb_hw->sie_ctrl, scr, 12, USB_SIE_CTRL_START_TRANS_BITS);
 }
 
@@ -220,9 +229,6 @@ void start_enumeration() {
         | 0x180;                       // Data buffer offset
 
     get_device_descriptor();
-
-    // ==[ Send a ZLP, can't do here... we need to do after the XFER was completed... ]==
-
 }
 
 // ==[ Interrupt ]=============================================================
@@ -234,12 +240,12 @@ void isr_usbctrl() {
     static event_t event;
 
     printf("┌───────┬──────────────────────────────────────────────────────────────────────┐\n");
-    x = usb_hw->sof_rd          ; printf("│Frame\t│ %u\n", x);
-    x = ints                    ; printf("│IRQ\t│ %032b 0x%08x\n", x, x);
-    x = usb_hw->sie_status      ; printf("│SIE\t│ %032b 0x%08x\n", x, x);
-    x = usb_hw->dev_addr_ctrl   ; printf("│DEV\t│ %032b 0x%08x\n", x, x);
-    x = usbh_dpram->epx_ctrl    ; printf("│ECR\t│ %032b 0x%08x\n", x, x);
-    x = usbh_dpram->epx_buf_ctrl; printf("│BCR\t│ %032b 0x%08x\n", x, x);
+    printf("│Frame\t│ %u\n", usb_hw->sof_rd);
+    bindump("│IRQ", ints);
+    bindump("│SIE", usb_hw->sie_status);
+    bindump("│DEV", usb_hw->dev_addr_ctrl);
+    bindump("│ECR", usbh_dpram->epx_ctrl);
+    bindump("│BCR", usbh_dpram->epx_buf_ctrl);
 
     // Connection event (attach or detach)
     if (ints &  USB_INTS_HOST_CONN_DIS_BITS) {
@@ -277,7 +283,7 @@ void isr_usbctrl() {
         ints ^= USB_INTS_BUFF_STATUS_BITS;
 
         // Show buffer status
-        x = usb_hw->buf_status; printf("│BUF\t| %032b 0x%08x\n", x, x);
+        bindump("│BUF", usb_hw->buf_status);
 
         // For now, we know it's EP0_IN... (we're cheating)
         x = usbh_dpram->epx_buf_ctrl & USB_BUF_CTRL_LEN_MASK; // Buffer length
@@ -300,6 +306,27 @@ void isr_usbctrl() {
         ints ^= USB_INTS_TRANS_COMPLETE_BITS;
 
         printf("│ISR\t│ Transfer complete\n");
+
+        // uint32_t size = x & USB_BUF_CTRL_LEN_MASK; // Buffer length
+        // printf("Transfer complete (%u bytes)\n", size);
+
+        if (usb_hw->sie_ctrl & USB_SIE_CTRL_SEND_SETUP_BITS) {
+
+// TODO: Mark this as complete...
+//   uint8_t dev_addr = ep->dev_addr;
+//   uint8_t ep_addr = ep->ep_addr;
+//   uint xferred_len = ep->xferred_len;
+//   hw_endpoint_reset_transfer(ep);
+//   hcd_event_xfer_complete(dev_addr, ep_addr, xferred_len, xfer_result, true);
+
+            printf("│XSD\t│ Device connected\n");
+            event.type = EVENT_TRANSFER;
+            // TODO: Do we set the EP number, transferred length, and result?
+            event.xfer.ep_addr = 37;
+            event.xfer.result  = 42;
+            event.xfer.len     = 22;
+            queue_add_blocking(queue, &event); // TODO: How "quick" does this queue? Race condition?
+        }
 
         usb_hw_clear->sie_status = USB_SIE_STATUS_TRANS_COMPLETE_BITS;
         // hw_trans_complete();
@@ -380,7 +407,7 @@ void usb_host_reset() {
 
 // ==[ Main ]==================================================================
 
-void puh_task() {
+void usb_task() {
     static event_t event;
 
     if (queue_try_remove(queue, &event)) {
@@ -418,6 +445,6 @@ int main() {
     queue_init(queue, sizeof(event_t), 64);
 
     while (1) {
-        puh_task();
+        usb_task();
     }
 }
