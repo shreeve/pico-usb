@@ -594,10 +594,6 @@ void usb_host_reset() {
     memset(usb_hw    , 0, sizeof(*usb_hw    ));
     memset(usbh_dpram, 0, sizeof(*usbh_dpram));
 
-    // Setup endpoints
-    usb_setup_endpoint(&epx);
-    // usb_setup_endpoints();
-
     // Configure USB host controller
     usb_hw->muxing    = USB_USB_MUXING_TO_PHY_BITS                // Connect USB Phy
                       | USB_USB_MUXING_SOFTCON_BITS;              // TODO: What is this?
@@ -613,6 +609,13 @@ void usb_host_reset() {
                       | USB_INTE_HOST_RESUME_BITS                 // Device resumed
                       | USB_INTE_ERROR_DATA_SEQ_BITS              // Data error
                       | USB_INTE_ERROR_RX_TIMEOUT_BITS;           // Receive timeout
+
+    bindump(" IRQ", usb_hw->inte);
+
+    // Setup endpoints
+    usb_setup_endpoint(&epx);
+    // usb_setup_endpoints();
+    printf("\n");
 
     irq_set_enabled(USBCTRL_IRQ, true);
 }
