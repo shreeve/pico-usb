@@ -193,8 +193,7 @@ enum {
 //   uintptr_t     user_data;
 // };
 
-//   tuh_xfer_t xfer =
-//   {
+//   tuh_xfer_t xfer = {
 //     .daddr       = daddr,
 //     .ep_addr     = 0,
 //     .setup       = &request,
@@ -217,8 +216,7 @@ enum {
 //   bool const ret = tuh_control_xfer(&xfer);
 //
 //   // if blocking, user_data could be pointed to xfer_result
-//   if ( !complete_cb && user_data )
-//   {
+//   if ( !complete_cb && user_data ) {
 //     *((xfer_result_t*) user_data) = xfer.result;
 //   }
 
