@@ -89,6 +89,71 @@ static queue_t queue_struct, *queue = &queue_struct;
 
 // ==[ Endpoints ]=============================================================
 
+// CFG_TUH_MEM_SECTION struct {
+//   CFG_TUH_MEM_ALIGN tusb_control_request_t request;
+//   uint8_t* buffer;
+//   tuh_xfer_cb_t complete_cb;
+//   uintptr_t user_data;
+//
+//   uint8_t daddr;
+//   volatile uint8_t stage;
+//   volatile uint16_t actual_len;
+// } _ctrl_xfer;
+
+//   tuh_xfer_t xfer =
+//   {
+//     .daddr       = daddr,
+//     .ep_addr     = 0,
+//     .setup       = &request,
+//     .buffer      = buffer,
+//     .complete_cb = complete_cb,
+//     .user_data   = user_data
+//   };
+//
+//   bool const ret = tuh_control_xfer(&xfer);
+//
+//   // if blocking, user_data could be pointed to xfer_result
+//   if ( !complete_cb && user_data )
+//   {
+//     *((xfer_result_t*) user_data) = xfer.result;
+//   }
+
+// typedef enum {
+//   XFER_RESULT_SUCCESS = 0,
+//   XFER_RESULT_FAILED,
+//   XFER_RESULT_STALLED,
+//   XFER_RESULT_TIMEOUT,
+//   XFER_RESULT_INVALID
+// } xfer_result_t;
+
+// struct tuh_xfer_t {
+//   uint8_t daddr;
+//   uint8_t ep_addr;
+//   xfer_result_t result;
+//   uint32_t actual_len;      // excluding setup packet
+//   union {
+//     tusb_control_request_t const* setup; // setup packet pointer if control transfer
+//     uint32_t buflen;                     // expected length if not control transfer (not available in callback)
+//   };
+//   uint8_t*      buffer; // not available in callback if not control transfer
+//   tuh_xfer_cb_t complete_cb;
+//   uintptr_t     user_data;
+// };
+
+// NOTE: This is a single/global/static control transfer object
+// // Control transfers: since most controllers do not support multiple control transfers
+// // on multiple devices concurrently and control transfers are not used much except for
+// // enumeration, we will only execute control transfers one at a time.
+// CFG_TUSB_MEM_SECTION struct {
+//   tusb_control_request_t request TU_ATTR_ALIGNED(4);
+//   uint8_t* buffer;
+//   tuh_xfer_cb_t complete_cb;
+//   uintptr_t user_data;
+//
+//   uint8_t daddr;
+//   volatile uint8_t stage;
+//   volatile uint16_t actual_len;
+// } _ctrl_xfer;
 
 enum {
     USB_SIE_CTRL_BASE = USB_SIE_CTRL_VBUS_EN_BITS       // Supply VBUS to device
@@ -98,6 +163,95 @@ enum {
                       | USB_SIE_CTRL_EP0_INT_1BUF_BITS  // Interrupt on every buffer
 };
 
+// NOTE: SIE_CTRL
+//
+// 4 | STOP_TRANS   | Host: Stop transaction                 | SC
+// 3 | RECEIVE_DATA | Host: Receive transaction (IN to host) | RW
+// 2 | SEND_DATA    | Host: Send transaction (OUT from host) | RW
+// 1 | SEND_SETUP   | Host: Send Setup packet                | RW
+// 0 | START_TRANS  | Host: Start transaction                | SC
+
+// #define EP0_OUT_ADDR (USB_DIR_OUT | 0)
+// #define EP0_IN_ADDR  (USB_DIR_IN  | 0)
+//
+// typedef void (*usb_ep_handler)(uint8_t *buf, uint16_t len);
+//
+// void ep0_out_handler(uint8_t *buf, uint16_t len) {
+//     ; // Nothing to do
+//     // TODO: Find out when this is called...
+// }
+//
+// void ep0_in_handler(uint8_t *buf, uint16_t len) {
+//     // if (should_set_address) {
+//     //     usb_hw->dev_addr_ctrl = device_address; // Set hardware device address
+//     //     should_set_address = false;
+//     // } else {
+//     //     // Prepare for a ZLP from host on EP0_OUT
+//     //     usb_start_transfer(usb_get_endpoint(EP0_OUT_ADDR), NULL, 0);
+//     // }
+// }
+//
+// static const struct usb_endpoint_descriptor ep0_out = { // EP0, out to device
+//     .bLength          = sizeof(struct usb_endpoint_descriptor),
+//     .bDescriptorType  = USB_DT_ENDPOINT,
+//     .bEndpointAddress = EP0_OUT_ADDR,
+//     .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
+//     .wMaxPacketSize   = 64,
+//     .bInterval        = 0
+// };
+//
+// static const struct usb_endpoint_descriptor ep0_in = { // EP0, in to host
+//     .bLength          = sizeof(struct usb_endpoint_descriptor),
+//     .bDescriptorType  = USB_DT_ENDPOINT,
+//     .bEndpointAddress = EP0_IN_ADDR,
+//     .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
+//     .wMaxPacketSize   = 64,
+//     .bInterval        = 0
+// };
+//
+// struct usb_endpoint {
+//     usb_endpoint_descriptor_t *descriptor;
+//     usb_ep_handler handler;
+//
+//     volatile uint32_t *endpoint_control;
+//     volatile uint32_t *buffer_control;
+//     volatile uint8_t  *data_buffer;
+//
+//     uint8_t next_datapid; // Toggle DATA0/DATA1 each packet
+// };
+//
+// static struct usb_endpoint epx = {
+//     .descriptor       = &ep0_out,
+//     .handler          = NULL,
+//     .endpoint_control = &usbh_dpram->epx_ctrl,
+//     .buffer_control   = &usbh_dpram->epx_buf_ctrl,
+//     .data_buffer      = &usbh_dpram->epx_data[0],
+//     .next_datapid     = 1, // Starts with DATA1
+// };
+
+// struct usb_device {
+//     const struct usb_device_descriptor        *device_descriptor;
+//     const struct usb_configuration_descriptor *config_descriptor;
+//     const struct usb_interface_descriptor     *interface_descriptor;
+//     const unsigned char                       *lang_descriptor;
+//     const unsigned char                       **descriptor_strings;
+//     struct usb_endpoint                       endpoints[USB_NUM_ENDPOINTS];
+//
+//     // TODO: Integrate the stuff below...
+//     // uint8_t  ep0_size; ???
+//     // uint8_t  speed; // 0: unknown, 1: full, 2: high, 3: super
+//     // struct SDK_PACKED {
+//     //     uint8_t  speed; // 0: unknown, 1: full, 2: high, 3: super
+//     //     volatile uint8_t addressed  : 1; // After SET_ADDR
+//     //     volatile uint8_t connected  : 1; // After first transfer
+//     //     volatile uint8_t enumerating : 1; // enumeration is in progress, false if not connected or all interfaces are configured
+//     //     volatile uint8_t configured : 1; // After SET_CONFIG and all drivers are configured
+//     //     volatile uint8_t suspended  : 1; // Bus suspended
+//     // };
+//     // uint8_t itf2drv[CFG_TUH_INTERFACE_MAX];  // map interface number to driver (0xff is invalid)
+//     // uint8_t ep2drv[CFG_TUH_ENDPOINT_MAX][2]; // map endpoint to driver ( 0xff is invalid ), can use only 4-bit each
+//     // tu_edpt_state_t ep_status[CFG_TUH_ENDPOINT_MAX][2];
+// };
 
 // // Set up an endpoint's control register
 // void usb_setup_endpoint(const struct usb_endpoint *ep) {
@@ -144,15 +298,14 @@ void get_device_descriptor() {
     printf("< Setup");
     hexdump(&request, sizeof(request), 1);
 
+// epx.descriptor = in ? &ep0_in : &ep0_out;
+
     // Pluck from the request
     bool in = request.bmRequestType & USB_DIR_IN;
     uint16_t len = request.wLength;
 
     // Execute the transfer
     usb_hw->dev_addr_ctrl = (uint32_t) 0; // NOTE: 19:16=ep_num, 6:0=dev_addr
-
-// Fix this later...
-uint32_t x;
 
     // Endpoint control bits (No EP0, except for IRQ control via SIE_CTRL)
     // #define EP_CTRL_ENABLE_BITS (1u << 31u)
@@ -184,6 +337,26 @@ uint32_t x;
                  | USB_BUF_CTRL_SEL;
     bindump(" BCR", bcr);
     hw_set_wait_set(usbh_dpram->epx_buf_ctrl, bcr, 12, USB_BUF_CTRL_AVAIL);
+
+//   if ( ep == &epx ) {
+//     hw_endpoint_xfer_start(ep, buffer, buflen);
+//
+//     // Assumes you have set up buffer control, endpoint control etc
+//     // for host we have to initiate the transfer
+//     usb_hw->dev_addr_ctrl = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB));
+//
+//     uint32_t flags = USB_SIE_CTRL_START_TRANS_BITS | SIE_CTRL_BASE |
+//                      (ep_dir ? USB_SIE_CTRL_RECEIVE_DATA_BITS : USB_SIE_CTRL_SEND_DATA_BITS) |
+//                      (need_pre(dev_addr) ? USB_SIE_CTRL_PREAMBLE_EN_BITS : 0);
+//     // START_TRANS bit on SIE_CTRL seems to exhibit the same behavior as the AVAILABLE bit
+//     // described in RP2040 Datasheet, release 2.1, section "4.1.2.5.1. Concurrent access".
+//     // We write everything except the START_TRANS bit first, then wait some cycles.
+//     usb_hw->sie_ctrl = flags & ~USB_SIE_CTRL_START_TRANS_BITS;
+//     busy_wait_at_least_cycles(12);
+//     usb_hw->sie_ctrl = flags;
+//   } else {
+//     hw_endpoint_xfer_start(ep, buffer, buflen);
+//   }
 
     // Send the setup request // TODO: preamble (LS on FS)
     uint32_t scr = USB_SIE_CTRL_BASE              // Default SIE_CTRL bits
@@ -236,7 +409,7 @@ void start_enumeration() {
 
 // Interrupt handler
 void isr_usbctrl() {
-    volatile uint32_t ints = usb_hw->ints, x;
+    volatile uint32_t ints = usb_hw->ints;
     uint16_t size = 0;
     static event_t event;
 
@@ -287,16 +460,67 @@ void isr_usbctrl() {
         bindump("│BUF", usb_hw->buf_status);
 
         // For now, we know it's EP0_IN... (we're cheating)
-        x = usbh_dpram->epx_buf_ctrl & USB_BUF_CTRL_LEN_MASK; // Buffer length
+        uint8_t len = usbh_dpram->epx_buf_ctrl & USB_BUF_CTRL_LEN_MASK;
 
-        if (x) {
+        if (len) {
             printf("│> Data");
-            hexdump(usbh_dpram->epx_data, x, 1);
+            hexdump(usbh_dpram->epx_data, len, 1);
         } else {
             printf("│> ZLP\n");
         }
 
-        // hw_handle_buff_status();
+// static void __tusb_irq_path_func(hw_handle_buff_status)()
+// {
+//   uint32_t remaining_buffers = usb_hw->buf_status;
+//   pico_trace("buf_status 0x%08x\n", remaining_buffers);
+//
+//   // Check EPX first
+//   uint bit = 0b1;
+//   if ( remaining_buffers & bit )
+//   {
+//     remaining_buffers &= ~bit;
+//     struct hw_endpoint * ep = &epx;
+//
+//     uint32_t ep_ctrl = *ep->endpoint_control;
+//     if ( ep_ctrl & EP_CTRL_DOUBLE_BUFFERED_BITS )
+//     {
+//       TU_LOG(3, "Double Buffered: ");
+//     }
+//     else
+//     {
+//       TU_LOG(3, "Single Buffered: ");
+//     }
+//     TU_LOG_HEX(3, ep_ctrl);
+//
+//     _handle_buff_status_bit(bit, ep);
+//   }
+//
+//   // Check "interrupt" (asynchronous) endpoints for both IN and OUT
+//   for ( uint i = 1; i <= USB_HOST_INTERRUPT_ENDPOINTS && remaining_buffers; i++ )
+//   {
+//     // EPX is bit 0 & 1
+//     // IEP1 IN  is bit 2
+//     // IEP1 OUT is bit 3
+//     // IEP2 IN  is bit 4
+//     // IEP2 OUT is bit 5
+//     // IEP3 IN  is bit 6
+//     // IEP3 OUT is bit 7
+//     // etc
+//     for ( uint j = 0; j < 2; j++ )
+//     {
+//       bit = 1 << (i * 2 + j);
+//       if ( remaining_buffers & bit )
+//       {
+//         remaining_buffers &= ~bit;
+//         _handle_buff_status_bit(bit, &ep_pool[i]);
+//       }
+//     }
+//   }
+//
+//   if ( remaining_buffers )
+//   {
+//     panic("Unhandled buffer %d\n", remaining_buffers);
+//   }
 
         // Clear all buffers
         usb_hw_clear->buf_status = (uint32_t) ~0;
@@ -307,9 +531,6 @@ void isr_usbctrl() {
         ints ^= USB_INTS_TRANS_COMPLETE_BITS;
 
         printf("│ISR\t│ Transfer complete\n");
-
-        // uint32_t size = x & USB_BUF_CTRL_LEN_MASK; // Buffer length
-        // printf("Transfer complete (%u bytes)\n", size);
 
         if (usb_hw->sie_ctrl & USB_SIE_CTRL_SEND_SETUP_BITS) {
 
@@ -326,7 +547,7 @@ void isr_usbctrl() {
             event.xfer.ep_addr = 37;
             event.xfer.result  = 42;
             event.xfer.len     = 22;
-            queue_add_blocking(queue, &event); // TODO: How "quick" does this queue? Race condition?
+            queue_add_blocking(queue, &event); // TODO: How "quick" is this queue? Race condition?
         }
 
         usb_hw_clear->sie_status = USB_SIE_STATUS_TRANS_COMPLETE_BITS;
@@ -373,6 +594,22 @@ void isr_usbctrl() {
 
 // Reset USB host
 void usb_host_reset() {
+
+// TODO: Host reset...
+//   // Device
+//   tu_memclr(&_dev0, sizeof(_dev0));
+//   tu_memclr(_usbh_devices, sizeof(_usbh_devices));
+//   tu_memclr(&_ctrl_xfer, sizeof(_ctrl_xfer));
+//
+//   for(uint8_t i=0; i<TOTAL_DEVICES; i++) { clear_device(&_usbh_devices[i]); }
+//
+//   // Class drivers
+//   for (uint8_t drv_id = 0; drv_id < TOTAL_DRIVER_COUNT; drv_id++) {
+//     usbh_class_driver_t const* driver = get_driver(drv_id);
+//     if (driver) driver->init();
+//   }
+//   _usbh_controller = controller_id;;
+//   hcd_int_enable(controller_id);
 
     // Reset controller
     reset_block       (RESETS_RESET_USBCTRL_BITS);
@@ -449,3 +686,78 @@ int main() {
         usb_task();
     }
 }
+
+// ==[ Done ]==================================================================
+
+// #include "hardware/sync.h" // For __dmb()
+
+// TODO: Class drivers...
+// static usbh_class_driver_t const usbh_class_drivers[] = {
+//     #if CFG_TUH_CDC
+//     {
+//         DRIVER_NAME("CDC")
+//         .init       = cdch_init,
+//         .open       = cdch_open,
+//         .set_config = cdch_set_config,
+//         .xfer_cb    = cdch_xfer_cb,
+//         .close      = cdch_close
+
+// static void clear_device(usbh_device_t* dev) {
+//   tu_memclr(dev, sizeof(usbh_device_t));
+//   memset(dev->itf2drv, TUSB_INDEX_INVALID_8, sizeof(dev->itf2drv)); // invalid mapping
+//   memset(dev->ep2drv , TUSB_INDEX_INVALID_8, sizeof(dev->ep2drv )); // invalid mapping
+// }
+
+// NOTE: Endpoint API
+// // Submit a transfer, when complete hcd_event_xfer_complete() must be invoked
+// bool hcd_edpt_xfer(uint8_t rhport, uint8_t daddr, uint8_t ep_addr, uint8_t * buffer, uint16_t buflen);
+//
+// // Abort a queued transfer. Note: it can only abort transfer that has not been started
+// // Return true if a queued transfer is aborted, false if there is no transfer to abort
+// bool hcd_edpt_abort_xfer(uint8_t rhport, uint8_t dev_addr, uint8_t ep_addr);
+//
+// // Submit a special transfer to send 8-byte Setup Packet, when complete hcd_event_xfer_complete() must be invoked
+// bool hcd_setup_send(uint8_t rhport, uint8_t daddr, uint8_t const setup_packet[8]);
+//
+// // clear stall, data toggle is also reset to DATA0
+// bool hcd_edpt_clear_stall(uint8_t rhport, uint8_t dev_addr, uint8_t ep_addr);
+
+// Buffer for preparing output to send to host
+// static uint8_t ep0_buf[64];
+
+// ==[ Interrupt ]=============================================================
+
+// AVAILABLE bit   => datasheet page 383 says to wait 1 usb_clk cycle
+// START_TRANS bit => datasheet page 390 says to wait 2 usb_clk cycles
+
+// Cycles to wait: usb_cycles * cpu_clk / usb_clk
+// 2 cycles * 133MHz / 48MHz = 5.5833 cycles =>  6 cycles # ((133-1)/48+1)*2 => 6
+// 2 cycles * 125MHz / 48MHz = 5.3333 cycles =>  6 cycles # ((125-1)/48+1)*2 => 6
+// 1 cycle  * 133MHz / 48MHz = 2.7708 cycles =>  3 cycles # ((133-1)/48+1)*1 => 3
+// 1 cycle  * 576MHz / 48MHz = 12     cycles => 12 cycles # ((576-1)/48+1)*1 => 12
+// 2 cycles * 576MHz / 48MHz = 24     cycles => 24 cycles # ((576-1)/48+1)*2 => 24
+
+// Each one takes 1 cycle and wastes 1 cycle, so 2 cycles * 6 = 12 cycles total
+// __asm volatile (
+//        "b 1f\n"
+//     "1: b 1f\n"
+//     "1: b 1f\n"
+//     "1: b 1f\n"
+//     "1: b 1f\n"
+//     "1: b 1f\n"
+//     "1:\n"
+//     : : : "memory"
+// );
+
+// TinyUSB comment: "We don't need to delay in host mode, since host is in charge".
+// Explanation... if this many cycles are going to pass anyway as we monkey around
+// with the USB hardware, then we might as well wait for them to pass before and
+// we might not even need to wait!
+
+// static uint8_t _usbh_ctrl_buf[CFG_TUH_ENUMERATION_BUFSIZE];
+
+// // Could be a nice way to delay a bit...
+// uint32_t start;;
+// printf("Frame 1: %u\n", start = usb_hw->sof_rd);
+// while (usb_hw->sof_rd - start < 500) { tight_loop_contents(); }
+// printf("Frame 2: %u\n", usb_hw->sof_rd);
