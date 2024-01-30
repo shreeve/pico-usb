@@ -94,70 +94,67 @@ static queue_t queue_struct, *queue = &queue_struct;
 
 // ==[ Endpoints ]=============================================================
 
-// #define EP0_OUT_ADDR (USB_DIR_OUT | 0)
-// #define EP0_IN_ADDR  (USB_DIR_IN  | 0)
-//
-// static usb_endpoint_descriptor_t ep0_both = {
-//     .bLength          = sizeof(struct usb_endpoint_descriptor),
-//     .bDescriptorType  = USB_DT_ENDPOINT,
-//     .bEndpointAddress = EP0_OUT_ADDR, // Shared for IN and OUT
-//     .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
-//     .wMaxPacketSize   = 64,
-//     .bInterval        = 0
-// };
-//
-// typedef void (*usb_ep_handler)(uint8_t *buf, uint16_t len);
-//
-// typedef struct usb_endpoint {
-//     usb_endpoint_descriptor_t *descriptor;
-//     usb_ep_handler handler;
-//
-//     volatile uint32_t *endpoint_control;
-//     volatile uint32_t *buffer_control;
-//     volatile uint8_t  *data_buffer;
-//
-//     uint8_t next_datapid; // Toggle DATA0/DATA1 each packet
-// } usb_endpoint_t;
-//
-// // TODO: Find out if and when this is called...
-// void epx_handler(uint8_t *buf, uint16_t len) {
-//     ; // Nothing to do
-// }
-//
-// static usb_endpoint_t epx = {
-//     .descriptor       = &ep0_both,
-//     .handler          = epx_handler,
-//     .endpoint_control = &usbh_dpram->epx_ctrl,
-//     .buffer_control   = &usbh_dpram->epx_buf_ctrl,
-//     .data_buffer      = &usbh_dpram->epx_data[0],
-//     .next_datapid     = 1, // Starts with DATA1
-// };
-//
-// // Set up an endpoint's control register
-// void usb_setup_endpoint(usb_endpoint_t *ep) {
-//
-//     // // Grok the desired endpoint
-//     // uint8_t ep_addr = ep->descriptor->bEndpointAddress;
-//     // uint8_t ep_num = ep_addr & 0x0f;
-//     // bool in = ep_addr & USB_DIR_IN;
-//     // printf("Initialized EP%d_%s (0x%02x) with buffer address 0x%p\n",
-//     //        ep_num, in ? "IN " : "OUT", ep_addr, ep->data_buffer);
-//
-//     // Set ep_ctrl register for this endpoint (skip EP0 since it uses SIE_CTRL)
-//     if (ep->endpoint_control) {
-//         uint32_t type = ep->descriptor->bmAttributes << EP_CTRL_BUFFER_TYPE_LSB;
-//         uint32_t offset = ((uint32_t) ep->data_buffer) ^ ((uint32_t) usbh_dpram);
-//         uint32_t interval = ep->descriptor->bInterval;
-//         if (interval) {
-//             interval = (interval - 1) << EP_CTRL_HOST_INTERRUPT_INTERVAL_LSB;
-//         }
-//         *ep->endpoint_control = EP_CTRL_ENABLE_BITS          | // Enable EP
-//                                 EP_CTRL_INTERRUPT_PER_BUFFER | // One IRQ per
-//                                 type     | // Control, iso, bulk, or interrupt
-//                                 interval | // Interrupt interval in ms
-//                                 offset   ; // Address base offset in DSPRAM
-//     }
-// }
+#define EP0_OUT_ADDR (USB_DIR_OUT | 0)
+#define EP0_IN_ADDR  (USB_DIR_IN  | 0)
+
+static usb_endpoint_descriptor_t ep0_both = {
+    .bLength          = sizeof(struct usb_endpoint_descriptor),
+    .bDescriptorType  = USB_DT_ENDPOINT,
+    .bEndpointAddress = EP0_OUT_ADDR, // Can be IN and OUT
+    .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
+    .wMaxPacketSize   = 64,
+    .bInterval        = 0
+};
+
+typedef void (*usb_endpoint_cb)(uint8_t *buf, uint16_t len);
+
+typedef struct usb_endpoint {
+    usb_endpoint_descriptor_t *usb; // USB descriptor
+    volatile uint32_t *ecr; // Endpoint control register
+    volatile uint32_t *bcr; // Buffer control register
+    volatile uint8_t *buf; // Data buffer
+    uint8_t pid; // Toggle DATA0/DATA1 each packet
+    usb_endpoint_cb cb;
+} usb_endpoint_t;
+
+void epx_cb(uint8_t *buf, uint16_t len) {
+    printf("Inside the EPX callback...\n");
+}
+
+// Hardware aware endpoint structure
+static usb_endpoint_t epx = {
+    .usb = &ep0_both,
+    .ecr = &usbh_dpram->epx_ctrl,
+    .bcr = &usbh_dpram->epx_buf_ctrl,
+    .buf = &usbh_dpram->epx_data[0],
+    .pid = 1, // Starts with DATA1
+    .cb  = epx_cb,
+};
+
+// Set up an endpoint's control register
+void usb_setup_endpoint(usb_endpoint_t *ep) {
+    if (!ep || !ep->ecr) return;
+
+    // Determine configuration
+    uint32_t type = ep->usb->bmAttributes;
+    uint32_t ms = ep->usb->bInterval;
+    uint32_t interval_lsb = EP_CTRL_HOST_INTERRUPT_INTERVAL_LSB;
+    uint32_t offset = ((uint32_t) ep->buf) ^ ((uint32_t) usbh_dpram);
+
+    // Summarize endpoint configuration
+    uint8_t ep_addr = ep->usb->bEndpointAddress;
+    uint8_t ep_num = ep_addr & 0x0f;
+    bool in = ep_addr & USB_DIR_IN;
+    printf("Setup EP%d_%s (0x%02x) at buffer offset 0x%p\n",
+           ep_num, in ? "IN " : "OUT", ep_addr, ep->buf);
+
+    // Set the endpoint control register
+    *ep->ecr = EP_CTRL_ENABLE_BITS               // Endpoint enabled
+             | EP_CTRL_INTERRUPT_PER_BUFFER      // One interrupt per buffer
+             | type << EP_CTRL_BUFFER_TYPE_LSB   // Transfer type
+             | (ms ? ms - 1 : 0) << interval_lsb // Interrupt interval in ms
+             | offset;                           // Data buffer offset
+}
 
 // ==[ Transfers ]=============================================================
 
@@ -384,13 +381,6 @@ void start_enumeration() {
 
 // static uint8_t _usbh_ctrl_buf[CFG_TUH_ENUMERATION_BUFSIZE];
 
-    // EPX setup (do earlier)
-    usbh_dpram->epx_ctrl =
-          EP_CTRL_ENABLE_BITS          // Enable EP
-        | EP_CTRL_INTERRUPT_PER_BUFFER // One IRQ per
-        | USB_TRANSFER_TYPE_CONTROL << EP_CTRL_BUFFER_TYPE_LSB // Control transfer
-        | 0x180;                       // Data buffer offset
-
     get_device_descriptor();
 }
 
@@ -469,7 +459,7 @@ void isr_usbctrl() {
 //     remaining_buffers &= ~bit;
 //     struct hw_endpoint * ep = &epx;
 //
-//     uint32_t ep_ctrl = *ep->endpoint_control;
+//     uint32_t ep_ctrl = *ep->ecr;
     // if ( ep_ctrl & EP_CTRL_DOUBLE_BUFFERED_BITS ) {
     //   TU_LOG(3, "Double Buffered: ");
     // } else {
@@ -648,7 +638,7 @@ void usb_host_reset() {
     memset(usbh_dpram, 0, sizeof(*usbh_dpram));
 
     // Setup endpoints
-    // usb_setup_endpoint(&epx);
+    usb_setup_endpoint(&epx);
     // usb_setup_endpoints();
 
     // Configure USB host controller
