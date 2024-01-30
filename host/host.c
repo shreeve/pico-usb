@@ -108,6 +108,11 @@ static usb_endpoint_descriptor_t ep0_both = {
 
 typedef void (*usb_endpoint_cb)(uint8_t *buf, uint16_t len);
 
+void epx_cb(uint8_t *buf, uint16_t len) {
+    printf("Inside the EPX callback...\n");
+}
+
+// Hardware specific endpoint
 typedef struct usb_endpoint {
     usb_endpoint_descriptor_t *usb; // USB descriptor
     volatile uint32_t *ecr; // Endpoint control register
@@ -117,11 +122,7 @@ typedef struct usb_endpoint {
     usb_endpoint_cb cb;
 } usb_endpoint_t;
 
-void epx_cb(uint8_t *buf, uint16_t len) {
-    printf("Inside the EPX callback...\n");
-}
-
-// Hardware aware endpoint structure
+// Create our shared EPX endpoint
 static usb_endpoint_t epx = {
     .usb = &ep0_both,
     .ecr = &usbh_dpram->epx_ctrl,
@@ -159,21 +160,21 @@ void usb_setup_endpoint(usb_endpoint_t *ep) {
 // ==[ Transfers ]=============================================================
 
 enum {
-    USB_SIE_CTRL_BASE = USB_SIE_CTRL_VBUS_EN_BITS       // Supply VBUS to device
-                      | USB_SIE_CTRL_SOF_EN_BITS        // Enable full speed bus
-                      | USB_SIE_CTRL_KEEP_ALIVE_EN_BITS // Enable low speed bus
-                      | USB_SIE_CTRL_PULLDOWN_EN_BITS   // Enable devices to connect
-                      | USB_SIE_CTRL_EP0_INT_1BUF_BITS  // Interrupt on every buffer
+    USB_SIE_CTRL_BASE = USB_SIE_CTRL_VBUS_EN_BITS       // Supply VBUS
+                      | USB_SIE_CTRL_SOF_EN_BITS        // Enable full speed
+                      | USB_SIE_CTRL_KEEP_ALIVE_EN_BITS // Enable low speed
+                      | USB_SIE_CTRL_PULLDOWN_EN_BITS   // Allow connections
+                      | USB_SIE_CTRL_EP0_INT_1BUF_BITS  // Interrupt per buffer
 };
 
-// NOTE: This is a single/global/static control transfer object
-// Control transfers: since most controllers do not support multiple control transfers
-// on multiple devices concurrently and control transfers are not used much except for
-// enumeration, we will only execute control transfers one at a time.
+// NOTE: This is a single/global/static control transfer object.
+// Control transfers: since most controllers do not support multiple control
+// transfers on multiple devices concurrently and control transfers are mainly
+// used for enumeration, we will only execute control transfers one at a time.
 
 // Submit a transfer and, when complete, push an EVENT_TRANSFER completed event
-// Abort a transfer (only if it has not been started), return true if queue xfer aborted
-// Send a special SETUP transfer and, when complete, push an EVENT_TRANSFER completed event
+// Abort a transfer, only if not yet started. Return true if queue xfer aborted
+// Send a SETUP transfer. When complete, push an EVENT_TRANSFER completed event
 // Clear a stall and toggle data PID back to DATA0
 
 // struct tuh_xfer_t {
@@ -273,27 +274,6 @@ void get_device_descriptor() {
     // Pluck from the request
     bool in = request.bmRequestType & USB_DIR_IN;
     uint16_t len = request.wLength;
-
-    // Endpoint control bits (No EP0, except for IRQ control via SIE_CTRL)
-    // #define EP_CTRL_ENABLE_BITS (1u << 31u)
-    // #define EP_CTRL_DOUBLE_BUFFERED_BITS (1u << 30)
-    // #define EP_CTRL_INTERRUPT_PER_BUFFER (1u << 29)
-    // #define EP_CTRL_INTERRUPT_PER_DOUBLE_BUFFER (1u << 28)
-    // #define EP_CTRL_INTERRUPT_ON_NAK (1u << 16)
-    // #define EP_CTRL_INTERRUPT_ON_STALL (1u << 17)
-    // #define EP_CTRL_BUFFER_TYPE_LSB 26u
-    // #define EP_CTRL_HOST_INTERRUPT_INTERVAL_LSB 16u
-
-    // Buffer control bits (all EPs are treated the same)
-    // #define USB_BUF_CTRL_FULL      0x00008000u
-    // #define USB_BUF_CTRL_LAST      0x00004000u
-    // #define USB_BUF_CTRL_DATA0_PID 0x00000000u
-    // #define USB_BUF_CTRL_DATA1_PID 0x00002000u
-    // #define USB_BUF_CTRL_SEL       0x00001000u
-    // #define USB_BUF_CTRL_STALL     0x00000800u
-    // #define USB_BUF_CTRL_AVAIL     0x00000400u
-    // #define USB_BUF_CTRL_LEN_MASK  0x000003FFu
-    // #define USB_BUF_CTRL_LEN_LSB   0
 
     // Execute the transfer
 // usb_hw->dev_addr_ctrl = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB)); // NOTE: 19:16=ep_num, 6:0=dev_addr
