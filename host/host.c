@@ -288,20 +288,18 @@ void get_device_descriptor() {
     // Values here are used on the IN transaction of the control transfer
     uint32_t bcr = USB_BUF_CTRL_LAST
                  | USB_BUF_CTRL_DATA1_PID
-    bindump(" BCR", bcr);
-    hw_set_settle(usbh_dpram->epx_buf_ctrl, bcr, USB_BUF_CTRL_AVAIL);
-    // hw_set_wait_set(usbh_dpram->epx_buf_ctrl, bcr, 12, USB_BUF_CTRL_AVAIL);
                  | USB_BUF_CTRL_SEL
                  | len;
+    hw_set_wait_set(usbh_dpram->epx_buf_ctrl, bcr, 12, USB_BUF_CTRL_AVAIL);
+    bindump(" BCR", bcr | USB_BUF_CTRL_AVAIL);
 
     // Send the setup request // TODO: preamble (LS on FS)
     uint32_t scr = USB_SIE_CTRL_BASE              // Default SIE_CTRL bits
                  | USB_SIE_CTRL_SEND_SETUP_BITS   // Send a SETUP packet
            | (in ? USB_SIE_CTRL_RECEIVE_DATA_BITS // IN to host is receive
                  : USB_SIE_CTRL_SEND_DATA_BITS);  // OUT from host is send
-    bindump(" SCR", scr);
     hw_set_settle(usb_hw->sie_ctrl, scr, USB_SIE_CTRL_START_TRANS_BITS);
-    // hw_set_wait_set(usb_hw->sie_ctrl, scr, 12, USB_SIE_CTRL_START_TRANS_BITS);
+    bindump(" SCR", scr | USB_SIE_CTRL_START_TRANS_BITS);
 }
 
 // AVAILABLE bit   => datasheet page 383 says to wait 1 usb_clk cycle
