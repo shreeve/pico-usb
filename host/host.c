@@ -155,6 +155,8 @@ void usb_setup_endpoint(struct hw_endpoint *ep) {
              | type << EP_CTRL_BUFFER_TYPE_LSB   // Transfer type
              | (ms ? ms - 1 : 0) << interval_lsb // Interrupt interval in ms
              | offset;                           // Data buffer offset
+
+    bindump(" ECR", *ep->ecr);
 }
 
 // ==[ Transfers ]=============================================================
