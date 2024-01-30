@@ -575,6 +575,7 @@ void isr_usbctrl() {
 
 // Reset USB host
 void usb_host_reset() {
+    printf("USB host reset\n");
 
 // static void clear_device(usbh_device_t* dev) {
 //   tu_memclr(dev, sizeof(usbh_device_t));
@@ -613,7 +614,6 @@ void usb_host_reset() {
                       | USB_INTE_ERROR_DATA_SEQ_BITS              // Data error
                       | USB_INTE_ERROR_RX_TIMEOUT_BITS;           // Receive timeout
 
-    printf("USB host reset\n");
     irq_set_enabled(USBCTRL_IRQ, true);
 }
 
