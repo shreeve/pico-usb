@@ -38,13 +38,13 @@ void bindump(uint8_t *str, uint32_t val) {
     uint32_t bit = 1 << 31u;
     size_t i;
 
-    printf("%s\t│ ", str);
+    printf("%s\t│ %08x │ ", str, val);
 
     for (i = 0; i < 32; i++) {
         printf("%c", val & bit ? '1' : '0');
         bit >>= 1u;
-        if (i % 4 == 7) printf(" ");
+        if (i % 8 == 7) printf(" ");
     }
 
-    printf(" │ 0x%08x\n", val);
+    printf("\n");
 }
