@@ -87,6 +87,7 @@ typedef struct {
 // static event_t event_struct, *event = &event_struct;
 static queue_t queue_struct, *queue = &queue_struct;
 
+// ==[ Endpoints ]=============================================================
 
 
 enum {
