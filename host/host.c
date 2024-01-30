@@ -404,6 +404,10 @@ void isr_usbctrl() {
     uint16_t size = 0;
     static event_t event;
 
+    // printf("┌───────┬──────────────────────────────────┐\n");
+    // printf("│Frame\t│ %4u                             │\n", usb_hw->sof_rd);
+    // printf("└───────┴──────────────────────────────────┘\n");
+
     printf("┌───────┬──────────────────────────────────────────────────────────────────────┐\n");
     printf("│Frame\t│ %u\n", usb_hw->sof_rd);
     bindump("│IRQ", ints);
