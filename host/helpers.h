@@ -38,7 +38,7 @@ void bindump(uint8_t *str, uint32_t val) {
     uint32_t bit = 1 << 31u;
     size_t i;
 
-    printf("%s\t│ %08x │ ", str, val);
+    printf("%s\t│          │ ", str);
 
     for (i = 0; i < 32; i++) {
         printf("%c", val & bit ? '1' : '0');
@@ -46,5 +46,5 @@ void bindump(uint8_t *str, uint32_t val) {
         if (i % 8 == 7) printf(" ");
     }
 
-    printf("\n");
+    printf("             │ %08x\n", val);
 }
