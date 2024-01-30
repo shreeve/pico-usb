@@ -23,20 +23,18 @@
 #define usb_hw_set   ((usb_hw_t *) hw_set_alias_untyped  (usb_hw))
 #define usb_hw_clear ((usb_hw_t *) hw_clear_alias_untyped(usb_hw))
 
-#define PU_ALIGNED(bytes) __attribute__ ((aligned(bytes)))
-#define PU_ALWAYS_INLINE  __attribute__ ((always_inline))
-#define PU_PACKED         __attribute__ ((packed))
-#define PU_WEAK           __attribute__ ((weak))
-
-#define MAKE_U16(x,y)    (((x) << 8) | ((y)     ))
-#define SWAP_U16(x)      (((x) >> 8) | ((x) << 8))
-
 #define hw_set_wait_set(reg, value, cycles, or_mask) \
     reg = (value); \
     busy_wait_at_least_cycles(cycles); \
     reg = (value) | (or_mask);
 
-static bool configured = false;
+#define MAKE_U16(x, y) (((x) << 8) | ((y)     ))
+#define SWAP_U16(x)    (((x) >> 8) | ((x) << 8))
+
+#define PU_ALIGNED(bytes) __attribute__ ((aligned(bytes)))
+#define PU_ALWAYS_INLINE  __attribute__ ((always_inline))
+#define PU_PACKED         __attribute__ ((packed))
+#define PU_WEAK           __attribute__ ((weak))
 
 // ==[ Event queue ]===========================================================
 
