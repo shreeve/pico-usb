@@ -288,10 +288,11 @@ void get_device_descriptor() {
     // Values here are used on the IN transaction of the control transfer
     uint32_t bcr = USB_BUF_CTRL_LAST
                  | USB_BUF_CTRL_DATA1_PID
-                 | USB_BUF_CTRL_SEL;
     bindump(" BCR", bcr);
     hw_set_settle(usbh_dpram->epx_buf_ctrl, bcr, USB_BUF_CTRL_AVAIL);
     // hw_set_wait_set(usbh_dpram->epx_buf_ctrl, bcr, 12, USB_BUF_CTRL_AVAIL);
+                 | USB_BUF_CTRL_SEL
+                 | len;
 
     // Send the setup request // TODO: preamble (LS on FS)
     uint32_t scr = USB_SIE_CTRL_BASE              // Default SIE_CTRL bits
