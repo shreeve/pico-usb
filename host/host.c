@@ -56,7 +56,7 @@ SDK_ALWAYS_INLINE static inline uint8_t line_state() {
 
 #define hw_set_settle(reg, value, or_mask) \
     reg = (value); \
-    __asm volatile ("b 1f\n1:b 1f\n1:b 1f\n1:b 1f\n1:b 1f\n1:b 1f\n1:\n" \
+    __asm volatile("b 1f\n1:b 1f\n1:b 1f\n1:b 1f\n1:b 1f\n1:b 1f\n1:\n" \
         : : : "memory"); \
     reg = (value) | (or_mask);
 
@@ -94,30 +94,13 @@ static queue_t queue_struct, *queue = &queue_struct;
 
 // ==[ Endpoints ]=============================================================
 
-enum {
-    USB_SIE_CTRL_BASE = USB_SIE_CTRL_VBUS_EN_BITS       // Supply VBUS to device
-                      | USB_SIE_CTRL_SOF_EN_BITS        // Enable full speed bus
-                      | USB_SIE_CTRL_KEEP_ALIVE_EN_BITS // Enable low speed bus
-                      | USB_SIE_CTRL_PULLDOWN_EN_BITS   // Enable devices to connect
-                      | USB_SIE_CTRL_EP0_INT_1BUF_BITS  // Interrupt on every buffer
-};
-
 #define EP0_OUT_ADDR (USB_DIR_OUT | 0)
 #define EP0_IN_ADDR  (USB_DIR_IN  | 0)
 
-static usb_endpoint_descriptor_t ep0_out = {
+static usb_endpoint_descriptor_t epx = {
     .bLength          = sizeof(struct usb_endpoint_descriptor),
     .bDescriptorType  = USB_DT_ENDPOINT,
-    .bEndpointAddress = EP0_OUT_ADDR,
-    .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
-    .wMaxPacketSize   = 64,
-    .bInterval        = 0
-};
-
-static usb_endpoint_descriptor_t ep0_in = {
-    .bLength          = sizeof(struct usb_endpoint_descriptor),
-    .bDescriptorType  = USB_DT_ENDPOINT,
-    .bEndpointAddress = EP0_IN_ADDR,
+    .bEndpointAddress = EP0_OUT_ADDR, // Start as OUT
     .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
     .wMaxPacketSize   = 64,
     .bInterval        = 0
@@ -125,7 +108,7 @@ static usb_endpoint_descriptor_t ep0_in = {
 
 typedef void (*usb_ep_handler)(uint8_t *buf, uint16_t len);
 
-struct usb_endpoint {
+typedef struct usb_endpoint {
     usb_endpoint_descriptor_t *descriptor;
     usb_ep_handler handler;
 
@@ -134,83 +117,57 @@ struct usb_endpoint {
     volatile uint8_t  *data_buffer;
 
     uint8_t next_datapid; // Toggle DATA0/DATA1 each packet
-};
+} usb_endpoint_t;
 
-void ep0_out_handler(uint8_t *buf, uint16_t len) {
-    // ; // Nothing to do
-    // // TODO: Find out when this is called...
+// TODO: Find out if and when this is called...
+void epx_handler(uint8_t *buf, uint16_t len) {
+    ; // Nothing to do
 }
 
-void ep0_in_handler(uint8_t *buf, uint16_t len) {
-    // if (should_set_address) {
-    //     usb_hw->dev_addr_ctrl = device_address; // Set hardware device address
-    //     should_set_address = false;
-    // } else {
-    //     // Prepare for a ZLP from host on EP0_OUT
-    //     usb_start_transfer(usb_get_endpoint(EP0_OUT_ADDR), NULL, 0);
-    // }
-}
-
-static struct usb_endpoint epx = {
-    .descriptor       = &ep0_out,
-    .handler          = NULL,
+static usb_endpoint_t epx = {
+    .descriptor       = &epx,
+    .handler          = epx_handler,
     .endpoint_control = &usbh_dpram->epx_ctrl,
     .buffer_control   = &usbh_dpram->epx_buf_ctrl,
     .data_buffer      = &usbh_dpram->epx_data[0],
     .next_datapid     = 1, // Starts with DATA1
 };
 
-// struct usb_device {
-//     const struct usb_device_descriptor        *device_descriptor;
-//     const struct usb_configuration_descriptor *config_descriptor;
-//     const struct usb_interface_descriptor     *interface_descriptor;
-//     const unsigned char                       *lang_descriptor;
-//     const unsigned char                       **descriptor_strings;
-//     struct usb_endpoint                       endpoints[USB_NUM_ENDPOINTS];
-//
-//     // TODO: Integrate the stuff below...
-//     // uint8_t  ep0_size; ???
-//     // uint8_t  speed; // 0: unknown, 1: full, 2: high, 3: super
-//     // struct SDK_PACKED {
-//     //     uint8_t  speed; // 0: unknown, 1: full, 2: high, 3: super
-//     //     volatile uint8_t addressed  : 1; // After SET_ADDR
-//     //     volatile uint8_t connected  : 1; // After first transfer
-//     //     volatile uint8_t enumerating : 1; // enumeration is in progress, false if not connected or all interfaces are configured
-//     //     volatile uint8_t configured : 1; // After SET_CONFIG and all drivers are configured
-//     //     volatile uint8_t suspended  : 1; // Bus suspended
-//     // };
-//     // uint8_t itf2drv[CFG_TUH_INTERFACE_MAX];  // map interface number to driver (0xff is invalid)
-//     // uint8_t ep2drv[CFG_TUH_ENDPOINT_MAX][2]; // map endpoint to driver ( 0xff is invalid ), can use only 4-bit each
-//     // tu_edpt_state_t ep_status[CFG_TUH_ENDPOINT_MAX][2];
-// };
+// Set up an endpoint's control register
+void usb_setup_endpoint(usb_endpoint_t *ep) {
 
-// // Set up an endpoint's control register
-// void usb_setup_endpoint(const struct usb_endpoint *ep) {
-//
-//     // // Grok the desired endpoint
-//     // uint8_t ep_addr = ep->descriptor->bEndpointAddress;
-//     // uint8_t ep_num = ep_addr & 0x0f;
-//     // bool in = ep_addr & USB_DIR_IN;
-//     // printf("Initialized EP%d_%s (0x%02x) with buffer address 0x%p\n",
-//     //        ep_num, in ? "IN " : "OUT", ep_addr, ep->data_buffer);
-//
-//     // Set ep_ctrl register for this endpoint (skip EP0 since it uses SIE_CTRL)
-//     if (ep->endpoint_control) {
-//         uint32_t type = ep->descriptor->bmAttributes << EP_CTRL_BUFFER_TYPE_LSB;
-//         uint32_t offset = ((uint32_t) ep->data_buffer) ^ ((uint32_t) usbh_dpram);
-//         uint32_t interval = ep->descriptor->bInterval;
-//         if (interval) {
-//             interval = (interval - 1) << EP_CTRL_HOST_INTERRUPT_INTERVAL_LSB;
-//         }
-//         *ep->endpoint_control = EP_CTRL_ENABLE_BITS          | // Enable EP
-//                                 EP_CTRL_INTERRUPT_PER_BUFFER | // One IRQ per
-//                                 type     | // Control, iso, bulk, or interrupt
-//                                 interval | // Interrupt interval in ms
-//                                 offset   ; // Address base offset in DSPRAM
-//     }
-// }
+    // // Grok the desired endpoint
+    // uint8_t ep_addr = ep->descriptor->bEndpointAddress;
+    // uint8_t ep_num = ep_addr & 0x0f;
+    // bool in = ep_addr & USB_DIR_IN;
+    // printf("Initialized EP%d_%s (0x%02x) with buffer address 0x%p\n",
+    //        ep_num, in ? "IN " : "OUT", ep_addr, ep->data_buffer);
+
+    // Set ep_ctrl register for this endpoint (skip EP0 since it uses SIE_CTRL)
+    if (ep->endpoint_control) {
+        uint32_t type = ep->descriptor->bmAttributes << EP_CTRL_BUFFER_TYPE_LSB;
+        uint32_t offset = ((uint32_t) ep->data_buffer) ^ ((uint32_t) usbh_dpram);
+        uint32_t interval = ep->descriptor->bInterval;
+        if (interval) {
+            interval = (interval - 1) << EP_CTRL_HOST_INTERRUPT_INTERVAL_LSB;
+        }
+        *ep->endpoint_control = EP_CTRL_ENABLE_BITS          | // Enable EP
+                                EP_CTRL_INTERRUPT_PER_BUFFER | // One IRQ per
+                                type     | // Control, iso, bulk, or interrupt
+                                interval | // Interrupt interval in ms
+                                offset   ; // Address base offset in DSPRAM
+    }
+}
 
 // ==[ Transfers ]=============================================================
+
+enum {
+    USB_SIE_CTRL_BASE = USB_SIE_CTRL_VBUS_EN_BITS       // Supply VBUS to device
+                      | USB_SIE_CTRL_SOF_EN_BITS        // Enable full speed bus
+                      | USB_SIE_CTRL_KEEP_ALIVE_EN_BITS // Enable low speed bus
+                      | USB_SIE_CTRL_PULLDOWN_EN_BITS   // Enable devices to connect
+                      | USB_SIE_CTRL_EP0_INT_1BUF_BITS  // Interrupt on every buffer
+};
 
 // NOTE: This is a single/global/static control transfer object
 // Control transfers: since most controllers do not support multiple control transfers
@@ -274,6 +231,30 @@ static struct usb_endpoint epx = {
 // } xfer_result_t;
 
 // ==[ Enumeration ]===========================================================
+
+// struct usb_device {
+//     const struct usb_device_descriptor        *device_descriptor;
+//     const struct usb_configuration_descriptor *config_descriptor;
+//     const struct usb_interface_descriptor     *interface_descriptor;
+//     const unsigned char                       *lang_descriptor;
+//     const unsigned char                       **descriptor_strings;
+//     struct usb_endpoint                       endpoints[USB_NUM_ENDPOINTS];
+//
+//     // TODO: Integrate the stuff below...
+//     // uint8_t  ep0_size; ???
+//     // uint8_t  speed; // 0: unknown, 1: full, 2: high, 3: super
+//     // struct SDK_PACKED {
+//     //     uint8_t  speed; // 0: unknown, 1: full, 2: high, 3: super
+//     //     volatile uint8_t addressed  : 1; // After SET_ADDR
+//     //     volatile uint8_t connected  : 1; // After first transfer
+//     //     volatile uint8_t enumerating : 1; // enumeration is in progress, false if not connected or all interfaces are configured
+//     //     volatile uint8_t configured : 1; // After SET_CONFIG and all drivers are configured
+//     //     volatile uint8_t suspended  : 1; // Bus suspended
+//     // };
+//     // uint8_t itf2drv[CFG_TUH_INTERFACE_MAX];  // map interface number to driver (0xff is invalid)
+//     // uint8_t ep2drv[CFG_TUH_ENDPOINT_MAX][2]; // map endpoint to driver ( 0xff is invalid ), can use only 4-bit each
+//     // tu_edpt_state_t ep_status[CFG_TUH_ENDPOINT_MAX][2];
+// };
 
 // Get device descriptor
 void get_device_descriptor() {
