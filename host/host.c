@@ -146,8 +146,8 @@ void usb_setup_endpoint(struct hw_endpoint *ep) {
     uint8_t ep_addr = ep->usb->bEndpointAddress;
     uint8_t ep_num = ep_addr & 0x0f;
     bool in = ep_addr & USB_DIR_IN;
-    printf("Setup EP%d_%s (0x%02x) at buffer offset 0x%p\n",
-           ep_num, in ? "IN " : "OUT", ep_addr, ep->buf);
+    printf(" EP%d_%s│ 0x%02x │ Buffer offset 0x%04x\n",
+           ep_num, in ? "IN " : "OUT", ep_addr, offset);
 
     // Set the endpoint control register
     *ep->ecr = EP_CTRL_ENABLE_BITS               // Endpoint enabled
@@ -266,20 +266,18 @@ void get_device_descriptor() {
         .wLength       = sizeof(request),
     };
 
-    // Copy this request to the transfer buffer
+    // Copy the request to the transfer buffer
     memcpy((void *) usbh_dpram->setup_packet, &request, sizeof(request));
     printf("< Setup");
     hexdump(&request, sizeof(request), 1);
 
-    // Pluck from the request
+    // Read the fields in the request
     bool in = request.bmRequestType & USB_DIR_IN;
     uint16_t len = request.wLength;
-
-    // TODO: Does this do anything?
     // epx.usb = in ? &ep0_in : &ep0_out;
 
     // Execute the transfer
-// usb_hw->dev_addr_ctrl = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB)); // NOTE: 19:16=ep_num, 6:0=dev_addr
+//  usb_hw->dev_addr_ctrl = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB)); // NOTE: 19:16=ep_num, 6:0=dev_addr
     usb_hw->dev_addr_ctrl = (uint32_t) 0; // NOTE: 19:16=ep_num, 6:0=dev_addr
 
     // // Values here are used on the IN transaction of the control transfer
@@ -360,8 +358,8 @@ void isr_usbctrl() {
     uint16_t size = 0;
     static event_t event;
 
-    printf("┌───────┬─────────────────────────────────────────────────────────┐\n");
-    printf("│Frame\t│ %u\n", usb_hw->sof_rd);
+    printf("┌───────┬──────┬──────────────────────────────────────────────────┐\n");
+    printf("│Frame\t│ %4u │%50s│\n", usb_hw->sof_rd, "");
     bindump("│IRQ", ints);
     bindump("│SIE", usb_hw->sie_status);
     bindump("│DEV", usb_hw->dev_addr_ctrl);
@@ -575,7 +573,7 @@ void isr_usbctrl() {
 
 // Reset USB host
 void usb_host_reset() {
-    printf("USB host reset\n");
+    printf("USB host reset\n\n");
 
 // static void clear_device(usbh_device_t* dev) {
 //   tu_memclr(dev, sizeof(usbh_device_t));
@@ -610,12 +608,11 @@ void usb_host_reset() {
                       | USB_INTE_ERROR_DATA_SEQ_BITS              // Data error
                       | USB_INTE_ERROR_RX_TIMEOUT_BITS;           // Receive timeout
 
-    bindump(" IRQ", usb_hw->inte);
-
     // Setup endpoints
     usb_setup_endpoint(&epx);
     // usb_setup_endpoints();
-    printf("\n");
+
+    bindump(" INT", usb_hw->inte);
 
     irq_set_enabled(USBCTRL_IRQ, true);
 }
