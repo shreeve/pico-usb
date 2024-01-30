@@ -271,18 +271,19 @@ void get_device_descriptor() {
     printf("< Setup");
     hexdump(&request, sizeof(request), 1);
 
-// epx.usb = in ? &ep0_in : &ep0_out;
-
     // Pluck from the request
     bool in = request.bmRequestType & USB_DIR_IN;
     uint16_t len = request.wLength;
+
+    // TODO: Does this do anything?
+    // epx.usb = in ? &ep0_in : &ep0_out;
 
     // Execute the transfer
 // usb_hw->dev_addr_ctrl = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB)); // NOTE: 19:16=ep_num, 6:0=dev_addr
     usb_hw->dev_addr_ctrl = (uint32_t) 0; // NOTE: 19:16=ep_num, 6:0=dev_addr
 
     // // Values here are used on the IN transaction of the control transfer
-    // uint32_t ecr = ...
+    // uint32_t ecr = handled during endpoint setup...
 
     // Values here are used on the IN transaction of the control transfer
     uint32_t bcr = USB_BUF_CTRL_LAST
