@@ -106,24 +106,24 @@ static usb_endpoint_descriptor_t ep0_both = {
     .bInterval        = 0
 };
 
-typedef void (*usb_endpoint_cb)(uint8_t *buf, uint16_t len);
+typedef void (*hw_endpoint_cb)(uint8_t *buf, uint16_t len);
 
 void epx_cb(uint8_t *buf, uint16_t len) {
     printf("Inside the EPX callback...\n");
 }
 
 // Hardware endpoint
-typedef struct usb_endpoint {
+struct hw_endpoint {
     usb_endpoint_descriptor_t *usb; // USB descriptor
-    volatile uint32_t *ecr; // Endpoint control register
-    volatile uint32_t *bcr; // Buffer control register
-    volatile uint8_t *buf; // Data buffer
-    uint8_t pid; // Toggle DATA0/DATA1 each packet
-    usb_endpoint_cb cb;
-} usb_endpoint_t;
+    volatile uint32_t *ecr;         // Endpoint control register
+    volatile uint32_t *bcr;         // Buffer control register
+    volatile uint8_t *buf;          // Data buffer
+    uint8_t pid;                    // Toggle DATA0/DATA1 each packet
+    hw_endpoint_cb cb;              // Callback function
+};
 
 // Create our shared EPX endpoint
-static usb_endpoint_t epx = {
+static struct hw_endpoint epx = {
     .usb = &ep0_both,
     .ecr = &usbh_dpram->epx_ctrl,
     .bcr = &usbh_dpram->epx_buf_ctrl,
@@ -133,7 +133,7 @@ static usb_endpoint_t epx = {
 };
 
 // Set up an endpoint's control register
-void usb_setup_endpoint(usb_endpoint_t *ep) {
+void usb_setup_endpoint(struct hw_endpoint *ep) {
     if (!ep || !ep->ecr) return;
 
     // Determine configuration
@@ -269,7 +269,7 @@ void get_device_descriptor() {
     printf("< Setup");
     hexdump(&request, sizeof(request), 1);
 
-// epx.descriptor = in ? &ep0_in : &ep0_out;
+// epx.usb = in ? &ep0_in : &ep0_out;
 
     // Pluck from the request
     bool in = request.bmRequestType & USB_DIR_IN;
@@ -289,6 +289,16 @@ void get_device_descriptor() {
     bindump(" BCR", bcr);
     hw_set_settle(usbh_dpram->epx_buf_ctrl, bcr, USB_BUF_CTRL_AVAIL);
     // hw_set_wait_set(usbh_dpram->epx_buf_ctrl, bcr, 12, USB_BUF_CTRL_AVAIL);
+
+    // Send the setup request // TODO: preamble (LS on FS)
+    uint32_t scr = USB_SIE_CTRL_BASE              // Default SIE_CTRL bits
+                 | USB_SIE_CTRL_SEND_SETUP_BITS   // Send a SETUP packet
+           | (in ? USB_SIE_CTRL_RECEIVE_DATA_BITS // IN to host is receive
+                 : USB_SIE_CTRL_SEND_DATA_BITS);  // OUT from host is send
+    bindump(" SCR", scr);
+    hw_set_settle(usb_hw->sie_ctrl, scr, USB_SIE_CTRL_START_TRANS_BITS);
+    // hw_set_wait_set(usb_hw->sie_ctrl, scr, 12, USB_SIE_CTRL_START_TRANS_BITS);
+}
 
 // AVAILABLE bit   => datasheet page 383 says to wait 1 usb_clk cycle
 // START_TRANS bit => datasheet page 390 says to wait 2 usb_clk cycles
@@ -320,16 +330,6 @@ void get_device_descriptor() {
 // 2 | SEND_DATA    | Host: Send transaction (OUT from host) | RW
 // 1 | SEND_SETUP   | Host: Send Setup packet                | RW
 // 0 | START_TRANS  | Host: Start transaction                | SC
-
-    // Send the setup request // TODO: preamble (LS on FS)
-    uint32_t scr = USB_SIE_CTRL_BASE              // Default SIE_CTRL bits
-                 | USB_SIE_CTRL_SEND_SETUP_BITS   // Send a SETUP packet
-           | (in ? USB_SIE_CTRL_RECEIVE_DATA_BITS // IN to host is receive
-                 : USB_SIE_CTRL_SEND_DATA_BITS);  // OUT from host is send
-    bindump(" SCR", scr);
-    hw_set_settle(usb_hw->sie_ctrl, scr, USB_SIE_CTRL_START_TRANS_BITS);
-    // hw_set_wait_set(usb_hw->sie_ctrl, scr, 12, USB_SIE_CTRL_START_TRANS_BITS);
-}
 
 // // Set device address
 // void set_device_address() {
