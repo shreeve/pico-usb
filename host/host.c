@@ -18,6 +18,8 @@
 #include "hardware/irq.h"         // Interrupts and definitions
 #include "hardware/resets.h"      // Resetting the native USB controller
 
+// #include "hardware/sync.h" // For __dmb() // TODO: Is this needed?
+
 #include "usb_common.h"           // USB 2.0 definitions
 
 // ==[ Helpers ]===============================================================
@@ -54,6 +56,12 @@ SDK_ALWAYS_INLINE static inline uint8_t line_state() {
     busy_wait_at_least_cycles(cycles); \
     reg = (value) | (or_mask);
 
+// // Could be a simple way to delay...
+// uint32_t start;;
+// printf("Frame 1: %u\n", start = usb_hw->sof_rd);
+// while (usb_hw->sof_rd - start < 500) { tight_loop_contents(); }
+// printf("Frame 2: %u\n", usb_hw->sof_rd);
+
 // ==[ Event queue ]===========================================================
 
 enum {
@@ -84,76 +92,22 @@ typedef struct {
     };
 } event_t;
 
-// static event_t event_struct, *event = &event_struct;
 static queue_t queue_struct, *queue = &queue_struct;
 
 // ==[ Endpoints ]=============================================================
 
-// CFG_TUH_MEM_SECTION struct {
-//   CFG_TUH_MEM_ALIGN tusb_control_request_t request;
-//   uint8_t* buffer;
-//   tuh_xfer_cb_t complete_cb;
-//   uintptr_t user_data;
+// // Submit a transfer, when complete hcd_event_xfer_complete() must be invoked
+// bool hcd_edpt_xfer(uint8_t rhport, uint8_t daddr, uint8_t ep_addr, uint8_t * buffer, uint16_t buflen);
 //
-//   uint8_t daddr;
-//   volatile uint8_t stage;
-//   volatile uint16_t actual_len;
-// } _ctrl_xfer;
-
-//   tuh_xfer_t xfer =
-//   {
-//     .daddr       = daddr,
-//     .ep_addr     = 0,
-//     .setup       = &request,
-//     .buffer      = buffer,
-//     .complete_cb = complete_cb,
-//     .user_data   = user_data
-//   };
+// // Abort a queued transfer. Note: it can only abort transfer that has not been started
+// // Return true if a queued transfer is aborted, false if there is no transfer to abort
+// bool hcd_edpt_abort_xfer(uint8_t rhport, uint8_t dev_addr, uint8_t ep_addr);
 //
-//   bool const ret = tuh_control_xfer(&xfer);
+// // Submit a special transfer to send 8-byte Setup Packet, when complete hcd_event_xfer_complete() must be invoked
+// bool hcd_setup_send(uint8_t rhport, uint8_t daddr, uint8_t const setup_packet[8]);
 //
-//   // if blocking, user_data could be pointed to xfer_result
-//   if ( !complete_cb && user_data )
-//   {
-//     *((xfer_result_t*) user_data) = xfer.result;
-//   }
-
-// typedef enum {
-//   XFER_RESULT_SUCCESS = 0,
-//   XFER_RESULT_FAILED,
-//   XFER_RESULT_STALLED,
-//   XFER_RESULT_TIMEOUT,
-//   XFER_RESULT_INVALID
-// } xfer_result_t;
-
-// struct tuh_xfer_t {
-//   uint8_t daddr;
-//   uint8_t ep_addr;
-//   xfer_result_t result;
-//   uint32_t actual_len;      // excluding setup packet
-//   union {
-//     tusb_control_request_t const* setup; // setup packet pointer if control transfer
-//     uint32_t buflen;                     // expected length if not control transfer (not available in callback)
-//   };
-//   uint8_t*      buffer; // not available in callback if not control transfer
-//   tuh_xfer_cb_t complete_cb;
-//   uintptr_t     user_data;
-// };
-
-// NOTE: This is a single/global/static control transfer object
-// // Control transfers: since most controllers do not support multiple control transfers
-// // on multiple devices concurrently and control transfers are not used much except for
-// // enumeration, we will only execute control transfers one at a time.
-// CFG_TUSB_MEM_SECTION struct {
-//   tusb_control_request_t request TU_ATTR_ALIGNED(4);
-//   uint8_t* buffer;
-//   tuh_xfer_cb_t complete_cb;
-//   uintptr_t user_data;
-//
-//   uint8_t daddr;
-//   volatile uint8_t stage;
-//   volatile uint16_t actual_len;
-// } _ctrl_xfer;
+// // clear stall, data toggle is also reset to DATA0
+// bool hcd_edpt_clear_stall(uint8_t rhport, uint8_t dev_addr, uint8_t ep_addr);
 
 enum {
     USB_SIE_CTRL_BASE = USB_SIE_CTRL_VBUS_EN_BITS       // Supply VBUS to device
@@ -162,14 +116,6 @@ enum {
                       | USB_SIE_CTRL_PULLDOWN_EN_BITS   // Enable devices to connect
                       | USB_SIE_CTRL_EP0_INT_1BUF_BITS  // Interrupt on every buffer
 };
-
-// NOTE: SIE_CTRL
-//
-// 4 | STOP_TRANS   | Host: Stop transaction                 | SC
-// 3 | RECEIVE_DATA | Host: Receive transaction (IN to host) | RW
-// 2 | SEND_DATA    | Host: Send transaction (OUT from host) | RW
-// 1 | SEND_SETUP   | Host: Send Setup packet                | RW
-// 0 | START_TRANS  | Host: Start transaction                | SC
 
 // #define EP0_OUT_ADDR (USB_DIR_OUT | 0)
 // #define EP0_IN_ADDR  (USB_DIR_IN  | 0)
@@ -279,6 +225,64 @@ enum {
 //     }
 // }
 
+// ==[ Transfers ]=============================================================
+
+// NOTE: This is a single/global/static control transfer object
+// Control transfers: since most controllers do not support multiple control transfers
+// on multiple devices concurrently and control transfers are not used much except for
+// enumeration, we will only execute control transfers one at a time.
+
+// struct tuh_xfer_t {
+//   uint8_t daddr;
+//   uint8_t ep_addr;
+//   xfer_result_t result;
+//   uint32_t actual_len;      // excluding setup packet
+//   union {
+//     tusb_control_request_t const* setup; // setup packet pointer if control transfer
+//     uint32_t buflen;                     // expected length if not control transfer (not available in callback)
+//   };
+//   uint8_t*      buffer; // not available in callback if not control transfer
+//   tuh_xfer_cb_t complete_cb;
+//   uintptr_t     user_data;
+// };
+
+//   tuh_xfer_t xfer =
+//   {
+//     .daddr       = daddr,
+//     .ep_addr     = 0,
+//     .setup       = &request,
+//     .buffer      = buffer,
+//     .complete_cb = complete_cb,
+//     .user_data   = user_data
+//   };
+
+// CFG_TUSB_MEM_SECTION struct {
+//   tusb_control_request_t request TU_ATTR_ALIGNED(4);
+//   uint8_t* buffer;
+//   tuh_xfer_cb_t complete_cb;
+//   uintptr_t user_data;
+//
+//   uint8_t daddr;
+//   volatile uint8_t stage;
+//   volatile uint16_t actual_len;
+// } _ctrl_xfer;
+
+//   bool const ret = tuh_control_xfer(&xfer);
+//
+//   // if blocking, user_data could be pointed to xfer_result
+//   if ( !complete_cb && user_data )
+//   {
+//     *((xfer_result_t*) user_data) = xfer.result;
+//   }
+
+// typedef enum {
+//   XFER_RESULT_SUCCESS = 0,
+//   XFER_RESULT_FAILED,
+//   XFER_RESULT_STALLED,
+//   XFER_RESULT_TIMEOUT,
+//   XFER_RESULT_INVALID
+// } xfer_result_t;
+
 // ==[ Enumeration ]===========================================================
 
 // Get device descriptor
@@ -338,6 +342,33 @@ void get_device_descriptor() {
     bindump(" BCR", bcr);
     hw_set_wait_set(usbh_dpram->epx_buf_ctrl, bcr, 12, USB_BUF_CTRL_AVAIL);
 
+// AVAILABLE bit   => datasheet page 383 says to wait 1 usb_clk cycle
+// START_TRANS bit => datasheet page 390 says to wait 2 usb_clk cycles
+
+// Cycles to wait: usb_cycles * cpu_clk / usb_clk
+// 2 cycles * 133MHz / 48MHz = 5.5833 cycles =>  6 cycles # ((133-1)/48+1)*2 => 6
+// 2 cycles * 125MHz / 48MHz = 5.3333 cycles =>  6 cycles # ((125-1)/48+1)*2 => 6
+// 1 cycle  * 133MHz / 48MHz = 2.7708 cycles =>  3 cycles # ((133-1)/48+1)*1 => 3
+// 1 cycle  * 576MHz / 48MHz = 12     cycles => 12 cycles # ((576-1)/48+1)*1 => 12
+// 2 cycles * 576MHz / 48MHz = 24     cycles => 24 cycles # ((576-1)/48+1)*2 => 24
+
+// Each one takes 1 cycle and wastes 1 cycle, so 2 cycles * 6 = 12 cycles total
+// __asm volatile (
+//        "b 1f\n"
+//     "1: b 1f\n"
+//     "1: b 1f\n"
+//     "1: b 1f\n"
+//     "1: b 1f\n"
+//     "1: b 1f\n"
+//     "1:\n"
+//     : : : "memory"
+// );
+
+// TinyUSB comment: "We don't need to delay in host mode, since host is in charge".
+// Explanation... if this many cycles are going to pass anyway as we monkey around
+// with the USB hardware, then we might as well wait for them to pass before and
+// we might not even need to wait!
+
 //   if ( ep == &epx ) {
 //     hw_endpoint_xfer_start(ep, buffer, buflen);
 //
@@ -357,6 +388,14 @@ void get_device_descriptor() {
 //   } else {
 //     hw_endpoint_xfer_start(ep, buffer, buflen);
 //   }
+
+// NOTE: SIE_CTRL
+//
+// 4 | STOP_TRANS   | Host: Stop transaction                 | SC
+// 3 | RECEIVE_DATA | Host: Receive transaction (IN to host) | RW
+// 2 | SEND_DATA    | Host: Send transaction (OUT from host) | RW
+// 1 | SEND_SETUP   | Host: Send Setup packet                | RW
+// 0 | START_TRANS  | Host: Start transaction                | SC
 
     // Send the setup request // TODO: preamble (LS on FS)
     uint32_t scr = USB_SIE_CTRL_BASE              // Default SIE_CTRL bits
@@ -391,6 +430,8 @@ void get_device_descriptor() {
 //     busy_wait_at_least_cycles(12)          ; // TODO: Anything better? Why not 3 or 6 cycles? TinyUSB doesn't use this in hcd_edpt_xfer().
 //     usb_hw->sie_ctrl = bits | USB_SIE_CTRL_START_TRANS_BITS;
 // }
+
+// static uint8_t _usbh_ctrl_buf[CFG_TUH_ENUMERATION_BUFSIZE];
 
 void start_enumeration() {
     printf("Start enumeration\n");
@@ -476,28 +517,23 @@ void isr_usbctrl() {
 //
 //   // Check EPX first
 //   uint bit = 0b1;
-//   if ( remaining_buffers & bit )
-//   {
+//   if ( remaining_buffers & bit ) {
 //     remaining_buffers &= ~bit;
 //     struct hw_endpoint * ep = &epx;
 //
 //     uint32_t ep_ctrl = *ep->endpoint_control;
-//     if ( ep_ctrl & EP_CTRL_DOUBLE_BUFFERED_BITS )
-//     {
-//       TU_LOG(3, "Double Buffered: ");
-//     }
-//     else
-//     {
-//       TU_LOG(3, "Single Buffered: ");
-//     }
+    // if ( ep_ctrl & EP_CTRL_DOUBLE_BUFFERED_BITS ) {
+    //   TU_LOG(3, "Double Buffered: ");
+    // } else {
+    //   TU_LOG(3, "Single Buffered: ");
+    // }
 //     TU_LOG_HEX(3, ep_ctrl);
 //
 //     _handle_buff_status_bit(bit, ep);
 //   }
 //
 //   // Check "interrupt" (asynchronous) endpoints for both IN and OUT
-//   for ( uint i = 1; i <= USB_HOST_INTERRUPT_ENDPOINTS && remaining_buffers; i++ )
-//   {
+//   for ( uint i = 1; i <= USB_HOST_INTERRUPT_ENDPOINTS && remaining_buffers; i++ ) {
 //     // EPX is bit 0 & 1
 //     // IEP1 IN  is bit 2
 //     // IEP1 OUT is bit 3
@@ -506,19 +542,16 @@ void isr_usbctrl() {
 //     // IEP3 IN  is bit 6
 //     // IEP3 OUT is bit 7
 //     // etc
-//     for ( uint j = 0; j < 2; j++ )
-//     {
+//    for ( uint j = 0; j < 2; j++ ) {
 //       bit = 1 << (i * 2 + j);
-//       if ( remaining_buffers & bit )
-//       {
+//       if ( remaining_buffers & bit ) {
 //         remaining_buffers &= ~bit;
 //         _handle_buff_status_bit(bit, &ep_pool[i]);
 //       }
 //     }
 //   }
 //
-//   if ( remaining_buffers )
-//   {
+//   if ( remaining_buffers ) {
 //     panic("Unhandled buffer %d\n", remaining_buffers);
 //   }
 
@@ -594,6 +627,12 @@ void isr_usbctrl() {
 
 // Reset USB host
 void usb_host_reset() {
+
+// static void clear_device(usbh_device_t* dev) {
+//   tu_memclr(dev, sizeof(usbh_device_t));
+//   memset(dev->itf2drv, TUSB_INDEX_INVALID_8, sizeof(dev->itf2drv)); // invalid mapping
+//   memset(dev->ep2drv , TUSB_INDEX_INVALID_8, sizeof(dev->ep2drv )); // invalid mapping
+// }
 
 // TODO: Host reset...
 //   // Device
@@ -686,78 +725,3 @@ int main() {
         usb_task();
     }
 }
-
-// ==[ Done ]==================================================================
-
-// #include "hardware/sync.h" // For __dmb()
-
-// TODO: Class drivers...
-// static usbh_class_driver_t const usbh_class_drivers[] = {
-//     #if CFG_TUH_CDC
-//     {
-//         DRIVER_NAME("CDC")
-//         .init       = cdch_init,
-//         .open       = cdch_open,
-//         .set_config = cdch_set_config,
-//         .xfer_cb    = cdch_xfer_cb,
-//         .close      = cdch_close
-
-// static void clear_device(usbh_device_t* dev) {
-//   tu_memclr(dev, sizeof(usbh_device_t));
-//   memset(dev->itf2drv, TUSB_INDEX_INVALID_8, sizeof(dev->itf2drv)); // invalid mapping
-//   memset(dev->ep2drv , TUSB_INDEX_INVALID_8, sizeof(dev->ep2drv )); // invalid mapping
-// }
-
-// NOTE: Endpoint API
-// // Submit a transfer, when complete hcd_event_xfer_complete() must be invoked
-// bool hcd_edpt_xfer(uint8_t rhport, uint8_t daddr, uint8_t ep_addr, uint8_t * buffer, uint16_t buflen);
-//
-// // Abort a queued transfer. Note: it can only abort transfer that has not been started
-// // Return true if a queued transfer is aborted, false if there is no transfer to abort
-// bool hcd_edpt_abort_xfer(uint8_t rhport, uint8_t dev_addr, uint8_t ep_addr);
-//
-// // Submit a special transfer to send 8-byte Setup Packet, when complete hcd_event_xfer_complete() must be invoked
-// bool hcd_setup_send(uint8_t rhport, uint8_t daddr, uint8_t const setup_packet[8]);
-//
-// // clear stall, data toggle is also reset to DATA0
-// bool hcd_edpt_clear_stall(uint8_t rhport, uint8_t dev_addr, uint8_t ep_addr);
-
-// Buffer for preparing output to send to host
-// static uint8_t ep0_buf[64];
-
-// ==[ Interrupt ]=============================================================
-
-// AVAILABLE bit   => datasheet page 383 says to wait 1 usb_clk cycle
-// START_TRANS bit => datasheet page 390 says to wait 2 usb_clk cycles
-
-// Cycles to wait: usb_cycles * cpu_clk / usb_clk
-// 2 cycles * 133MHz / 48MHz = 5.5833 cycles =>  6 cycles # ((133-1)/48+1)*2 => 6
-// 2 cycles * 125MHz / 48MHz = 5.3333 cycles =>  6 cycles # ((125-1)/48+1)*2 => 6
-// 1 cycle  * 133MHz / 48MHz = 2.7708 cycles =>  3 cycles # ((133-1)/48+1)*1 => 3
-// 1 cycle  * 576MHz / 48MHz = 12     cycles => 12 cycles # ((576-1)/48+1)*1 => 12
-// 2 cycles * 576MHz / 48MHz = 24     cycles => 24 cycles # ((576-1)/48+1)*2 => 24
-
-// Each one takes 1 cycle and wastes 1 cycle, so 2 cycles * 6 = 12 cycles total
-// __asm volatile (
-//        "b 1f\n"
-//     "1: b 1f\n"
-//     "1: b 1f\n"
-//     "1: b 1f\n"
-//     "1: b 1f\n"
-//     "1: b 1f\n"
-//     "1:\n"
-//     : : : "memory"
-// );
-
-// TinyUSB comment: "We don't need to delay in host mode, since host is in charge".
-// Explanation... if this many cycles are going to pass anyway as we monkey around
-// with the USB hardware, then we might as well wait for them to pass before and
-// we might not even need to wait!
-
-// static uint8_t _usbh_ctrl_buf[CFG_TUH_ENUMERATION_BUFSIZE];
-
-// // Could be a nice way to delay a bit...
-// uint32_t start;;
-// printf("Frame 1: %u\n", start = usb_hw->sof_rd);
-// while (usb_hw->sof_rd - start < 500) { tight_loop_contents(); }
-// printf("Frame 2: %u\n", usb_hw->sof_rd);
