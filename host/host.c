@@ -306,25 +306,11 @@ void get_device_descriptor() {
 // START_TRANS bit => datasheet page 390 says to wait 2 usb_clk cycles
 
 // Cycles to wait: usb_cycles * cpu_clk / usb_clk
-// 2 cycles * 133MHz / 48MHz = 5.5833 cycles =>  6 cycles # ((133-1)/48+1)*2 => 6
-// 2 cycles * 125MHz / 48MHz = 5.3333 cycles =>  6 cycles # ((125-1)/48+1)*2 => 6
-// 1 cycle  * 133MHz / 48MHz = 2.7708 cycles =>  3 cycles # ((133-1)/48+1)*1 => 3
-// 1 cycle  * 576MHz / 48MHz = 12     cycles => 12 cycles # ((576-1)/48+1)*1 => 12
-// 2 cycles * 576MHz / 48MHz = 24     cycles => 24 cycles # ((576-1)/48+1)*2 => 24
-
-//   hw_endpoint_xfer_start(ep, buffer, buflen);
-//   if ( ep == &epx ) {
-//     usb_hw->dev_addr_ctrl = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB));
-//     uint32_t flags = USB_SIE_CTRL_START_TRANS_BITS | SIE_CTRL_BASE |
-//                      (ep_dir ? USB_SIE_CTRL_RECEIVE_DATA_BITS : USB_SIE_CTRL_SEND_DATA_BITS) |
-//                      (need_pre(dev_addr) ? USB_SIE_CTRL_PREAMBLE_EN_BITS : 0);
-//     // START_TRANS bit on SIE_CTRL seems to exhibit the same behavior as the AVAILABLE bit
-//     // described in RP2040 Datasheet, release 2.1, section "4.1.2.5.1. Concurrent access".
-//     // We write everything except the START_TRANS bit first, then wait some cycles.
-//     usb_hw->sie_ctrl = flags & ~USB_SIE_CTRL_START_TRANS_BITS;
-//     busy_wait_at_least_cycles(12);
-//     usb_hw->sie_ctrl = flags;
-//   }
+// 2 cycles * 133MHz/48MHz = 5.6 cycles =>  6 cycles # ((133-1)/48+1)*2 =>  6
+// 2 cycles * 125MHz/48MHz = 5.3 cycles =>  6 cycles # ((125-1)/48+1)*2 =>  6
+// 1 cycle  * 133MHz/48MHz = 2.8 cycles =>  3 cycles # ((133-1)/48+1)*1 =>  3
+// 1 cycle  * 576MHz/48MHz = 12  cycles => 12 cycles # ((576-1)/48+1)*1 => 12
+// 2 cycles * 576MHz/48MHz = 24  cycles => 24 cycles # ((576-1)/48+1)*2 => 24
 
 // NOTE: SIE_CTRL
 // 4 | STOP_TRANS   | Host: Stop transaction                 | SC
