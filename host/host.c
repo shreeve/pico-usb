@@ -94,11 +94,6 @@ static queue_t queue_struct, *queue = &queue_struct;
 
 // ==[ Endpoints ]=============================================================
 
-// Submit a transfer and, when complete, push an EVENT_TRANSFER completed event
-// Abort a transfer (only if it has not been started), return true if queue xfer aborted
-// Send a special SETUP transfer and, when complete, push an EVENT_TRANSFER completed event
-// Clear a stall and toggle data PID back to DATA0
-
 enum {
     USB_SIE_CTRL_BASE = USB_SIE_CTRL_VBUS_EN_BITS       // Supply VBUS to device
                       | USB_SIE_CTRL_SOF_EN_BITS        // Enable full speed bus
@@ -107,63 +102,63 @@ enum {
                       | USB_SIE_CTRL_EP0_INT_1BUF_BITS  // Interrupt on every buffer
 };
 
-// #define EP0_OUT_ADDR (USB_DIR_OUT | 0)
-// #define EP0_IN_ADDR  (USB_DIR_IN  | 0)
-//
-// typedef void (*usb_ep_handler)(uint8_t *buf, uint16_t len);
-//
-// void ep0_out_handler(uint8_t *buf, uint16_t len) {
-//     ; // Nothing to do
-//     // TODO: Find out when this is called...
-// }
-//
-// void ep0_in_handler(uint8_t *buf, uint16_t len) {
-//     // if (should_set_address) {
-//     //     usb_hw->dev_addr_ctrl = device_address; // Set hardware device address
-//     //     should_set_address = false;
-//     // } else {
-//     //     // Prepare for a ZLP from host on EP0_OUT
-//     //     usb_start_transfer(usb_get_endpoint(EP0_OUT_ADDR), NULL, 0);
-//     // }
-// }
-//
-// static const struct usb_endpoint_descriptor ep0_out = { // EP0, out to device
-//     .bLength          = sizeof(struct usb_endpoint_descriptor),
-//     .bDescriptorType  = USB_DT_ENDPOINT,
-//     .bEndpointAddress = EP0_OUT_ADDR,
-//     .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
-//     .wMaxPacketSize   = 64,
-//     .bInterval        = 0
-// };
-//
-// static const struct usb_endpoint_descriptor ep0_in = { // EP0, in to host
-//     .bLength          = sizeof(struct usb_endpoint_descriptor),
-//     .bDescriptorType  = USB_DT_ENDPOINT,
-//     .bEndpointAddress = EP0_IN_ADDR,
-//     .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
-//     .wMaxPacketSize   = 64,
-//     .bInterval        = 0
-// };
-//
-// struct usb_endpoint {
-//     usb_endpoint_descriptor_t *descriptor;
-//     usb_ep_handler handler;
-//
-//     volatile uint32_t *endpoint_control;
-//     volatile uint32_t *buffer_control;
-//     volatile uint8_t  *data_buffer;
-//
-//     uint8_t next_datapid; // Toggle DATA0/DATA1 each packet
-// };
-//
-// static struct usb_endpoint epx = {
-//     .descriptor       = &ep0_out,
-//     .handler          = NULL,
-//     .endpoint_control = &usbh_dpram->epx_ctrl,
-//     .buffer_control   = &usbh_dpram->epx_buf_ctrl,
-//     .data_buffer      = &usbh_dpram->epx_data[0],
-//     .next_datapid     = 1, // Starts with DATA1
-// };
+#define EP0_OUT_ADDR (USB_DIR_OUT | 0)
+#define EP0_IN_ADDR  (USB_DIR_IN  | 0)
+
+static usb_endpoint_descriptor_t ep0_out = {
+    .bLength          = sizeof(struct usb_endpoint_descriptor),
+    .bDescriptorType  = USB_DT_ENDPOINT,
+    .bEndpointAddress = EP0_OUT_ADDR,
+    .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
+    .wMaxPacketSize   = 64,
+    .bInterval        = 0
+};
+
+static usb_endpoint_descriptor_t ep0_in = {
+    .bLength          = sizeof(struct usb_endpoint_descriptor),
+    .bDescriptorType  = USB_DT_ENDPOINT,
+    .bEndpointAddress = EP0_IN_ADDR,
+    .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
+    .wMaxPacketSize   = 64,
+    .bInterval        = 0
+};
+
+typedef void (*usb_ep_handler)(uint8_t *buf, uint16_t len);
+
+struct usb_endpoint {
+    usb_endpoint_descriptor_t *descriptor;
+    usb_ep_handler handler;
+
+    volatile uint32_t *endpoint_control;
+    volatile uint32_t *buffer_control;
+    volatile uint8_t  *data_buffer;
+
+    uint8_t next_datapid; // Toggle DATA0/DATA1 each packet
+};
+
+void ep0_out_handler(uint8_t *buf, uint16_t len) {
+    // ; // Nothing to do
+    // // TODO: Find out when this is called...
+}
+
+void ep0_in_handler(uint8_t *buf, uint16_t len) {
+    // if (should_set_address) {
+    //     usb_hw->dev_addr_ctrl = device_address; // Set hardware device address
+    //     should_set_address = false;
+    // } else {
+    //     // Prepare for a ZLP from host on EP0_OUT
+    //     usb_start_transfer(usb_get_endpoint(EP0_OUT_ADDR), NULL, 0);
+    // }
+}
+
+static struct usb_endpoint epx = {
+    .descriptor       = &ep0_out,
+    .handler          = NULL,
+    .endpoint_control = &usbh_dpram->epx_ctrl,
+    .buffer_control   = &usbh_dpram->epx_buf_ctrl,
+    .data_buffer      = &usbh_dpram->epx_data[0],
+    .next_datapid     = 1, // Starts with DATA1
+};
 
 // struct usb_device {
 //     const struct usb_device_descriptor        *device_descriptor;
@@ -221,6 +216,11 @@ enum {
 // Control transfers: since most controllers do not support multiple control transfers
 // on multiple devices concurrently and control transfers are not used much except for
 // enumeration, we will only execute control transfers one at a time.
+
+// Submit a transfer and, when complete, push an EVENT_TRANSFER completed event
+// Abort a transfer (only if it has not been started), return true if queue xfer aborted
+// Send a special SETUP transfer and, when complete, push an EVENT_TRANSFER completed event
+// Clear a stall and toggle data PID back to DATA0
 
 // struct tuh_xfer_t {
 //   uint8_t daddr;
