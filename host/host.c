@@ -537,6 +537,9 @@ void isr_usbctrl() {
 
         // Clear all buffers
         usb_hw_clear->buf_status = (uint32_t) ~0;
+
+        // set_device_address();
+        // get_device_descriptor();
     }
 
     // Transfer complete (last packet)
