@@ -20,6 +20,38 @@
 
 #include "usb_common.h"           // USB 2.0 definitions
 
+// ==[ Event queue ]===========================================================
+
+enum {
+    EVENT_CONNECTION,
+    EVENT_TRANSFER,
+    EVENT_FUNCTION,
+};
+
+typedef struct {
+    uint8_t type;
+    uint8_t dev_addr;
+
+    union {
+        struct {
+            uint8_t speed;
+        } conn;
+
+        struct {
+            uint8_t ep_addr;
+            uint8_t result;
+            uint16_t len;
+        } xfer;
+
+        struct {
+            void (*call) (void *);
+            void *arg;
+        } fn;
+    };
+} event_t;
+
+static queue_t queue_struct, *queue = &queue_struct;
+
 // ==[ Helpers ]===============================================================
 
 #include "helpers.h"
@@ -60,37 +92,8 @@ SDK_ALWAYS_INLINE static inline uint8_t line_state() {
         : : : "memory"); \
     reg = (value) | (or_mask);
 
-// ==[ Event queue ]===========================================================
-
 enum {
-    EVENT_CONNECTION,
-    EVENT_TRANSFER,
-    EVENT_FUNCTION,
 };
-
-typedef struct {
-    uint8_t type;
-    uint8_t dev_addr;
-
-    union {
-        struct {
-            uint8_t speed;
-        } conn;
-
-        struct {
-            uint8_t ep_addr;
-            uint8_t result;
-            uint16_t len;
-        } xfer;
-
-        struct {
-            void (*call) (void *);
-            void *arg;
-        } fn;
-    };
-} event_t;
-
-static queue_t queue_struct, *queue = &queue_struct;
 
 // ==[ Endpoints ]=============================================================
 
