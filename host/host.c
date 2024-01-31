@@ -375,48 +375,6 @@ void set_device_address() {
     start_transfer(&packet, sizeof(packet));
 }
 
-// AVAILABLE bit   => datasheet page 383 says to wait 1 usb_clk cycle
-// START_TRANS bit => datasheet page 390 says to wait 2 usb_clk cycles
-
-// Cycles to wait: usb_cycles * cpu_clk / usb_clk
-// 2 cycles * 133MHz/48MHz = 5.6 cycles =>  6 cycles # ((133-1)/48+1)*2 =>  6
-// 2 cycles * 125MHz/48MHz = 5.3 cycles =>  6 cycles # ((125-1)/48+1)*2 =>  6
-// 1 cycle  * 133MHz/48MHz = 2.8 cycles =>  3 cycles # ((133-1)/48+1)*1 =>  3
-// 1 cycle  * 576MHz/48MHz = 12  cycles => 12 cycles # ((576-1)/48+1)*1 => 12
-// 2 cycles * 576MHz/48MHz = 24  cycles => 24 cycles # ((576-1)/48+1)*2 => 24
-
-// NOTE: SIE_CTRL
-// 4 | STOP_TRANS   | Host: Stop transaction                 | SC
-// 3 | RECEIVE_DATA | Host: Receive transaction (IN to host) | RW
-// 2 | SEND_DATA    | Host: Send transaction (OUT from host) | RW
-// 1 | SEND_SETUP   | Host: Send Setup packet                | RW
-// 0 | START_TRANS  | Host: Start transaction                | SC
-
-// // Set device address
-// void set_device_address() {
-//     const uint8_t data[] = "\x00\x05\x01\x00\x00\x00\x00\x00";
-//     const uint8_t size = 8;
-//     uint32_t bits;
-//
-//     printf("< Setup");
-//     hexdump(data, size, 2);
-//     printf("Set device address to 1\n");
-//
-//     memcpy((void *) usbh_dpram->setup_packet, data, size);
-//     usbh_dpram->epx_ctrl     = EP_CTRL_ENABLE_BITS          | // Enable EPX
-//                                EP_CTRL_INTERRUPT_PER_BUFFER | // One IRQ per buffer
-//                                0x180                        ; // Data buffer offset
-//     usbh_dpram->epx_buf_ctrl = 0x00007400  | // LAST, DATA1, SEL, AVAIL
-//                                size        ; // Size
-//     usb_hw->dev_addr_ctrl = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB)); // NOTE: 19:16=ep_num, 6:0=dev_addr
-//     bits = USB_SIE_CTRL_BASE               | // Default SIE_CTRL bits
-//         //    USB_SIE_CTRL_SEND_DATA_BITS  | // Request a response
-//            USB_SIE_CTRL_SEND_SETUP_BITS    ; // Send a SETUP packet
-//     usb_hw->sie_ctrl = bits                ; // TODO: Might need USB_SIE_CTRL_PREAMBLE_EN_BITS (LS on FS hub)
-//     busy_wait_at_least_cycles(12)          ; // TODO: Anything better? Why not 3 or 6 cycles? TinyUSB doesn't use this in hcd_edpt_xfer().
-//     usb_hw->sie_ctrl = bits | USB_SIE_CTRL_START_TRANS_BITS;
-// }
-
 void start_enumeration() {
     printf("Start enumeration\n");
 
