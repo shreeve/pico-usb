@@ -97,20 +97,20 @@ static queue_t queue_struct, *queue = &queue_struct;
 #define EP0_OUT_ADDR (USB_DIR_OUT | 0)
 #define EP0_IN_ADDR  (USB_DIR_IN  | 0)
 
-static usb_endpoint_descriptor_t ep0_both = {
-    .bLength          = sizeof(usb_endpoint_descriptor_t),
-    .bDescriptorType  = USB_DT_ENDPOINT,
-    .bEndpointAddress = EP0_OUT_ADDR, // Can be IN and OUT
-    .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
-    .wMaxPacketSize   = 64,
-    .bInterval        = 0
-};
+// static usb_endpoint_descriptor_t usb_epx = {
+//     .bLength          = sizeof(usb_endpoint_descriptor_t),
+//     .bDescriptorType  = USB_DT_ENDPOINT,
+//     .bEndpointAddress = EP0_OUT_ADDR, // Can be IN and OUT
+//     .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
+//     .wMaxPacketSize   = 64,
+//     .bInterval        = 0
+// };
 
 typedef void (*hw_endpoint_cb)(uint8_t *buf, uint16_t len);
 
-void epx_cb(uint8_t *buf, uint16_t len) {
-    printf("Inside the EPX callback...\n");
-}
+// void epx_cb(uint8_t *buf, uint16_t len) {
+//     printf("Inside the EPX callback...\n");
+// }
 
 // Hardware endpoint
 typedef struct hw_endpoint {
@@ -122,19 +122,19 @@ typedef struct hw_endpoint {
     hw_endpoint_cb cb;              // Callback function
 } hw_endpoint_t;
 
-// Create our shared EPX endpoint
-static hw_endpoint_t epx = {
-    .usb = &ep0_both,
-    .ecr = &usbh_dpram->epx_ctrl,
-    .bcr = &usbh_dpram->epx_buf_ctrl,
-    .buf = &usbh_dpram->epx_data[0],
-    .pid = 1, // Starts with DATA1
-    .cb  = epx_cb,
-};
 
 // Set up an endpoint's control register
 void setup_hw_endpoint(hw_endpoint_t *ep) {
     if (!ep || !ep->ecr) return;
+// // Create our shared EPX endpoint
+// static hw_endpoint_t epx = {
+//     .usb = &usb_epx,
+//     .ecr = &usbh_dpram->epx_ctrl,
+//     .bcr = &usbh_dpram->epx_buf_ctrl,
+//     .buf = &usbh_dpram->epx_data[0],
+//     .pid = 1, // Starts with DATA1
+//     .cb  = epx_cb,
+// };
 
     // Determine configuration
     uint32_t type = ep->usb->bmAttributes;
