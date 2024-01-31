@@ -165,8 +165,8 @@ enum {
     USB_SIE_CTRL_BASE = USB_SIE_CTRL_VBUS_EN_BITS       // Supply VBUS
                       | USB_SIE_CTRL_SOF_EN_BITS        // Enable full speed
                       | USB_SIE_CTRL_KEEP_ALIVE_EN_BITS // Enable low speed
-                      | USB_SIE_CTRL_PULLDOWN_EN_BITS   // Allow connections
-                      | USB_SIE_CTRL_EP0_INT_1BUF_BITS  // Interrupt per buffer
+                      | USB_SIE_CTRL_PULLDOWN_EN_BITS   // Ready for devices
+                      | USB_SIE_CTRL_EP0_INT_1BUF_BITS  // One bit per EP0 buf
 };
 
 // NOTE: This is a single/global/static control transfer object.
