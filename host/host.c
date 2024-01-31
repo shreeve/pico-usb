@@ -519,10 +519,7 @@ void isr_usbctrl() {
 //     // IEP1 IN  is bit 2
 //     // IEP1 OUT is bit 3
 //     // IEP2 IN  is bit 4
-//     // IEP2 OUT is bit 5
-//     // IEP3 IN  is bit 6
-//     // IEP3 OUT is bit 7
-//     // etc
+//     // IEP2 OUT is bit 5, etc...
 //    for ( uint j = 0; j < 2; j++ ) {
 //       bit = 1 << (i * 2 + j);
 //       if ( remaining_buffers & bit ) {
