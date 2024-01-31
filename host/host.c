@@ -122,10 +122,6 @@ typedef struct hw_endpoint {
     hw_endpoint_cb cb;              // Callback function
 } hw_endpoint_t;
 
-
-// Set up an endpoint's control register
-void setup_hw_endpoint(hw_endpoint_t *ep) {
-    if (!ep || !ep->ecr) return;
 // // Create our shared EPX endpoint
 // static hw_endpoint_t epx = {
 //     .usb = &usb_epx,
@@ -136,28 +132,32 @@ void setup_hw_endpoint(hw_endpoint_t *ep) {
 //     .cb  = epx_cb,
 // };
 
-    // Determine configuration
-    uint32_t type = ep->usb->bmAttributes;
-    uint32_t ms = ep->usb->bInterval;
-    uint32_t interval_lsb = EP_CTRL_HOST_INTERRUPT_INTERVAL_LSB;
-    uint32_t offset = ((uint32_t) ep->buf) ^ ((uint32_t) usbh_dpram);
-
-    // Summarize endpoint configuration
-    uint8_t ep_addr = ep->usb->bEndpointAddress;
-    uint8_t ep_num = ep_addr & 0x0f;
-    bool in = ep_addr & USB_DIR_IN;
-    printf(" EP%d_%s│ 0x%02x │ Buffer offset 0x%04x\n",
-           ep_num, in ? "IN " : "OUT", ep_addr, offset);
-
-    // Set the endpoint control register
-    *ep->ecr = EP_CTRL_ENABLE_BITS               // Endpoint enabled
-             | EP_CTRL_INTERRUPT_PER_BUFFER      // One interrupt per buffer
-             | type << EP_CTRL_BUFFER_TYPE_LSB   // Transfer type
-             | (ms ? ms - 1 : 0) << interval_lsb // Interrupt interval in ms
-             | offset;                           // Data buffer offset
-
-    bindump(" ECR", *ep->ecr);
-}
+// // Set up an endpoint's control register
+// void setup_hw_endpoint(hw_endpoint_t *ep) {
+//     if (!ep || !ep->ecr) return;
+//
+//     // Determine configuration
+//     uint32_t type = ep->usb->bmAttributes;
+//     uint32_t ms = ep->usb->bInterval;
+//     uint32_t interval_lsb = EP_CTRL_HOST_INTERRUPT_INTERVAL_LSB;
+//     uint32_t offset = ((uint32_t) ep->buf) ^ ((uint32_t) usbh_dpram);
+//
+//     // Summarize endpoint configuration
+//     uint8_t ep_addr = ep->usb->bEndpointAddress;
+//     uint8_t ep_num = ep_addr & 0x0f;
+//     bool in = ep_addr & USB_DIR_IN;
+//     printf(" EP%d_%s│ 0x%02x │ Buffer offset 0x%04x\n",
+//            ep_num, in ? "IN " : "OUT", ep_addr, offset);
+//
+//     // Set the endpoint control register
+//     *ep->ecr = EP_CTRL_ENABLE_BITS               // Endpoint enabled
+//              | EP_CTRL_INTERRUPT_PER_BUFFER      // One interrupt per buffer
+//              | type << EP_CTRL_BUFFER_TYPE_LSB   // Transfer type
+//              | (ms ? ms - 1 : 0) << interval_lsb // Interrupt interval in ms
+//              | offset;                           // Data buffer offset
+//
+//     bindump(" ECR", *ep->ecr);
+// }
 
 // ==[ Transfers ]=============================================================
 
