@@ -641,7 +641,6 @@ void usb_host_reset() {
                       | USB_INTE_ERROR_RX_TIMEOUT_BITS;           // Receive timeout
 
     // Setup hardware endpoints
-    setup_hw_endpoint(&epx);
     // setup_hw_endpoints();
 
     bindump(" INT", usb_hw->inte);
@@ -664,9 +663,9 @@ void usb_task() {
 
             case EVENT_TRANSFER:
                 printf("Transfer complete\n");
-                printf("EP: %u\n", event.xfer.ep_addr);
-                printf("Result: %u\n", event.xfer.result);
-                printf("Length: %u\n", event.xfer.len);
+                if (event.xfer.len == 0) {
+                    send_zlp();
+                }
                 break;
 
             case EVENT_FUNCTION:
