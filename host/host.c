@@ -169,6 +169,91 @@ enum {
                       | USB_SIE_CTRL_EP0_INT_1BUF_BITS  // One bit per EP0 buf
 };
 
+// Start a transfer
+void start_transfer(usb_setup_packet_t *packet, size_t size) {
+
+    // Copy the packet to the transfer buffer
+    memcpy((void *) usbh_dpram->setup_packet, packet, size); // TODO: for (i=0; i<8; i++) needed? better?
+    bool in = packet->bmRequestType & USB_DIR_IN;
+
+    // Set ECR // TODO: What types should all of these be? Is uint32_t too big?
+    uint32_t type = 0; // ep->usb->bmAttributes;
+    uint32_t ms = 0; // ep->usb->bInterval;
+    uint32_t interval_lsb = EP_CTRL_HOST_INTERRUPT_INTERVAL_LSB;
+    uint32_t offset = 0x180; // ((uint32_t) ep->buf) ^ ((uint32_t) usbh_dpram);
+    uint32_t ecr = EP_CTRL_ENABLE_BITS               // Endpoint enabled
+                 | EP_CTRL_INTERRUPT_PER_BUFFER      // One interrupt per buffer
+                 | type << EP_CTRL_BUFFER_TYPE_LSB   // Transfer type
+                 | (ms ? ms - 1 : 0) << interval_lsb // Interrupt interval in ms
+                 | offset;                           // Data buffer offset
+    usbh_dpram->epx_ctrl = ecr;
+
+    // Set BCR
+    uint32_t bcr = USB_BUF_CTRL_LAST
+                 | USB_BUF_CTRL_DATA1_PID
+                 | USB_BUF_CTRL_SEL
+                 | size;
+    hw_set_wait_set(usbh_dpram->epx_buf_ctrl, bcr, 12, USB_BUF_CTRL_AVAIL);
+
+    // Set target device address and endpoint number
+    // NOTE: 19:16=ep_num, 6:0=dev_addr
+    // usb_hw->dev_addr_ctrl = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB));
+    usb_hw->dev_addr_ctrl = 0;
+
+    // Send the setup packet, using SIE_CTRL // TODO: preamble (LS on FS)
+    uint32_t scr = USB_SIE_CTRL_BASE              // SIE_CTRL defaults
+                 | USB_SIE_CTRL_SEND_SETUP_BITS   // Send a SETUP packet
+           | (in ? USB_SIE_CTRL_RECEIVE_DATA_BITS // IN to host is receive
+                 : USB_SIE_CTRL_SEND_DATA_BITS)   // OUT from host is send
+                 | USB_SIE_CTRL_START_TRANS_BITS;
+    // SDK says we need to let SIE_CTRL setting before setting USB_SIE_CTRL_START_TRANS_BITS???
+    //     hw_set_settle(usb_hw->sie_ctrl, scr, USB_SIE_CTRL_START_TRANS_BITS);
+
+    // Debug output
+    bindump(" ECR", ecr);
+    bindump(" BCR", bcr | USB_BUF_CTRL_AVAIL);
+    bindump(" SCR", scr | USB_SIE_CTRL_START_TRANS_BITS);
+    printf("< Setup");
+    hexdump(packet, size, 1);
+
+    // Is it ok to skip the nop delay before START_TRANS? TinyUSB skips it.
+    // hw_set_settle(usb_hw->sie_ctrl, scr, USB_SIE_CTRL_START_TRANS_BITS);
+    usb_hw->sie_ctrl = scr;
+}
+
+// Send a zero length status packet (ZLP)
+void send_zlp() {
+
+    // Set ECR
+    uint32_t ecr = EP_CTRL_ENABLE_BITS               // Endpoint enabled
+                 | EP_CTRL_INTERRUPT_PER_BUFFER;     // One interrupt per buffer
+    usbh_dpram->epx_ctrl = ecr;
+
+    // Set BCR
+    uint32_t bcr = USB_BUF_CTRL_FULL
+                 | USB_BUF_CTRL_LAST
+                 | USB_BUF_CTRL_DATA1_PID // not sure???
+                 | USB_BUF_CTRL_SEL;
+    hw_set_wait_set(usbh_dpram->epx_buf_ctrl, bcr, 12, USB_BUF_CTRL_AVAIL);
+
+    // Set target device address and endpoint number
+    // usb_hw->dev_addr_ctrl = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB));
+    usb_hw->dev_addr_ctrl = 0;
+
+    // Set SCR
+    uint32_t scr = USB_SIE_CTRL_BASE              // SIE_CTRL defaults
+                 | USB_SIE_CTRL_SEND_DATA_BITS    // OUT from host is send
+                 | USB_SIE_CTRL_START_TRANS_BITS;
+
+    // Debug output
+    bindump(" ECR", ecr);
+    bindump(" BCR", bcr | USB_BUF_CTRL_AVAIL);
+    bindump(" SCR", scr | USB_SIE_CTRL_START_TRANS_BITS);
+    printf("<ZLP\n");
+
+    usb_hw->sie_ctrl = scr;
+}
+
 // NOTE: This is a single/global/static control transfer object.
 // Control transfers: since most controllers do not support multiple control
 // transfers on multiple devices concurrently and control transfers are mainly
