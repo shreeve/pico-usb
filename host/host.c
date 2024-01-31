@@ -93,6 +93,11 @@ SDK_ALWAYS_INLINE static inline uint8_t line_state() {
     reg = (value) | (or_mask);
 
 enum {
+    USB_SIE_CTRL_BASE = USB_SIE_CTRL_VBUS_EN_BITS       // Supply VBUS
+                      | USB_SIE_CTRL_SOF_EN_BITS        // Enable full speed
+                      | USB_SIE_CTRL_KEEP_ALIVE_EN_BITS // Enable low speed
+                      | USB_SIE_CTRL_PULLDOWN_EN_BITS   // Ready for devices
+                      | USB_SIE_CTRL_EP0_INT_1BUF_BITS  // One bit per EP0 buf
 };
 
 // ==[ Endpoints ]=============================================================
@@ -163,14 +168,6 @@ typedef struct hw_endpoint {
 // }
 
 // ==[ Transfers ]=============================================================
-
-enum {
-    USB_SIE_CTRL_BASE = USB_SIE_CTRL_VBUS_EN_BITS       // Supply VBUS
-                      | USB_SIE_CTRL_SOF_EN_BITS        // Enable full speed
-                      | USB_SIE_CTRL_KEEP_ALIVE_EN_BITS // Enable low speed
-                      | USB_SIE_CTRL_PULLDOWN_EN_BITS   // Ready for devices
-                      | USB_SIE_CTRL_EP0_INT_1BUF_BITS  // One bit per EP0 buf
-};
 
 // Start a transfer
 void start_transfer(usb_setup_packet_t *packet, size_t size) {
