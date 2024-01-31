@@ -133,7 +133,7 @@ static hw_endpoint_t epx = {
 };
 
 // Set up an endpoint's control register
-void setup_usb_endpoint(hw_endpoint_t *ep) {
+void setup_hw_endpoint(hw_endpoint_t *ep) {
     if (!ep || !ep->ecr) return;
 
     // Determine configuration
@@ -608,9 +608,9 @@ void usb_host_reset() {
                       | USB_INTE_ERROR_DATA_SEQ_BITS              // Data error
                       | USB_INTE_ERROR_RX_TIMEOUT_BITS;           // Receive timeout
 
-    // Setup endpoints
-    setup_usb_endpoint(&epx);
-    // setup_usb_endpoints();
+    // Setup hardware endpoints
+    setup_hw_endpoint(&epx);
+    // setup_hw_endpoints();
 
     bindump(" INT", usb_hw->inte);
 
