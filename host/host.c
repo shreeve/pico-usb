@@ -81,6 +81,12 @@ enum {
     busy_wait_3_cycles(); \
     reg = (value) | (or_mask);
 
+#define hw_set_staged6(reg, value, or_mask) \
+    reg = (value); \
+    busy_wait_3_cycles(); \
+    busy_wait_3_cycles(); \
+    reg = (value) | (or_mask);
+
 SDK_ALWAYS_INLINE static inline bool is_host_mode() {
     return (usb_hw->main_ctrl & USB_MAIN_CTRL_HOST_NDEVICE_BITS);
 }
@@ -186,7 +192,11 @@ void start_transfer(usb_setup_packet_t *packet, size_t size) {
                  | USB_BUF_CTRL_DATA1_PID
                  | USB_BUF_CTRL_SEL
                  | size;
-    hw_set_wait_set(usbh_dpram->epx_buf_ctrl, bcr, 12, USB_BUF_CTRL_AVAIL);
+    // Datasheet § 4.1.2.5.1 (p. 383) says that when clk_sys (usually 133Mhz)
+    // and clk_usb (usually 48MHz) are different, we must wait one USB clock
+    // cycle before setting the AVAILABLE bit. Based on this, we should wait
+    // 133MHz/48MHz * 1 clk_usb cycle = 2.8 clk_sys cycles (rounds up to 3).
+    hw_set_staged3(usbh_dpram->epx_buf_ctrl, bcr, USB_BUF_CTRL_AVAIL);
 
     // Set target device address and endpoint number
     // NOTE: 19:16=ep_num, 6:0=dev_addr
@@ -197,10 +207,7 @@ void start_transfer(usb_setup_packet_t *packet, size_t size) {
     uint32_t scr = USB_SIE_CTRL_BASE              // SIE_CTRL defaults
                  | USB_SIE_CTRL_SEND_SETUP_BITS   // Send a SETUP packet
            | (in ? USB_SIE_CTRL_RECEIVE_DATA_BITS // IN to host is receive
-                 : USB_SIE_CTRL_SEND_DATA_BITS)   // OUT from host is send
-                 | USB_SIE_CTRL_START_TRANS_BITS;
-    // SDK says we need to let SIE_CTRL setting before setting USB_SIE_CTRL_START_TRANS_BITS???
-    //     hw_set_settle(usb_hw->sie_ctrl, scr, USB_SIE_CTRL_START_TRANS_BITS);
+                 : USB_SIE_CTRL_SEND_DATA_BITS);  // OUT from host is send
 
     // Debug output
     bindump(" ECR", ecr);
@@ -209,9 +216,11 @@ void start_transfer(usb_setup_packet_t *packet, size_t size) {
     printf("< Setup");
     hexdump(packet, size, 1);
 
-    // Is it ok to skip the nop delay before START_TRANS? TinyUSB skips it.
-    // hw_set_settle(usb_hw->sie_ctrl, scr, USB_SIE_CTRL_START_TRANS_BITS);
-    usb_hw->sie_ctrl = scr;
+    // Datasheet § 4.1.2.7 (p. 390) says that when clk_sys (usually 133Mhz)
+    // and clk_usb (usually 48MHz) are different, we must wait two USB clock
+    // cycles before setting the START_TRANS bit. Based on this, we need
+    // 133MHz/48MHz * 2 clk_usb cycles = 5.6 clk_sys cycles (rounds up to 6).
+    hw_set_staged6(usb_hw->sie_ctrl, scr, USB_SIE_CTRL_START_TRANS_BITS);
 }
 
 // Send a zero length status packet (ZLP)
@@ -223,11 +232,11 @@ void send_zlp() {
     usbh_dpram->epx_ctrl = ecr;
 
     // Set BCR
-    uint32_t bcr = USB_BUF_CTRL_FULL
+    uint32_t bcr = USB_BUF_CTRL_FULL // Indicates we've populated the buffer
                  | USB_BUF_CTRL_LAST
-                 | USB_BUF_CTRL_DATA1_PID // not sure???
+                 | USB_BUF_CTRL_DATA1_PID
                  | USB_BUF_CTRL_SEL;
-    hw_set_wait_set(usbh_dpram->epx_buf_ctrl, bcr, 12, USB_BUF_CTRL_AVAIL);
+    hw_set_staged3(usbh_dpram->epx_buf_ctrl, bcr, USB_BUF_CTRL_AVAIL);
 
     // Set target device address and endpoint number
     // usb_hw->dev_addr_ctrl = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB));
@@ -235,8 +244,7 @@ void send_zlp() {
 
     // Set SCR
     uint32_t scr = USB_SIE_CTRL_BASE              // SIE_CTRL defaults
-                 | USB_SIE_CTRL_SEND_DATA_BITS    // OUT from host is send
-                 | USB_SIE_CTRL_START_TRANS_BITS;
+                 | USB_SIE_CTRL_SEND_DATA_BITS;   // OUT from host is send
 
     // Debug output
     bindump(" ECR", ecr);
@@ -244,7 +252,8 @@ void send_zlp() {
     bindump(" SCR", scr | USB_SIE_CTRL_START_TRANS_BITS);
     printf("<ZLP\n");
 
-    usb_hw->sie_ctrl = scr;
+    // NOTE: TinyUSB doesn't wait here, but the datasheet says we should...
+    hw_set_staged6(usb_hw->sie_ctrl, scr, USB_SIE_CTRL_START_TRANS_BITS);
 }
 
 // NOTE: This is a single/global/static control transfer object.
