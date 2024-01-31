@@ -341,48 +341,38 @@ void send_zlp() {
 
 // Get device descriptor
 void get_device_descriptor() {
-    usb_setup_packet_t packet = {
+    printf("Get device descriptor\n");
+
+    static usb_setup_packet_t packet = {
         .bmRequestType = USB_DIR_IN
                        | USB_REQ_TYPE_STANDARD
                        | USB_REQ_TYPE_RECIPIENT_DEVICE,
         .bRequest      = USB_REQUEST_GET_DESCRIPTOR,
         .wValue        = MAKE_U16(USB_DT_DEVICE, 0),
         .wIndex        = 0,
-        .wLength       = sizeof(packet),
+        .wLength       = 8, // If dev_addr > 0, then use: sizeof(usb_device_descriptor_t)
     };
 
-    // Copy the packet to the transfer buffer
-    memcpy((void *) usbh_dpram->setup_packet, &packet, sizeof(packet));
-    printf("< Setup");
-    hexdump(&packet, sizeof(packet), 1);
+    start_transfer(&packet, sizeof(packet));
+}
 
-    // Read the fields in the packet
-    bool in = packet.bmRequestType & USB_DIR_IN;
-    uint16_t len = packet.wLength;
-    // epx.usb = in ? &ep0_in : &ep0_out;
+// Set device address
+void set_device_address() {
+    uint8_t dev_addr = 1;
+    printf("Set device address to %u\n", dev_addr);
 
-    // Execute the transfer
-//  usb_hw->dev_addr_ctrl = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB)); // NOTE: 19:16=ep_num, 6:0=dev_addr
-    usb_hw->dev_addr_ctrl = (uint32_t) 0; // NOTE: 19:16=ep_num, 6:0=dev_addr
+    // Setup packet
+    usb_setup_packet_t packet = {
+        .bmRequestType = USB_DIR_OUT
+                       | USB_REQ_TYPE_STANDARD
+                       | USB_REQ_TYPE_RECIPIENT_DEVICE,
+        .bRequest      = USB_REQUEST_SET_ADDRESS,
+        .wValue        = dev_addr,
+        .wIndex        = 0,
+        .wLength       = 0,
+    };
 
-    // // Values here are used on the IN transaction of the control transfer
-    // uint32_t ecr = handled during endpoint setup...
-
-    // Values here are used on the IN transaction of the control transfer
-    uint32_t bcr = USB_BUF_CTRL_LAST
-                 | USB_BUF_CTRL_DATA1_PID
-                 | USB_BUF_CTRL_SEL
-                 | len;
-    hw_set_wait_set(usbh_dpram->epx_buf_ctrl, bcr, 12, USB_BUF_CTRL_AVAIL);
-    bindump(" BCR", bcr | USB_BUF_CTRL_AVAIL);
-
-    // Send the setup packet // TODO: preamble (LS on FS)
-    uint32_t scr = USB_SIE_CTRL_BASE              // Default SIE_CTRL bits
-                 | USB_SIE_CTRL_SEND_SETUP_BITS   // Send a SETUP packet
-           | (in ? USB_SIE_CTRL_RECEIVE_DATA_BITS // IN to host is receive
-                 : USB_SIE_CTRL_SEND_DATA_BITS);  // OUT from host is send
-    hw_set_settle(usb_hw->sie_ctrl, scr, USB_SIE_CTRL_START_TRANS_BITS);
-    bindump(" SCR", scr | USB_SIE_CTRL_START_TRANS_BITS);
+    start_transfer(&packet, sizeof(packet));
 }
 
 // AVAILABLE bit   => datasheet page 383 says to wait 1 usb_clk cycle
