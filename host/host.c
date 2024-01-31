@@ -446,7 +446,7 @@ void isr_usbctrl() {
             printf("│> Data");
             hexdump(usbh_dpram->epx_data, len, 1);
         } else {
-            printf("│> ZLP\n");
+            printf("│<ZLP\n"); // which direction?!
         }
 
 // static void __tusb_irq_path_func(hw_handle_buff_status)()
