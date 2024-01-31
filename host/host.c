@@ -19,8 +19,17 @@
 #include "hardware/resets.h"      // Resetting the native USB controller
 
 #include "usb_common.h"           // USB 2.0 definitions
+#include "helpers.h"              // Helper functions
 
-// ==[ Event queue ]===========================================================
+#define MAKE_U16(x, y) (((x) << 8) | ((y)     ))
+#define SWAP_U16(x)    (((x) >> 8) | ((x) << 8))
+
+#define SDK_ALIGNED(bytes) __attribute__ ((aligned(bytes)))
+#define SDK_ALWAYS_INLINE  __attribute__ ((always_inline))
+#define SDK_PACKED         __attribute__ ((packed))
+#define SDK_WEAK           __attribute__ ((weak))
+
+// ==[ PicoUSB ]===============================================================
 
 enum {
     EVENT_CONNECTION,
@@ -52,17 +61,25 @@ typedef struct {
 
 static queue_t queue_struct, *queue = &queue_struct;
 
-// ==[ Helpers ]===============================================================
+// ==[ Hardware: rp2040 ]======================================================
 
-#include "helpers.h"
+enum {
+    USB_SIE_CTRL_BASE = USB_SIE_CTRL_VBUS_EN_BITS       // Supply VBUS
+                      | USB_SIE_CTRL_SOF_EN_BITS        // Enable full speed
+                      | USB_SIE_CTRL_KEEP_ALIVE_EN_BITS // Enable low speed
+                      | USB_SIE_CTRL_PULLDOWN_EN_BITS   // Ready for devices
+                      | USB_SIE_CTRL_EP0_INT_1BUF_BITS  // One bit per EP0 buf
+};
 
-#define MAKE_U16(x, y) (((x) << 8) | ((y)     ))
-#define SWAP_U16(x)    (((x) >> 8) | ((x) << 8))
+#define usb_hw_set   ((usb_hw_t *) hw_set_alias_untyped  (usb_hw))
+#define usb_hw_clear ((usb_hw_t *) hw_clear_alias_untyped(usb_hw))
 
-#define SDK_ALIGNED(bytes) __attribute__ ((aligned(bytes)))
-#define SDK_ALWAYS_INLINE  __attribute__ ((always_inline))
-#define SDK_PACKED         __attribute__ ((packed))
-#define SDK_WEAK           __attribute__ ((weak))
+#define busy_wait_3_cycles() __asm volatile("nop\nnop\nnop\n":::"memory")
+
+#define hw_set_staged3(reg, value, or_mask) \
+    reg = (value); \
+    busy_wait_3_cycles(); \
+    reg = (value) | (or_mask);
 
 SDK_ALWAYS_INLINE static inline bool is_host_mode() {
     return (usb_hw->main_ctrl & USB_MAIN_CTRL_HOST_NDEVICE_BITS);
@@ -78,49 +95,8 @@ SDK_ALWAYS_INLINE static inline uint8_t line_state() {
                               >> USB_SIE_STATUS_LINE_STATE_LSB;
 }
 
-#define usb_hw_set   ((usb_hw_t *) hw_set_alias_untyped  (usb_hw))
-#define usb_hw_clear ((usb_hw_t *) hw_clear_alias_untyped(usb_hw))
-
-#define hw_set_wait_set(reg, value, cycles, or_mask) \
-    reg = (value); \
-    busy_wait_at_least_cycles(cycles); \
-    reg = (value) | (or_mask);
-
-#define hw_set_settle(reg, value, or_mask) \
-    reg = (value); \
-    __asm volatile("b 1f\n1:b 1f\n1:b 1f\n1:b 1f\n1:b 1f\n1:b 1f\n1:\n" \
-        : : : "memory"); \
-    reg = (value) | (or_mask);
-
-enum {
-    USB_SIE_CTRL_BASE = USB_SIE_CTRL_VBUS_EN_BITS       // Supply VBUS
-                      | USB_SIE_CTRL_SOF_EN_BITS        // Enable full speed
-                      | USB_SIE_CTRL_KEEP_ALIVE_EN_BITS // Enable low speed
-                      | USB_SIE_CTRL_PULLDOWN_EN_BITS   // Ready for devices
-                      | USB_SIE_CTRL_EP0_INT_1BUF_BITS  // One bit per EP0 buf
-};
-
-// ==[ Endpoints ]=============================================================
-
-#define EP0_OUT_ADDR (USB_DIR_OUT | 0)
-#define EP0_IN_ADDR  (USB_DIR_IN  | 0)
-
-// static usb_endpoint_descriptor_t usb_epx = {
-//     .bLength          = sizeof(usb_endpoint_descriptor_t),
-//     .bDescriptorType  = USB_DT_ENDPOINT,
-//     .bEndpointAddress = EP0_OUT_ADDR, // Can be IN and OUT
-//     .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
-//     .wMaxPacketSize   = 64,
-//     .bInterval        = 0
-// };
-
 typedef void (*hw_endpoint_cb)(uint8_t *buf, uint16_t len);
 
-// void epx_cb(uint8_t *buf, uint16_t len) {
-//     printf("Inside the EPX callback...\n");
-// }
-
-// Hardware endpoint
 typedef struct hw_endpoint {
     usb_endpoint_descriptor_t *usb; // USB descriptor
     volatile uint32_t *ecr;         // Endpoint control register
@@ -130,42 +106,59 @@ typedef struct hw_endpoint {
     hw_endpoint_cb cb;              // Callback function
 } hw_endpoint_t;
 
-// // Create our shared EPX endpoint
-// static hw_endpoint_t epx = {
-//     .usb = &usb_epx,
-//     .ecr = &usbh_dpram->epx_ctrl,
-//     .bcr = &usbh_dpram->epx_buf_ctrl,
-//     .buf = &usbh_dpram->epx_data[0],
-//     .pid = 1, // Starts with DATA1
-//     .cb  = epx_cb,
-// };
+// ==[ Endpoints ]=============================================================
 
-// // Set up an endpoint's control register
-// void setup_hw_endpoint(hw_endpoint_t *ep) {
-//     if (!ep || !ep->ecr) return;
-//
-//     // Determine configuration
-//     uint32_t type = ep->usb->bmAttributes;
-//     uint32_t ms = ep->usb->bInterval;
-//     uint32_t interval_lsb = EP_CTRL_HOST_INTERRUPT_INTERVAL_LSB;
-//     uint32_t offset = ((uint32_t) ep->buf) ^ ((uint32_t) usbh_dpram);
-//
-//     // Summarize endpoint configuration
-//     uint8_t ep_addr = ep->usb->bEndpointAddress;
-//     uint8_t ep_num = ep_addr & 0x0f;
-//     bool in = ep_addr & USB_DIR_IN;
-//     printf(" EP%d_%s│ 0x%02x │ Buffer offset 0x%04x\n",
-//            ep_num, in ? "IN " : "OUT", ep_addr, offset);
-//
-//     // Set the endpoint control register
-//     *ep->ecr = EP_CTRL_ENABLE_BITS               // Endpoint enabled
-//              | EP_CTRL_INTERRUPT_PER_BUFFER      // One interrupt per buffer
-//              | type << EP_CTRL_BUFFER_TYPE_LSB   // Transfer type
-//              | (ms ? ms - 1 : 0) << interval_lsb // Interrupt interval in ms
-//              | offset;                           // Data buffer offset
-//
-//     bindump(" ECR", *ep->ecr);
-// }
+#define EP0_OUT_ADDR (USB_DIR_OUT | 0)
+#define EP0_IN_ADDR  (USB_DIR_IN  | 0)
+
+static usb_endpoint_descriptor_t usb_epx = {
+    .bLength          = sizeof(usb_endpoint_descriptor_t),
+    .bDescriptorType  = USB_DT_ENDPOINT,
+    .bEndpointAddress = EP0_OUT_ADDR, // Can be IN and OUT
+    .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
+    .wMaxPacketSize   = 64,
+    .bInterval        = 0
+};
+
+void epx_cb(uint8_t *buf, uint16_t len) {
+    printf("Inside the EPX callback...\n");
+}
+
+static hw_endpoint_t epx = {
+    .usb = &usb_epx,
+    .ecr = &usbh_dpram->epx_ctrl,
+    .bcr = &usbh_dpram->epx_buf_ctrl,
+    .buf = &usbh_dpram->epx_data[0],
+    .pid = 1, // Starts with DATA1
+    .cb  = epx_cb,
+};
+
+// Set up an endpoint's control register
+void setup_hw_endpoint(hw_endpoint_t *ep) {
+    if (!ep || !ep->ecr) return;
+
+    // Determine configuration
+    uint32_t type = ep->usb->bmAttributes;
+    uint32_t ms = ep->usb->bInterval;
+    uint32_t interval_lsb = EP_CTRL_HOST_INTERRUPT_INTERVAL_LSB;
+    uint32_t offset = ((uint32_t) ep->buf) ^ ((uint32_t) usbh_dpram);
+
+    // Summarize endpoint configuration
+    uint8_t ep_addr = ep->usb->bEndpointAddress;
+    uint8_t ep_num = ep_addr & 0x0f;
+    bool in = ep_addr & USB_DIR_IN;
+    printf(" EP%d_%s│ 0x%02x │ Buffer offset 0x%04x\n",
+           ep_num, in ? "IN " : "OUT", ep_addr, offset);
+
+    // Set the endpoint control register
+    *ep->ecr = EP_CTRL_ENABLE_BITS               // Endpoint enabled
+             | EP_CTRL_INTERRUPT_PER_BUFFER      // One interrupt per buffer
+             | type << EP_CTRL_BUFFER_TYPE_LSB   // Transfer type
+             | (ms ? ms - 1 : 0) << interval_lsb // Interrupt interval in ms
+             | offset;                           // Data buffer offset
+
+    bindump(" ECR", *ep->ecr);
+}
 
 // ==[ Transfers ]=============================================================
 
