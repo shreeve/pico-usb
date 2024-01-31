@@ -98,7 +98,7 @@ static queue_t queue_struct, *queue = &queue_struct;
 #define EP0_IN_ADDR  (USB_DIR_IN  | 0)
 
 static usb_endpoint_descriptor_t ep0_both = {
-    .bLength          = sizeof(struct usb_endpoint_descriptor),
+    .bLength          = sizeof(usb_endpoint_descriptor_t),
     .bDescriptorType  = USB_DT_ENDPOINT,
     .bEndpointAddress = EP0_OUT_ADDR, // Can be IN and OUT
     .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
@@ -113,17 +113,17 @@ void epx_cb(uint8_t *buf, uint16_t len) {
 }
 
 // Hardware endpoint
-struct hw_endpoint {
+typedef struct hw_endpoint {
     usb_endpoint_descriptor_t *usb; // USB descriptor
     volatile uint32_t *ecr;         // Endpoint control register
     volatile uint32_t *bcr;         // Buffer control register
     volatile uint8_t *buf;          // Data buffer
     uint8_t pid;                    // Toggle DATA0/DATA1 each packet
     hw_endpoint_cb cb;              // Callback function
-};
+} hw_endpoint_t;
 
 // Create our shared EPX endpoint
-static struct hw_endpoint epx = {
+static hw_endpoint_t epx = {
     .usb = &ep0_both,
     .ecr = &usbh_dpram->epx_ctrl,
     .bcr = &usbh_dpram->epx_buf_ctrl,
@@ -133,7 +133,7 @@ static struct hw_endpoint epx = {
 };
 
 // Set up an endpoint's control register
-void usb_setup_endpoint(struct hw_endpoint *ep) {
+void setup_usb_endpoint(hw_endpoint_t *ep) {
     if (!ep || !ep->ecr) return;
 
     // Determine configuration
@@ -256,24 +256,24 @@ enum {
 
 // Get device descriptor
 void get_device_descriptor() {
-    usb_setup_packet_t request = {
+    usb_setup_packet_t packet = {
         .bmRequestType = USB_DIR_IN
                        | USB_REQ_TYPE_STANDARD
                        | USB_REQ_TYPE_RECIPIENT_DEVICE,
         .bRequest      = USB_REQUEST_GET_DESCRIPTOR,
         .wValue        = MAKE_U16(USB_DT_DEVICE, 0),
         .wIndex        = 0,
-        .wLength       = sizeof(request),
+        .wLength       = sizeof(packet),
     };
 
-    // Copy the request to the transfer buffer
-    memcpy((void *) usbh_dpram->setup_packet, &request, sizeof(request));
+    // Copy the packet to the transfer buffer
+    memcpy((void *) usbh_dpram->setup_packet, &packet, sizeof(packet));
     printf("< Setup");
-    hexdump(&request, sizeof(request), 1);
+    hexdump(&packet, sizeof(packet), 1);
 
-    // Read the fields in the request
-    bool in = request.bmRequestType & USB_DIR_IN;
-    uint16_t len = request.wLength;
+    // Read the fields in the packet
+    bool in = packet.bmRequestType & USB_DIR_IN;
+    uint16_t len = packet.wLength;
     // epx.usb = in ? &ep0_in : &ep0_out;
 
     // Execute the transfer
@@ -291,7 +291,7 @@ void get_device_descriptor() {
     hw_set_wait_set(usbh_dpram->epx_buf_ctrl, bcr, 12, USB_BUF_CTRL_AVAIL);
     bindump(" BCR", bcr | USB_BUF_CTRL_AVAIL);
 
-    // Send the setup request // TODO: preamble (LS on FS)
+    // Send the setup packet // TODO: preamble (LS on FS)
     uint32_t scr = USB_SIE_CTRL_BASE              // Default SIE_CTRL bits
                  | USB_SIE_CTRL_SEND_SETUP_BITS   // Send a SETUP packet
            | (in ? USB_SIE_CTRL_RECEIVE_DATA_BITS // IN to host is receive
@@ -423,7 +423,7 @@ void isr_usbctrl() {
 //   uint bit = 0b1;
 //   if ( remaining_buffers & bit ) {
 //     remaining_buffers &= ~bit;
-//     struct hw_endpoint * ep = &epx;
+//     hw_endpoint_t * ep = &epx;
 //
 //     uint32_t ep_ctrl = *ep->ecr;
     // if ( ep_ctrl & EP_CTRL_DOUBLE_BUFFERED_BITS ) {
@@ -436,7 +436,7 @@ void isr_usbctrl() {
 //     _handle_buff_status_bit(bit, ep);
 //   }
 
-// static void __tusb_irq_path_func(_handle_buff_status_bit)(uint bit, struct hw_endpoint *ep)
+// static void __tusb_irq_path_func(_handle_buff_status_bit)(uint bit, hw_endpoint_t *ep)
 // {
 //   usb_hw_clear->buf_status = bit;
 //   // EP may have been stalled?
@@ -448,7 +448,7 @@ void isr_usbctrl() {
 // }
 
 // // Returns true if transfer is complete
-// bool __tusb_irq_path_func(hw_endpoint_xfer_continue)(struct hw_endpoint *ep) {
+// bool __tusb_irq_path_func(hw_endpoint_xfer_continue)(hw_endpoint_t *ep) {
 //   hw_endpoint_lock_update(ep, 1);
 //
 //   // Part way through a transfer
@@ -609,8 +609,8 @@ void usb_host_reset() {
                       | USB_INTE_ERROR_RX_TIMEOUT_BITS;           // Receive timeout
 
     // Setup endpoints
-    usb_setup_endpoint(&epx);
-    // usb_setup_endpoints();
+    setup_usb_endpoint(&epx);
+    // setup_usb_endpoints();
 
     bindump(" INT", usb_hw->inte);
 
