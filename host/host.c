@@ -387,13 +387,15 @@ void start_enumeration() {
 
 // Interrupt handler
 void isr_usbctrl() {
+    volatile uint32_t intr = usb_hw->intr;
     volatile uint32_t ints = usb_hw->ints;
     uint16_t size = 0;
     static event_t event;
 
     printf("┌───────┬──────┬──────────────────────────────────────────────────┐\n");
     printf("│Frame\t│ %4u │%50s│\n", usb_hw->sof_rd, "");
-    bindump("│IRQ", ints);
+    bindump("│INTR", intr);
+    bindump("│INTS", ints);
     bindump("│SIE", usb_hw->sie_status);
     bindump("│DEV", usb_hw->dev_addr_ctrl);
     bindump("│ECR", usbh_dpram->epx_ctrl);
