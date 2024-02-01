@@ -350,6 +350,7 @@ SDK_ALWAYS_INLINE static inline void send_zlp(hw_endpoint_t *ep) {
 
 // Get device descriptor
 void get_device_descriptor() {
+
     printf("Get device descriptor\n");
 
     static usb_setup_packet_t packet = {
@@ -368,6 +369,7 @@ void get_device_descriptor() {
 // Set device address
 void set_device_address() {
     uint8_t dev_addr = 1;
+
     printf("Set device address to %u\n", dev_addr);
 
     // Setup packet
@@ -385,6 +387,7 @@ void set_device_address() {
 }
 
 void start_enumeration() {
+
     printf("Start enumeration\n");
 
 // static uint8_t _usbh_ctrl_buf[CFG_TUH_ENUMERATION_BUFSIZE];
