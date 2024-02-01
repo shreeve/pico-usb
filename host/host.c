@@ -3,9 +3,11 @@
 //
 // Author: Steve Shreeve <steve.shreeve@gmail.com>
 //   Date: January 29, 2024
+//   Note: This is a work in progress. It is not yet functional.
 //  Legal: Same license as the Raspberry Pi Pico SDK
-// Thanks: Thanks to the TinyUSB project for inspiration and code snippets!
-//  Notes: This is a work in progress. It is not yet functional.
+//
+// Thanks to the TinyUSB project for inspiration and code snippets! Also, thank
+// you Miroslav Nemecek for the https://github.com/Panda381/PicoLibSDK project.
 // ============================================================================
 
 #include <stdio.h>                // For printf
