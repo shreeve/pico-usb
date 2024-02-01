@@ -63,14 +63,6 @@ static queue_t queue_struct, *queue = &queue_struct;
 
 // ==[ Hardware: rp2040 ]======================================================
 
-enum {
-    USB_SIE_CTRL_BASE = USB_SIE_CTRL_VBUS_EN_BITS       // Supply VBUS
-                      | USB_SIE_CTRL_SOF_EN_BITS        // Enable full speed
-                      | USB_SIE_CTRL_KEEP_ALIVE_EN_BITS // Enable low speed
-                      | USB_SIE_CTRL_PULLDOWN_EN_BITS   // Ready for devices
-                      | USB_SIE_CTRL_EP0_INT_1BUF_BITS  // One bit per EP0 buf
-};
-
 #define usb_hw_set   ((usb_hw_t *) hw_set_alias_untyped  (usb_hw))
 #define usb_hw_clear ((usb_hw_t *) hw_clear_alias_untyped(usb_hw))
 
@@ -100,6 +92,14 @@ SDK_ALWAYS_INLINE static inline uint8_t line_state() {
     return (usb_hw->sie_status & USB_SIE_STATUS_LINE_STATE_BITS) \
                               >> USB_SIE_STATUS_LINE_STATE_LSB;
 }
+
+enum {
+    USB_SIE_CTRL_BASE = USB_SIE_CTRL_VBUS_EN_BITS       // Supply VBUS
+                      | USB_SIE_CTRL_SOF_EN_BITS        // Enable full speed
+                      | USB_SIE_CTRL_KEEP_ALIVE_EN_BITS // Enable low speed
+                      | USB_SIE_CTRL_PULLDOWN_EN_BITS   // Ready for devices
+                      | USB_SIE_CTRL_EP0_INT_1BUF_BITS  // One bit per EP0 buf
+};
 
 typedef void (*hw_endpoint_cb)(uint8_t *buf, uint16_t len);
 
