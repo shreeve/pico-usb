@@ -186,22 +186,60 @@ void setup_hw_endpoint(hw_endpoint_t *ep) {
 
 // Start a transfer
 void start_transfer(hw_endpoint_t *ep, usb_setup_packet_t *packet, size_t size) {
-    if (!ep || !ep->on) setup_hw_endpoint(ep);
+    if (!ep) panic("Invalid endpoint\n");
+    if (!ep->on) setup_hw_endpoint(ep);
+
+    uint32_t bcr, scr;
 
     // Set target device address and endpoint number
     // NOTE: 19:16=ep_num, 6:0=dev_addr
     // *ep->dac = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB));
     *ep->dac = 0;
 
+if (size == 0) {
+    bool in = false;
+
+    // Set BCR
+    bcr = USB_BUF_CTRL_FULL // Indicates we've populated the buffer
+        | USB_BUF_CTRL_LAST
+        | USB_BUF_CTRL_DATA1_PID
+        | USB_BUF_CTRL_SEL;
+    //  | size; // just happens to be zero
+
+    // Set SCR
+    scr =          USB_SIE_CTRL_BASE              // SIE_CTRL defaults
+                 | USB_SIE_CTRL_SEND_DATA_BITS;   // OUT from host is send
+
+} else {
     // Copy the packet to the transfer buffer
-    memcpy((void *) usbh_dpram->setup_packet, packet, size); // TODO: for (i=0; i<8; i++) needed? better?
+    memcpy((void *) usbh_dpram->setup_packet, packet, size); // TODO: is for (i=0; i<8; i++) needed? better?
     bool in = packet->bmRequestType & USB_DIR_IN;
 
     // Set BCR
-    uint32_t bcr = USB_BUF_CTRL_LAST
-                 | USB_BUF_CTRL_DATA1_PID
-                 | USB_BUF_CTRL_SEL
-                 | size;
+    bcr = USB_BUF_CTRL_LAST
+        | USB_BUF_CTRL_DATA1_PID
+        | USB_BUF_CTRL_SEL
+        | size;
+
+    // Send the setup packet, using SIE_CTRL // TODO: preamble (LS on FS)
+    scr =          USB_SIE_CTRL_BASE              // SIE_CTRL defaults
+                 | USB_SIE_CTRL_SEND_SETUP_BITS   // Send a SETUP packet
+           | (in ? USB_SIE_CTRL_RECEIVE_DATA_BITS // IN to host is receive
+                 : USB_SIE_CTRL_SEND_DATA_BITS);  // OUT from host is send
+}
+
+    // Debug output
+    bindump(" ECR", *ep->ecr);
+    bindump(" BCR", bcr | USB_BUF_CTRL_AVAIL);
+    bindump(" SCR", scr | USB_SIE_CTRL_START_TRANS_BITS);
+    if (size == 0) {
+        printf("<ZLP\n");
+    } else {
+        printf("< Setup");
+        hexdump(packet, size, 1);
+    }
+
+    // NOTE: We might be able to collapse the 3 and 6 cycle delays into one!
 
     // Datasheet § 4.1.2.5.1 (p. 383) says that when clk_sys (usually 133Mhz)
     // and clk_usb (usually 48MHz) are different, we must wait one USB clock
@@ -209,54 +247,18 @@ void start_transfer(hw_endpoint_t *ep, usb_setup_packet_t *packet, size_t size) 
     // 133MHz/48MHz * 1 clk_usb cycle = 2.8 clk_sys cycles (rounds up to 3).
     hw_set_staged3(*ep->bcr, bcr, USB_BUF_CTRL_AVAIL);
 
-    // Send the setup packet, using SIE_CTRL // TODO: preamble (LS on FS)
-    uint32_t scr = USB_SIE_CTRL_BASE              // SIE_CTRL defaults
-                 | USB_SIE_CTRL_SEND_SETUP_BITS   // Send a SETUP packet
-           | (in ? USB_SIE_CTRL_RECEIVE_DATA_BITS // IN to host is receive
-                 : USB_SIE_CTRL_SEND_DATA_BITS);  // OUT from host is send
-
-    // Debug output
-    bindump(" ECR", *ep->ecr);
-    bindump(" BCR", bcr | USB_BUF_CTRL_AVAIL);
-    bindump(" SCR", scr | USB_SIE_CTRL_START_TRANS_BITS);
-    printf("< Setup");
-    hexdump(packet, size, 1);
-
     // Datasheet § 4.1.2.7 (p. 390) says that when clk_sys (usually 133Mhz)
     // and clk_usb (usually 48MHz) are different, we must wait two USB clock
     // cycles before setting the START_TRANS bit. Based on this, we need
     // 133MHz/48MHz * 2 clk_usb cycles = 5.6 clk_sys cycles (rounds up to 6).
+    //
     // NOTE: TinyUSB doesn't wait here, just sayin'... can we combine w/above?
     hw_set_staged6(usb_hw->sie_ctrl, scr, USB_SIE_CTRL_START_TRANS_BITS);
 }
 
 // Send a zero length status packet (ZLP)
-void send_zlp(hw_endpoint_t *ep) {
-    if (!ep || !ep->on) setup_hw_endpoint(ep);
-
-    // Set target device address and endpoint number
-    // *ep->dac = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB));
-    *ep->dac = 0;
-
-    // Set BCR
-    uint32_t bcr = USB_BUF_CTRL_FULL // Indicates we've populated the buffer
-                 | USB_BUF_CTRL_LAST
-                 | USB_BUF_CTRL_DATA1_PID
-                 | USB_BUF_CTRL_SEL;
-    hw_set_staged3(*ep->bcr, bcr, USB_BUF_CTRL_AVAIL);
-
-    // Set SCR
-    uint32_t scr = USB_SIE_CTRL_BASE              // SIE_CTRL defaults
-                 | USB_SIE_CTRL_SEND_DATA_BITS;   // OUT from host is send
-
-    // Debug output
-    bindump(" ECR", *ep->ecr);
-    bindump(" BCR", bcr | USB_BUF_CTRL_AVAIL);
-    bindump(" SCR", scr | USB_SIE_CTRL_START_TRANS_BITS);
-    printf("<ZLP\n");
-
-    // NOTE: TinyUSB doesn't wait here, but the datasheet says we should...
-    hw_set_staged6(usb_hw->sie_ctrl, scr, USB_SIE_CTRL_START_TRANS_BITS);
+SDK_ALWAYS_INLINE static inline void send_zlp(hw_endpoint_t *ep) {
+    start_transfer(ep, NULL, 0);
 }
 
 // NOTE: This is a single/global/static control transfer object.
