@@ -196,37 +196,39 @@ void start_transfer(hw_endpoint_t *ep, usb_setup_packet_t *packet, size_t size) 
     // *ep->dac = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB));
     *ep->dac = 0;
 
-if (size == 0) {
-    bool in = false;
+    // Control transfers start with a setup packet
+    if (!ep->usb->bmAttributes) {
+        memcpy((void *) usbh_dpram->setup_packet, packet, size); // TODO: is for (i=0; i<8; i++) needed? better?
+        bool in = packet->bmRequestType & USB_DIR_IN;
 
-    // Set BCR
-    bcr = USB_BUF_CTRL_FULL // Indicates we've populated the buffer
-        | USB_BUF_CTRL_LAST
-        | USB_BUF_CTRL_DATA1_PID
-        | USB_BUF_CTRL_SEL;
-    //  | size; // just happens to be zero
+        // Set BCR
+        bcr = USB_BUF_CTRL_LAST
+            | USB_BUF_CTRL_DATA1_PID
+            | USB_BUF_CTRL_SEL
+            | size;
 
-    // Set SCR
-    scr =          USB_SIE_CTRL_BASE              // SIE_CTRL defaults
-                 | USB_SIE_CTRL_SEND_DATA_BITS;   // OUT from host is send
+        // Send the setup packet, using SIE_CTRL // TODO: preamble (LS on FS)
+        scr =          USB_SIE_CTRL_BASE              // SIE_CTRL defaults
+                    | USB_SIE_CTRL_SEND_SETUP_BITS   // Send a SETUP packet
+            | (in ? USB_SIE_CTRL_RECEIVE_DATA_BITS // IN to host is receive
+                    : USB_SIE_CTRL_SEND_DATA_BITS);  // OUT from host is send
+    } else if (size != 0) {
+        // something here...
+        printf("WTF? I'm stuck in the weeds...\n");
+    } else { // Is there both a "send" ZLP AND a "recv" ZLP???
+        bool in = false;
 
-} else {
-    // Copy the packet to the transfer buffer
-    memcpy((void *) usbh_dpram->setup_packet, packet, size); // TODO: is for (i=0; i<8; i++) needed? better?
-    bool in = packet->bmRequestType & USB_DIR_IN;
+        // Set BCR
+        bcr = USB_BUF_CTRL_FULL // Indicates we've populated the buffer
+            | USB_BUF_CTRL_LAST
+            | USB_BUF_CTRL_DATA1_PID
+            | USB_BUF_CTRL_SEL;
+        //  | size; // just happens to be zero
 
-    // Set BCR
-    bcr = USB_BUF_CTRL_LAST
-        | USB_BUF_CTRL_DATA1_PID
-        | USB_BUF_CTRL_SEL
-        | size;
-
-    // Send the setup packet, using SIE_CTRL // TODO: preamble (LS on FS)
-    scr =          USB_SIE_CTRL_BASE              // SIE_CTRL defaults
-                 | USB_SIE_CTRL_SEND_SETUP_BITS   // Send a SETUP packet
-           | (in ? USB_SIE_CTRL_RECEIVE_DATA_BITS // IN to host is receive
-                 : USB_SIE_CTRL_SEND_DATA_BITS);  // OUT from host is send
-}
+        // Set SCR
+        scr =          USB_SIE_CTRL_BASE              // SIE_CTRL defaults
+                    | USB_SIE_CTRL_SEND_DATA_BITS;   // OUT from host is send
+    }
 
     // Debug output
     bindump(" ECR", *ep->ecr);
@@ -258,7 +260,7 @@ if (size == 0) {
 
 // Send a zero length status packet (ZLP)
 SDK_ALWAYS_INLINE static inline void send_zlp(hw_endpoint_t *ep) {
-    start_transfer(ep, NULL, 0);
+    start_transfer(ep, NULL, 0); // TODO: This isn't correct... it should be the end of a transfer
 }
 
 // NOTE: This is a single/global/static control transfer object.
