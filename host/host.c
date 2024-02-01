@@ -184,11 +184,7 @@ void setup_hw_endpoint(hw_endpoint_t *ep) {
 
 // Start a transfer
 void start_transfer(hw_endpoint_t *ep, usb_setup_packet_t *packet, size_t size) {
-
-    // Ensure endpoint is on
-    if (!ep || !ep->on) {
-        setup_hw_endpoint(ep);
-    }
+    if (!ep || !ep->on) setup_hw_endpoint(ep);
 
     // Set target device address and endpoint number
     // NOTE: 19:16=ep_num, 6:0=dev_addr
@@ -234,11 +230,7 @@ void start_transfer(hw_endpoint_t *ep, usb_setup_packet_t *packet, size_t size) 
 
 // Send a zero length status packet (ZLP)
 void send_zlp(hw_endpoint_t *ep) {
-
-    // Ensure endpoint is on
-    if (!ep || !ep->on) {
-        setup_hw_endpoint(ep);
-    }
+    if (!ep || !ep->on) setup_hw_endpoint(ep);
 
     // Set target device address and endpoint number
     // usb_hw->dev_addr_ctrl = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB));
