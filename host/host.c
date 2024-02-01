@@ -110,6 +110,7 @@ typedef struct hw_endpoint {
     volatile uint8_t *buf;          // Data buffer
     uint8_t pid;                    // Toggle DATA0/DATA1 each packet
     hw_endpoint_cb cb;              // Callback function
+    bool on;                        // Endpoint is on
 } hw_endpoint_t;
 
 // ==[ Endpoints ]=============================================================
@@ -120,7 +121,7 @@ typedef struct hw_endpoint {
 static usb_endpoint_descriptor_t usb_epx = {
     .bLength          = sizeof(usb_endpoint_descriptor_t),
     .bDescriptorType  = USB_DT_ENDPOINT,
-    .bEndpointAddress = EP0_OUT_ADDR, // Can be IN and OUT
+    .bEndpointAddress = EP0_OUT_ADDR, // Can be IN or OUT
     .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
     .wMaxPacketSize   = 64,
     .bInterval        = 0
@@ -139,7 +140,7 @@ static hw_endpoint_t epx = {
     .cb  = epx_cb,
 };
 
-// Set up an endpoint's control register
+// Set up endpoint control register (ECR)
 void setup_hw_endpoint(hw_endpoint_t *ep) {
     if (!ep || !ep->ecr) return;
 
@@ -147,7 +148,7 @@ void setup_hw_endpoint(hw_endpoint_t *ep) {
     uint32_t type = ep->usb->bmAttributes;
     uint32_t ms = ep->usb->bInterval;
     uint32_t interval_lsb = EP_CTRL_HOST_INTERRUPT_INTERVAL_LSB;
-    uint32_t offset = ((uint32_t) ep->buf) ^ ((uint32_t) usbh_dpram);
+    uint32_t offset = ((uint32_t) ep->buf) ^ ((uint32_t) usbh_dpram); // TODO: Why not just use subtraction?
 
     // Summarize endpoint configuration
     uint8_t ep_addr = ep->usb->bEndpointAddress;
@@ -164,28 +165,28 @@ void setup_hw_endpoint(hw_endpoint_t *ep) {
              | offset;                           // Data buffer offset
 
     bindump(" ECR", *ep->ecr);
+
+    ep->on = true;
 }
 
 // ==[ Transfers ]=============================================================
 
 // Start a transfer
-void start_transfer(usb_setup_packet_t *packet, size_t size) {
+void start_transfer(hw_endpoint_t *ep, usb_setup_packet_t *packet, size_t size) {
+
+    // Ensure endpoint is on
+    if (!ep || !ep->on) {
+        setup_hw_endpoint(ep);
+    }
+
+    // Set target device address and endpoint number
+    // NOTE: 19:16=ep_num, 6:0=dev_addr
+    // usb_hw->dev_addr_ctrl = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB));
+    usb_hw->dev_addr_ctrl = 0;
 
     // Copy the packet to the transfer buffer
     memcpy((void *) usbh_dpram->setup_packet, packet, size); // TODO: for (i=0; i<8; i++) needed? better?
     bool in = packet->bmRequestType & USB_DIR_IN;
-
-    // Set ECR // TODO: What types should all of these be? Is uint32_t too big?
-    uint32_t type = 0; // ep->usb->bmAttributes;
-    uint32_t ms = 0; // ep->usb->bInterval;
-    uint32_t interval_lsb = EP_CTRL_HOST_INTERRUPT_INTERVAL_LSB;
-    uint32_t offset = 0x180; // ((uint32_t) ep->buf) ^ ((uint32_t) usbh_dpram);
-    uint32_t ecr = EP_CTRL_ENABLE_BITS               // Endpoint enabled
-                 | EP_CTRL_INTERRUPT_PER_BUFFER      // One interrupt per buffer
-                 | type << EP_CTRL_BUFFER_TYPE_LSB   // Transfer type
-                 | (ms ? ms - 1 : 0) << interval_lsb // Interrupt interval in ms
-                 | offset;                           // Data buffer offset
-    usbh_dpram->epx_ctrl = ecr;
 
     // Set BCR
     uint32_t bcr = USB_BUF_CTRL_LAST
@@ -198,11 +199,6 @@ void start_transfer(usb_setup_packet_t *packet, size_t size) {
     // 133MHz/48MHz * 1 clk_usb cycle = 2.8 clk_sys cycles (rounds up to 3).
     hw_set_staged3(usbh_dpram->epx_buf_ctrl, bcr, USB_BUF_CTRL_AVAIL);
 
-    // Set target device address and endpoint number
-    // NOTE: 19:16=ep_num, 6:0=dev_addr
-    // usb_hw->dev_addr_ctrl = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB));
-    usb_hw->dev_addr_ctrl = 0;
-
     // Send the setup packet, using SIE_CTRL // TODO: preamble (LS on FS)
     uint32_t scr = USB_SIE_CTRL_BASE              // SIE_CTRL defaults
                  | USB_SIE_CTRL_SEND_SETUP_BITS   // Send a SETUP packet
@@ -210,7 +206,7 @@ void start_transfer(usb_setup_packet_t *packet, size_t size) {
                  : USB_SIE_CTRL_SEND_DATA_BITS);  // OUT from host is send
 
     // Debug output
-    bindump(" ECR", ecr);
+    bindump(" ECR", *ep->ecr);
     bindump(" BCR", bcr | USB_BUF_CTRL_AVAIL);
     bindump(" SCR", scr | USB_SIE_CTRL_START_TRANS_BITS);
     printf("< Setup");
@@ -224,12 +220,16 @@ void start_transfer(usb_setup_packet_t *packet, size_t size) {
 }
 
 // Send a zero length status packet (ZLP)
-void send_zlp() {
+void send_zlp(hw_endpoint_t *ep) {
 
-    // Set ECR
-    uint32_t ecr = EP_CTRL_ENABLE_BITS               // Endpoint enabled
-                 | EP_CTRL_INTERRUPT_PER_BUFFER;     // One interrupt per buffer
-    usbh_dpram->epx_ctrl = ecr;
+    // Ensure endpoint is on
+    if (!ep || !ep->on) {
+        setup_hw_endpoint(ep);
+    }
+
+    // Set target device address and endpoint number
+    // usb_hw->dev_addr_ctrl = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB));
+    usb_hw->dev_addr_ctrl = 0;
 
     // Set BCR
     uint32_t bcr = USB_BUF_CTRL_FULL // Indicates we've populated the buffer
@@ -238,16 +238,12 @@ void send_zlp() {
                  | USB_BUF_CTRL_SEL;
     hw_set_staged3(usbh_dpram->epx_buf_ctrl, bcr, USB_BUF_CTRL_AVAIL);
 
-    // Set target device address and endpoint number
-    // usb_hw->dev_addr_ctrl = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB));
-    usb_hw->dev_addr_ctrl = 0;
-
     // Set SCR
     uint32_t scr = USB_SIE_CTRL_BASE              // SIE_CTRL defaults
                  | USB_SIE_CTRL_SEND_DATA_BITS;   // OUT from host is send
 
     // Debug output
-    bindump(" ECR", ecr);
+    bindump(" ECR", *ep->ecr);
     bindump(" BCR", bcr | USB_BUF_CTRL_AVAIL);
     bindump(" SCR", scr | USB_SIE_CTRL_START_TRANS_BITS);
     printf("<ZLP\n");
@@ -355,7 +351,7 @@ void get_device_descriptor() {
         .wLength       = 8, // If dev_addr > 0, then use: sizeof(usb_device_descriptor_t)
     };
 
-    start_transfer(&packet, sizeof(packet));
+    start_transfer(&epx, &packet, sizeof(packet));
 }
 
 // Set device address
@@ -374,7 +370,7 @@ void set_device_address() {
         .wLength       = 0,
     };
 
-    start_transfer(&packet, sizeof(packet));
+    start_transfer(&epx, &packet, sizeof(packet));
 }
 
 void start_enumeration() {
@@ -647,6 +643,7 @@ void usb_host_reset() {
 
     // Setup hardware endpoints
     // setup_hw_endpoints();
+    setup_hw_endpoint(&epx);
 
     bindump(" INT", usb_hw->inte);
 
@@ -669,7 +666,7 @@ void usb_task() {
             case EVENT_TRANSFER:
                 printf("Transfer complete\n");
                 if (event.xfer.len == 0) {
-                    send_zlp();
+                    send_zlp(&epx);
                 }
                 break;
 
