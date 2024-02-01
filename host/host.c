@@ -138,6 +138,7 @@ static hw_endpoint_t epx = {
     .buf = &usbh_dpram->epx_data[0],
     .pid = 1, // Starts with DATA1
     .cb  = epx_cb,
+    .on  = false,
 };
 
 // Set up endpoint control register (ECR)
