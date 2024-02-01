@@ -105,6 +105,7 @@ typedef void (*hw_endpoint_cb)(uint8_t *buf, uint16_t len);
 
 typedef struct hw_endpoint {
     usb_endpoint_descriptor_t *usb; // USB descriptor
+    volatile uint32_t *dac;         // Device address control
     volatile uint32_t *ecr;         // Endpoint control register
     volatile uint32_t *bcr;         // Buffer control register
     volatile uint8_t *buf;          // Data buffer
@@ -133,6 +134,7 @@ void epx_cb(uint8_t *buf, uint16_t len) {
 
 static hw_endpoint_t epx = {
     .usb = &usb_epx,
+    .dac = 0, // dev_addr 0, ep_num 0
     .ecr = &usbh_dpram->epx_ctrl,
     .bcr = &usbh_dpram->epx_buf_ctrl,
     .buf = &usbh_dpram->epx_data[0],
@@ -174,13 +176,13 @@ void setup_hw_endpoint(hw_endpoint_t *ep) {
 
 // ==[ Transfers ]=============================================================
 
-// NOTE: To perform transfers, here's what we need to do:
+// NOTE: To perform transfers, we need:
 //
-// 1. Set ECR (epx_ctrl) <- enable ep, set type, interval, offset, etc.
-// 2. Set BCR (epx_buf_ctrl) <- buf, size, available, setup, len, etc.
-// 3. Set SCR (sie_ctrl) <- EPx ints, setup packet logic, start transfer, etc.
-// 4. Set DAC (dev_addr_ctrl) <- dev_addr, ep_num
-// 5. Fill buf by copying message to it
+// • DAC (dev_addr_ctrl) <- dev_addr, ep_num
+// • ECR (epx_ctrl) <- enable ep, set type, interval, offset, etc.
+// • BUF by copying message to it
+// • BCR (epx_buf_ctrl) <- buf, size, available, setup, len, etc.
+// • SCR (sie_ctrl) <- EPx ints, setup packet logic, start transfer, etc.
 
 // Start a transfer
 void start_transfer(hw_endpoint_t *ep, usb_setup_packet_t *packet, size_t size) {
@@ -188,8 +190,8 @@ void start_transfer(hw_endpoint_t *ep, usb_setup_packet_t *packet, size_t size) 
 
     // Set target device address and endpoint number
     // NOTE: 19:16=ep_num, 6:0=dev_addr
-    // usb_hw->dev_addr_ctrl = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB));
-    usb_hw->dev_addr_ctrl = 0;
+    // *ep->dac = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB));
+    *ep->dac = 0;
 
     // Copy the packet to the transfer buffer
     memcpy((void *) usbh_dpram->setup_packet, packet, size); // TODO: for (i=0; i<8; i++) needed? better?
@@ -233,8 +235,8 @@ void send_zlp(hw_endpoint_t *ep) {
     if (!ep || !ep->on) setup_hw_endpoint(ep);
 
     // Set target device address and endpoint number
-    // usb_hw->dev_addr_ctrl = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB));
-    usb_hw->dev_addr_ctrl = 0;
+    // *ep->dac = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB));
+    *ep->dac = 0;
 
     // Set BCR
     uint32_t bcr = USB_BUF_CTRL_FULL // Indicates we've populated the buffer
