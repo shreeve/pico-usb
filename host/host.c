@@ -141,7 +141,7 @@ static hw_endpoint_t epx = {
     .on  = false,
 };
 
-// Set up endpoint control register (ECR)
+// Setup endpoint control register (ECR)
 void setup_hw_endpoint(hw_endpoint_t *ep) {
     if (!ep || !ep->ecr) return;
 
@@ -170,7 +170,17 @@ void setup_hw_endpoint(hw_endpoint_t *ep) {
     ep->on = true;
 }
 
+// ==[ Buffers ]===============================================================
+
 // ==[ Transfers ]=============================================================
+
+// NOTE: To perform transfers, here's what we need to do:
+//
+// 1. Set ECR (epx_ctrl) <- enable ep, set type, interval, offset, etc.
+// 2. Set BCR (epx_buf_ctrl) <- buf, size, available, setup, len, etc.
+// 3. Set SCR (sie_ctrl) <- EPx ints, setup packet logic, start transfer, etc.
+// 4. Set DAC (dev_addr_ctrl) <- dev_addr, ep_num
+// 5. Fill buf by copying message to it
 
 // Start a transfer
 void start_transfer(hw_endpoint_t *ep, usb_setup_packet_t *packet, size_t size) {
@@ -199,7 +209,7 @@ void start_transfer(hw_endpoint_t *ep, usb_setup_packet_t *packet, size_t size) 
     // and clk_usb (usually 48MHz) are different, we must wait one USB clock
     // cycle before setting the AVAILABLE bit. Based on this, we should wait
     // 133MHz/48MHz * 1 clk_usb cycle = 2.8 clk_sys cycles (rounds up to 3).
-    hw_set_staged3(usbh_dpram->epx_buf_ctrl, bcr, USB_BUF_CTRL_AVAIL);
+    hw_set_staged3(*ep->bcr, bcr, USB_BUF_CTRL_AVAIL);
 
     // Send the setup packet, using SIE_CTRL // TODO: preamble (LS on FS)
     uint32_t scr = USB_SIE_CTRL_BASE              // SIE_CTRL defaults
@@ -239,7 +249,7 @@ void send_zlp(hw_endpoint_t *ep) {
                  | USB_BUF_CTRL_LAST
                  | USB_BUF_CTRL_DATA1_PID
                  | USB_BUF_CTRL_SEL;
-    hw_set_staged3(usbh_dpram->epx_buf_ctrl, bcr, USB_BUF_CTRL_AVAIL);
+    hw_set_staged3(*ep->bcr, bcr, USB_BUF_CTRL_AVAIL);
 
     // Set SCR
     uint32_t scr = USB_SIE_CTRL_BASE              // SIE_CTRL defaults
