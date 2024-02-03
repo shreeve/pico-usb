@@ -221,6 +221,130 @@ void setup_hw_endpoints() {
 
 // ==[ Buffers ]===============================================================
 
+// Prepare endpoint buffer and return BCR
+uint32_t prepare_buffer(hw_endpoint_t *ep, uint8_t buf_id) {
+    uint16_t len = MIN(ep->bytes_left, ep->usb->wMaxPacketSize);
+    ep->bytes_left -= len;
+
+    uint32_t bcr = len | USB_BUF_CTRL_AVAIL;
+    bcr |= ep->pid ? USB_BUF_CTRL_DATA1_PID : USB_BUF_CTRL_DATA0_PID;
+    ep->pid ^= 1u;
+
+    // Copy data to buffer if we're sending
+    if (!ep->rx) { // TODO: We need a better way than ep->rx???
+        memcpy(ep->buf + 64 * buf_id, ep->user_buf, len);
+        ep->user_buf += len;
+        bcr |= USB_BUF_CTRL_FULL;
+    }
+
+    // Is this the last buffer? This only really matters for host mode. It will
+    // trigger the TRANS_COMPLETE interrupt but will also stop it polling. We
+    // only really care about this for setup packets being sent, though.
+    if (!ep->bytes_left) {
+        bcr |= USB_BUF_CTRL_LAST;
+    }
+
+    if (buf_id) bcr = bcr << 16;
+
+    return bcr;
+}
+
+// THe hardware for HOST "interrupt" EPs only supports single buffering and
+// HOST "bulk" EPs are based on these.
+
+void start_next_buffer(hw_endpoint_t *ep) {
+    const bool host = is_host_mode();
+    const bool in = ep->usb->bEndpointAddress & USB_DIR_IN;
+    const bool allow_double = host ? !in : in;
+
+    uint32_t ecr = *ep->ecr;
+    uint32_t bcr = prepare_buffer(ep, 0) | USB_BUF_CTRL_SEL;
+
+    if (ep->bytes_left && allow_double) {
+        bcr |=  prepare_buffer(ep, 1); // TODO: Fix isochronous for buf_1!
+        ecr |=  EP_CTRL_DOUBLE_BUFFERED_BITS;
+    } else {
+        ecr &= ~EP_CTRL_DOUBLE_BUFFERED_BITS;
+    }
+
+    *ep->ecr = ecr;
+    *ep->bcr = bcr;
+}
+
+// Sync an endpoint buffer by updating and returning byte counts
+uint16_t sync_buffer(hw_endpoint_t *ep, uint8_t buf_id) {
+    uint32_t bcr = *ep->bcr;
+    if (buf_id) bcr = bcr >> 16;
+    uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK;
+
+    if (ep->rx) {
+        assert(bcr & USB_BUF_CTRL_FULL); // For reads, ensure buffer is full
+        memcpy(ep->user_buf, ep->buf + 64 * buf_id, len);
+        ep->bytes_done += len;
+        ep->user_buf += len;
+    } else {
+        assert(!(bcr & USB_BUF_CTRL_FULL)); // For writes, ensure buffer not full
+        ep->bytes_done += len;
+    }
+
+    if (len < ep->usb->wMaxPacketSize) {
+        printf("Short packet on buffer %u with %u bytes\n", buf_id, len); // TODO: Get rid of this...
+        ep->bytes_left = 0; // TODO: Why is this "the last packet"? Isn't it just an interim update?
+    }
+
+    return len;
+}
+
+// TODO: Later, find all of the hw_endpoint_lock_update calls and put something in there...
+
+bool still_transferring(hw_endpoint_t *ep) {
+    if (!ep->active) panic("EP 0x%02x not active\n", ep->ep_addr);
+
+    // Update hw_endpoint with latest buffer status
+    if (sync_buffer(ep, 0) == ep->usb->wMaxPacketSize) { // Full buf_0
+        if (*ep->ecr & EP_CTRL_DOUBLE_BUFFERED_BITS) { // Check double buffer
+            sync_buffer(ep, 1); // TODO: What if buf_1 is 0 bytes or short?
+        }
+    }
+
+    if (!ep->bytes_left) return false; // Transfer is complete
+
+    // // Handle Errata 15: Buffer status may not be set during last 200µs of a frame
+    // if (e15_is_critical_frame_period(ep)) {
+    //     ep->pending = 1;
+    // } else {
+        start_next_buffer(ep); // Calculate and set ECR/BCR to transfer next buffer
+    // }
+
+    return true; // Transfer should continue
+}
+
+void handle_buffer(uint32_t bit, hw_endpoint_t *ep) {
+    if (still_transferring(ep)) return;
+
+    // NOTE: Queue an event for a successful transfer completion
+
+    // Get values
+    uint8_t  dev_addr   = ep->dev_addr;
+    uint8_t  ep_addr    = ep->ep_addr;
+    uint16_t bytes_done = ep->bytes_done;
+
+    // Reset values
+    ep->active     = false;
+    ep->bytes_left = 0;
+    ep->bytes_done = 0;
+    ep->user_buf   = 0;
+
+    // Queue an event
+    event_t event = { 0 };
+    event.type         = EVENT_TRANS_COMPLETE; // NOTE: This means succeess!
+    event.dev_addr     = dev_addr;
+    event.xfer.ep_addr = ep;
+    event.xfer.result  = TRANS_COMPLETE;
+    event.xfer.bytes   = 123; // will we have the total size transferred in the hw_ep?
+    queue_add_blocking(queue, &event);
+}
+
 // ==[ Transfers ]=============================================================
 
 // NOTE: To perform transfers, we need:
