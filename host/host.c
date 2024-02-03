@@ -161,6 +161,30 @@ typedef struct hw_endpoint {
 
 } hw_endpoint_t;
 
+/*  TinyUSB hw_endpoint:
+    ====================
+    bool     configured          <= on
+    bool     active              <= active
+    bool     pending           <=== ??? (set during the last 200µs of a frame)
+    bool     rx                <=== ??? (if !rx, we're sending data and know about it)
+    u8       host:dev_addr       <= dev_addr
+    u8       ep_addr             <= ep_addr
+    u8       next_pid            <= pid (should we call it next_pid?)
+    u8       transfer_type       <= usb->bmAttributes & something? Maybe???
+    u8       host:interrupt_num<=== ??? not yet?
+    u16      xferred_len         <= bytes_done
+    u16      remaining_len       <= bytes_left
+    u16      wMaxPacketSize      <= usb->wMaxPacketSize? or is that only for setup?
+    io32_rw *endpoint_control    <= ecr
+    io32_rw *buffer_control      <= bcr
+    u8      *hw_data_buf         <= buf
+    u8      *user_buf            <= user_buf
+    ================================================
+                                 <= *usb
+                                 <= *dac (dev_addr_ctrl)
+                                 <= cb (callback)
+*/
+
 static hw_endpoint_t eps[USB_MAX_ENDPOINTS], *epx = eps;
 
 // TODO: Is this helpful? Maybe as a WEAK (override-able function) or for debugging?
