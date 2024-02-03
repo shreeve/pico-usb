@@ -656,7 +656,7 @@ void isr_usbctrl() {
                 mask = 1 << (i * 2 + j);
                 if (bits &  mask) {
                     bits ^= mask;
-                    handle_buffer(mask, &eps[i]); // TODO: create hw_endpoint_t eps[USB_NUM_ENDPOINTS]
+                    handle_buffer(mask, &eps[i]);
                 }
             }
         }
