@@ -39,6 +39,8 @@
 #define usb_hw_set   ((usb_hw_t *) hw_set_alias_untyped  (usb_hw))
 #define usb_hw_clear ((usb_hw_t *) hw_clear_alias_untyped(usb_hw))
 
+#define memclr(ptr, len) memset((ptr), 0, (len))
+
 // NOTE: Which is better? Same? Should they use an inlined function?
 //
 // #define INLINE   __forceinline             // request to use inline
