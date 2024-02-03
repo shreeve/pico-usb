@@ -142,21 +142,20 @@ typedef void (*hw_endpoint_cb)(uint8_t *buf, uint16_t len);
 
 typedef struct hw_endpoint {
     usb_endpoint_descriptor_t *usb; // USB descriptor
-    volatile uint32_t *dac;         // Device address control
-    volatile uint32_t *ecr;         // Endpoint control register
-    volatile uint32_t *bcr;         // Buffer control register
-    volatile uint8_t *buf;          // Data buffer
-    uint8_t pid;                    // Toggle DATA0/DATA1 each packet
-    hw_endpoint_cb cb;              // Callback function
-    bool on;                        // Endpoint is on
-    bool active;                    // Transfer is active
+    volatile uint32_t         *dac; // Device address control
+    volatile uint32_t         *ecr; // Endpoint control register
+    volatile uint32_t         *bcr; // Buffer control register
+    volatile uint8_t          *buf; // Data buffer
+    uint8_t                    pid; // Toggle DATA0/DATA1 each packet
+    hw_endpoint_cb             cb ; // Callback function
 
-    // TODO: Figure out how to best add, or if we need these at all?
-    uint8_t dev_addr;               // Device address     // HOST ONLY
-    uint8_t ep_addr;                // Endpoint address
-    uint16_t bytes_done;            // Bytes transferred
-    uint16_t bytes_left;            // Bytes remaining
-    uint8_t *user_buf;              // User buffer
+    bool      on        ; // Endpoint is on
+    bool      active    ; // Transfer is active
+    uint8_t   dev_addr  ; // Device address   // HOST ONLY
+    uint8_t   ep_addr   ; // Endpoint address
+    uint16_t  bytes_done; // Bytes transferred
+    uint16_t  bytes_left; // Bytes remaining
+    uint8_t  *user_buf  ; // User buffer
 
 } hw_endpoint_t;
 
