@@ -641,13 +641,12 @@ void isr_usbctrl() {
         // Check EPX first
         if (bits &  mask) {
             bits ^= mask;
-            // EPX can be double-buffered, the others cannot
-            if (*epx.ecr & EP_CTRL_DOUBLE_BUFFERED_BITS) {
+            if (*epx->ecr & EP_CTRL_DOUBLE_BUFFERED_BITS) {
                 printf("│ISR\t│ EPX double buffered\n");
             } else {
                 printf("│ISR\t│ EPX single buffered\n");
             }
-            handle_buffer(mask, &epx);
+            handle_buffer(mask, epx);
         }
 
         // Check the interrupt/asynchronous endpoints (IN and OUT)
