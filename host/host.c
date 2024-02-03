@@ -230,7 +230,7 @@ void setup_hw_endpoints() {
     // Configure the first endpoint as EPX
     *epx = (hw_endpoint_t){
         .usb = &usb_epx,
-        .dac = 0, // dev_addr 0, ep_num 0
+        .dac = 0, // dev_addr 0, ep_num 0 // TODO: How should this be set? What is it exactly???
         .ecr = &usbh_dpram->epx_ctrl,
         .bcr = &usbh_dpram->epx_buf_ctrl,
         .buf = &usbh_dpram->epx_data[0],
