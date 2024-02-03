@@ -214,7 +214,7 @@ void setup_hw_endpoints() {
         .cb  = epx_cb,
         .on  = false,
     };
-    setup_hw_endpoint(&epx);
+    setup_hw_endpoint(epx);
 
     // Dynamically allocate the others
 }
