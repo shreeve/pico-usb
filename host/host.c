@@ -690,6 +690,12 @@ void isr_usbctrl() {
         // Panic if we missed any buffers
         if (bits) panic("Unhandled buffer(s) %d\n", bits);
 
+        // if (len) {
+        //     printf("│> Data");
+        //     hexdump(usbh_dpram->epx_data, len, 1);
+        // } else {
+        //     printf("│<ZLP\n"); // which direction?!
+        // }
 
         // set_device_address();
         // get_device_descriptor();
