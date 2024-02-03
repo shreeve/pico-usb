@@ -142,6 +142,7 @@ static usb_endpoint_descriptor_t usb_epx = {
 
 typedef void (*hw_endpoint_cb)(uint8_t *buf, uint16_t len);
 
+// TODO: Pack this structure!
 typedef struct hw_endpoint {
     usb_endpoint_descriptor_t *usb; // USB descriptor
     volatile uint32_t         *dac; // Device address control
@@ -152,6 +153,7 @@ typedef struct hw_endpoint {
     hw_endpoint_cb             cb ; // Callback function
 
     bool      on        ; // Endpoint is on
+    bool      rx        ; // Endpoint is for receiving
     bool      active    ; // Transfer is active
     uint8_t   dev_addr  ; // Device address   // HOST ONLY
     uint8_t   ep_addr   ; // Endpoint address
@@ -166,7 +168,7 @@ typedef struct hw_endpoint {
     bool     configured          <= on
     bool     active              <= active
     bool     pending           <=== ??? (set during the last 200µs of a frame)
-    bool     rx                <=== ??? (if !rx, we're sending data and know about it)
+    bool     rx                  <= rx
     u8       host:dev_addr       <= dev_addr
     u8       ep_addr             <= ep_addr
     u8       next_pid            <= pid (should we call it next_pid?)
@@ -208,6 +210,9 @@ void setup_hw_endpoint(hw_endpoint_t *ep) {
     bool in = ep_addr & USB_DIR_IN;
     printf(" EP%d_%s│ 0x%02x │ Buffer offset 0x%04x\n",
            ep_num, in ? "IN " : "OUT", ep_addr, offset);
+
+    // Determine rx
+    ep->rx = in; // TODO: ep->rx = host ? in : !in;
 
     // Set the endpoint control register
     *ep->ecr = EP_CTRL_ENABLE_BITS               // Endpoint enabled
@@ -256,7 +261,7 @@ uint32_t prepare_buffer(hw_endpoint_t *ep, uint8_t buf_id) {
 
     // Copy data to buffer if we're sending
     if (!ep->rx) { // TODO: We need a better way than ep->rx???
-        memcpy(ep->buf + 64 * buf_id, ep->user_buf, len);
+        memcpy((void *) (ep->buf + buf_id * 64), ep->user_buf, len);
         ep->user_buf += len;
         bcr |= USB_BUF_CTRL_FULL;
     }
@@ -303,7 +308,7 @@ uint16_t sync_buffer(hw_endpoint_t *ep, uint8_t buf_id) {
 
     if (ep->rx) {
         assert(bcr & USB_BUF_CTRL_FULL); // For reads, ensure buffer is full
-        memcpy(ep->user_buf, ep->buf + 64 * buf_id, len);
+        memcpy(ep->user_buf, (void *) (ep->buf + buf_id * 64), len);
         ep->bytes_done += len;
         ep->user_buf += len;
     } else {
@@ -363,9 +368,9 @@ void handle_buffer(uint32_t bit, hw_endpoint_t *ep) {
     event_t event = { 0 };
     event.type         = EVENT_TRANS_COMPLETE; // NOTE: This means succeess!
     event.dev_addr     = dev_addr;
-    event.xfer.ep_addr = ep;
-    event.xfer.result  = TRANS_COMPLETE;
-    event.xfer.bytes   = 123; // will we have the total size transferred in the hw_ep?
+    event.xfer.ep_addr = 64; // TODO: gotta fix, obviously... ep;
+    event.xfer.result  = TRANSFER_SUCCESS;
+    event.xfer.len     = 123; // will we have the total size transferred in the hw_ep?
     queue_add_blocking(queue, &event);
 }
 
@@ -558,7 +563,7 @@ void get_device_descriptor() {
         .wLength       = 8, // If dev_addr > 0, then use: sizeof(usb_device_descriptor_t)
     };
 
-    start_transfer(&epx, &packet, sizeof(packet));
+    start_transfer(epx, &packet, sizeof(packet));
 }
 
 // Set device address
@@ -578,7 +583,7 @@ void set_device_address() {
         .wLength       = 0,
     };
 
-    start_transfer(&epx, &packet, sizeof(packet));
+    start_transfer(epx, &packet, sizeof(packet));
 }
 
 void start_enumeration() {
@@ -821,7 +826,7 @@ void usb_task() {
             case EVENT_TRANS_COMPLETE:
                 printf("Transfer complete\n");
                 if (event.xfer.len == 0) {
-                    send_zlp(&epx);
+                    send_zlp(epx);
                 }
                 break;
 
