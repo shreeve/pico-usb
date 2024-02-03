@@ -638,7 +638,10 @@ void isr_usbctrl() {
         // we would deal with EP3IN/EP3OUT at the same time and
         // mask with 0b11, etc.
 
-        // Check EPX first
+        // TODO: Why do we split this into two blocks of code?
+        //       Can't we just has epx and eps[i] in the same loop?
+
+        // Check EPX first (can be double buffered, others can't)
         if (bits &  mask) {
             bits ^= mask;
             if (*epx->ecr & EP_CTRL_DOUBLE_BUFFERED_BITS) {
