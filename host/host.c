@@ -397,8 +397,8 @@ void start_transfer(hw_endpoint_t *ep, usb_setup_packet_t *packet, size_t size) 
         //  | size; // just happens to be zero
 
         // Set SCR
-        scr =          USB_SIE_CTRL_BASE              // SIE_CTRL defaults
-                    | USB_SIE_CTRL_SEND_DATA_BITS;   // OUT from host is send
+        scr = USB_SIE_CTRL_BASE            // SIE_CTRL defaults
+            | USB_SIE_CTRL_SEND_DATA_BITS; // OUT from host is send
     }
 
     // Debug output
