@@ -507,89 +507,7 @@ void isr_usbctrl() {
             printf("│<ZLP\n"); // which direction?!
         }
 
-// static void __tusb_irq_path_func(hw_handle_buff_status)()
-// {
-//   uint32_t remaining_buffers = usb_hw->buf_status;
-//   pico_trace("buf_status 0x%08x\n", remaining_buffers);
-//
-//   // Check EPX first
-//   uint bit = 0b1;
-//   if ( remaining_buffers & bit ) {
-//     remaining_buffers &= ~bit;
-//     hw_endpoint_t * ep = &epx;
-//
-//     uint32_t ep_ctrl = *ep->ecr;
-    // if ( ep_ctrl & EP_CTRL_DOUBLE_BUFFERED_BITS ) {
-    //   TU_LOG(3, "Double Buffered: ");
-    // } else {
-    //   TU_LOG(3, "Single Buffered: ");
-    // }
-//     TU_LOG_HEX(3, ep_ctrl);
-//
-//     _handle_buff_status_bit(bit, ep);
-//   }
 
-// static void __tusb_irq_path_func(_handle_buff_status_bit)(uint bit, hw_endpoint_t *ep)
-// {
-//   usb_hw_clear->buf_status = bit;
-//   // EP may have been stalled?
-//   assert(ep->active);
-//   bool done = hw_endpoint_xfer_continue(ep);
-//   if ( done ) {
-//     hw_xfer_complete(ep, XFER_RESULT_SUCCESS);
-//   }
-// }
-
-// // Returns true if transfer is complete
-// bool __tusb_irq_path_func(hw_endpoint_xfer_continue)(hw_endpoint_t *ep) {
-//   hw_endpoint_lock_update(ep, 1);
-//
-//   // Part way through a transfer
-//   if (!ep->active) {
-//     panic("Can't continue xfer on inactive ep %d %s", tu_edpt_number(ep->ep_addr), ep_dir_string[tu_edpt_dir(ep->ep_addr)]);
-//   }
-//
-//   // Update EP struct from hardware state
-//   _hw_endpoint_xfer_sync(ep);
-//
-//   // Now we have synced our state with the hardware. Is there more data to transfer?
-//   // If we are done then notify tinyusb
-//   if (ep->remaining_len == 0) {
-//     pico_trace("Completed transfer of %d bytes on ep %d %s\n",
-//                ep->xferred_len, tu_edpt_number(ep->ep_addr), ep_dir_string[tu_edpt_dir(ep->ep_addr)]);
-//     // Notify caller we are done so it can notify the tinyusb stack
-//     hw_endpoint_lock_update(ep, -1);
-//     return true;
-//   } else {
-//       hw_endpoint_start_next_buffer(ep);
-//     }
-//   }
-//
-//   hw_endpoint_lock_update(ep, -1);
-//
-//   // More work to do
-//   return false;
-// }
-
-//   // Check "interrupt" (asynchronous) endpoints for both IN and OUT
-//   for ( uint i = 1; i <= USB_HOST_INTERRUPT_ENDPOINTS && remaining_buffers; i++ ) {
-//     // EPX is bit 0 & 1
-//     // IEP1 IN  is bit 2
-//     // IEP1 OUT is bit 3
-//     // IEP2 IN  is bit 4
-//     // IEP2 OUT is bit 5, etc...
-//    for ( uint j = 0; j < 2; j++ ) {
-//       bit = 1 << (i * 2 + j);
-//       if ( remaining_buffers & bit ) {
-//         remaining_buffers &= ~bit;
-//         _handle_buff_status_bit(bit, &ep_pool[i]);
-//       }
-//     }
-//   }
-//
-//   if ( remaining_buffers ) {
-//     panic("Unhandled buffer %d\n", remaining_buffers);
-//   }
 
         // Clear all buffers
         usb_hw_clear->buf_status = (uint32_t) ~0;
@@ -606,12 +524,6 @@ void isr_usbctrl() {
 
         if (usb_hw->sie_ctrl & USB_SIE_CTRL_SEND_SETUP_BITS) {
 
-// TODO: Mark this as complete...
-//   uint8_t dev_addr = ep->dev_addr;
-//   uint8_t ep_addr = ep->ep_addr;
-//   uint xferred_len = ep->xferred_len;
-//   hw_endpoint_reset_transfer(ep);
-//   hcd_event_xfer_complete(dev_addr, ep_addr, xferred_len, xfer_result, true);
 
             printf("│XSD\t│ Device connected\n");
             event.type = EVENT_TRANSFER;
