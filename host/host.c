@@ -21,6 +21,9 @@
 #include "hardware/resets.h"      // Resetting the native USB controller
 
 #include "usb_common.h"           // USB 2.0 definitions
+
+// ==[ PicoUSB ]===============================================================
+
 #include "helpers.h"              // Helper functions
 
 #define MAKE_U16(x, y) (((x) << 8) | ((y)     ))
@@ -31,43 +34,21 @@
 #define SDK_PACKED         __attribute__ ((packed))
 #define SDK_WEAK           __attribute__ ((weak))
 
-// ==[ PicoUSB ]===============================================================
-
-enum {
-    EVENT_CONNECTION,
-    EVENT_TRANSFER,
-    EVENT_FUNCTION,
-};
-
-typedef struct {
-    uint8_t type;
-    uint8_t dev_addr;
-
-    union {
-        struct {
-            uint8_t speed;
-        } conn;
-
-        struct {
-            uint8_t ep_addr;
-            uint8_t result;
-            uint16_t len;
-        } xfer;
-
-        struct {
-            void (*call) (void *);
-            void *arg;
-        } fn;
-    };
-} event_t;
-
-static queue_t queue_struct, *queue = &queue_struct;
-
 // ==[ Hardware: rp2040 ]======================================================
 
 #define usb_hw_set   ((usb_hw_t *) hw_set_alias_untyped  (usb_hw))
 #define usb_hw_clear ((usb_hw_t *) hw_clear_alias_untyped(usb_hw))
 
+// NOTE: Which is better? Same? Should they use an inlined function?
+//
+// #define INLINE   __forceinline             // request to use inline
+// #define NOINLINE __attribute__((noinline)) // avoid to use inline
+//
+// INLINE void nop2(void) { // no operation, 2 clock cycles
+// 	__asm volatile (" b 1f\n1:\n" ::: "memory");
+// }
+
+#define busy_wait_2_cycles() __asm volatile("b 1f\n1:\n"     :::"memory") // remove?
 #define busy_wait_3_cycles() __asm volatile("nop\nnop\nnop\n":::"memory")
 
 #define hw_set_staged3(reg, value, or_mask) \
@@ -103,18 +84,45 @@ enum {
                       | USB_SIE_CTRL_EP0_INT_1BUF_BITS  // One bit per EP0 buf
 };
 
-typedef void (*hw_endpoint_cb)(uint8_t *buf, uint16_t len);
+// ==[ Events ]================================================================
 
-typedef struct hw_endpoint {
-    usb_endpoint_descriptor_t *usb; // USB descriptor
-    volatile uint32_t *dac;         // Device address control
-    volatile uint32_t *ecr;         // Endpoint control register
-    volatile uint32_t *bcr;         // Buffer control register
-    volatile uint8_t *buf;          // Data buffer
-    uint8_t pid;                    // Toggle DATA0/DATA1 each packet
-    hw_endpoint_cb cb;              // Callback function
-    bool on;                        // Endpoint is on
-} hw_endpoint_t;
+enum {
+    EVENT_HOST_CONN_DIS,
+    EVENT_TRANS_COMPLETE,
+    EVENT_FUNCTION,
+};
+
+enum {
+    TRANSFER_SUCCESS, // used
+    TRANSFER_FAILED,  //
+    TRANSFER_STALLED, // used
+    TRANSFER_TIMEOUT, //
+    TRANSFER_INVALID, //
+};
+
+typedef struct {
+    uint8_t type;
+    uint8_t dev_addr;
+
+    union {
+        struct {
+            uint8_t speed;
+        } conn;
+
+        struct {
+            uint8_t ep_addr;
+            uint8_t result;
+            uint16_t len;
+        } xfer;
+
+        struct {
+            void (*call) (void *);
+            void *arg;
+        } fn;
+    };
+} event_t;
+
+static queue_t queue_struct, *queue = &queue_struct;
 
 // ==[ Endpoints ]=============================================================
 
@@ -130,20 +138,34 @@ static usb_endpoint_descriptor_t usb_epx = {
     .bInterval        = 0
 };
 
+typedef void (*hw_endpoint_cb)(uint8_t *buf, uint16_t len);
+
+typedef struct hw_endpoint {
+    usb_endpoint_descriptor_t *usb; // USB descriptor
+    volatile uint32_t *dac;         // Device address control
+    volatile uint32_t *ecr;         // Endpoint control register
+    volatile uint32_t *bcr;         // Buffer control register
+    volatile uint8_t *buf;          // Data buffer
+    uint8_t pid;                    // Toggle DATA0/DATA1 each packet
+    hw_endpoint_cb cb;              // Callback function
+    bool on;                        // Endpoint is on
+    bool active;                    // Transfer is active
+
+    // TODO: Figure out how to best add, or if we need these at all?
+    uint8_t dev_addr;               // Device address     // HOST ONLY
+    uint8_t ep_addr;                // Endpoint address
+    uint16_t bytes_done;            // Bytes transferred
+    uint16_t bytes_left;            // Bytes remaining
+    uint8_t *user_buf;              // User buffer
+
+} hw_endpoint_t;
+
+static hw_endpoint_t eps[USB_MAX_ENDPOINTS], *epx = eps;
+
+// TODO: Is this helpful? Maybe as a WEAK (override-able function) or for debugging?
 void epx_cb(uint8_t *buf, uint16_t len) {
     printf("Inside the EPX callback...\n");
 }
-
-static hw_endpoint_t epx = {
-    .usb = &usb_epx,
-    .dac = 0, // dev_addr 0, ep_num 0
-    .ecr = &usbh_dpram->epx_ctrl,
-    .bcr = &usbh_dpram->epx_buf_ctrl,
-    .buf = &usbh_dpram->epx_data[0],
-    .pid = 1, // Starts with DATA1
-    .cb  = epx_cb,
-    .on  = false,
-};
 
 // Setup endpoint control register (ECR)
 void setup_hw_endpoint(hw_endpoint_t *ep) {
@@ -172,6 +194,28 @@ void setup_hw_endpoint(hw_endpoint_t *ep) {
     bindump(" ECR", *ep->ecr);
 
     ep->on = true;
+}
+
+// Setup endpoints
+void setup_hw_endpoints() {
+
+    // Clear out all endpoints
+    memclr(eps, sizeof(eps));
+
+    // Configure the first endpoint as EPX
+    *epx = (hw_endpoint_t){
+        .usb = &usb_epx,
+        .dac = 0, // dev_addr 0, ep_num 0
+        .ecr = &usbh_dpram->epx_ctrl,
+        .bcr = &usbh_dpram->epx_buf_ctrl,
+        .buf = &usbh_dpram->epx_data[0],
+        .pid = 1, // Starts with DATA1
+        .cb  = epx_cb,
+        .on  = false,
+    };
+    setup_hw_endpoint(&epx);
+
+    // Dynamically allocate the others
 }
 
 // ==[ Buffers ]===============================================================
@@ -270,9 +314,9 @@ SDK_ALWAYS_INLINE static inline void send_zlp(hw_endpoint_t *ep) {
 // transfers on multiple devices concurrently and control transfers are mainly
 // used for enumeration, we will only execute control transfers one at a time.
 
-// Submit a transfer and, when complete, push an EVENT_TRANSFER completed event
+// Submit a transfer and, when complete, push an EVENT_TRANS_COMPLETE completed event
 // Abort a transfer, only if not yet started. Return true if queue xfer aborted
-// Send a SETUP transfer. When complete, push an EVENT_TRANSFER completed event
+// Send a SETUP transfer. When complete, push an EVENT_TRANS_COMPLETE completed event
 // Clear a stall and toggle data PID back to DATA0
 
 // struct tuh_xfer_t {
@@ -397,7 +441,7 @@ void start_enumeration() {
     get_device_descriptor();
 }
 
-// ==[ Interrupt ]=============================================================
+// ==[ Interrupts ]============================================================
 
 // Interrupt handler
 void isr_usbctrl() {
@@ -423,7 +467,7 @@ void isr_usbctrl() {
 
         if (speed) {
             printf("│ISR\t│ Device connected\n");
-            event.type = EVENT_CONNECTION;
+            event.type = EVENT_HOST_CONN_DIS;
             event.dev_addr = 0;
             event.conn.speed = speed;
             queue_add_blocking(queue, &event);
@@ -435,7 +479,7 @@ void isr_usbctrl() {
         usb_hw_clear->sie_status = USB_SIE_STATUS_SPEED_BITS;
     }
 
-    // Stall detected (before buffer status)
+    // Stall detected (higher priority than BUFF_STATUS and TRANS_COMPLETE)
     if (ints &  USB_INTS_STALL_BITS) {
         ints ^= USB_INTS_STALL_BITS;
 
@@ -658,8 +702,7 @@ void usb_host_reset() {
                       | USB_INTE_ERROR_RX_TIMEOUT_BITS;           // Receive timeout
 
     // Setup hardware endpoints
-    // setup_hw_endpoints();
-    setup_hw_endpoint(&epx);
+    setup_hw_endpoints();
 
     bindump(" INT", usb_hw->inte);
 
@@ -673,13 +716,13 @@ void usb_task() {
 
     if (queue_try_remove(queue, &event)) {
         switch (event.type) {
-            case EVENT_CONNECTION:
+            case EVENT_HOST_CONN_DIS:
                 printf("Device connected\n");
                 printf("Speed: %u\n", event.conn.speed);
                 start_enumeration();
                 break;
 
-            case EVENT_TRANSFER:
+            case EVENT_TRANS_COMPLETE:
                 printf("Transfer complete\n");
                 if (event.xfer.len == 0) {
                     send_zlp(&epx);
