@@ -487,30 +487,58 @@ void isr_usbctrl() {
 
         // Clear the stall
         usb_hw_clear->sie_status = USB_SIE_STATUS_STALL_REC_BITS;
-        // hw_xfer_complete(&epx, XFER_RESULT_STALLED);
+
+        // Queue the stalled transfer
+        event.type = EVENT_TRANS_COMPLETE;
+        event.xfer.ep_addr = 37; // TODO: Will need this and maybe some more info?
+        event.xfer.result  = TRANSFER_STALLED;
+        event.xfer.len     = 0; // TODO: Do we need this?
+        queue_add_blocking(queue, &event);
     }
 
     // Buffer(s) ready
     if (ints &  USB_INTS_BUFF_STATUS_BITS) {
         ints ^= USB_INTS_BUFF_STATUS_BITS;
 
-        // Show buffer status
-        bindump("│BUF", usb_hw->buf_status);
+        // Find the buffer(s) that are ready
+        uint32_t bits = usb_hw->buf_status;
+        uint32_t mask = 1u;
+        bindump("│BUF", bits);
 
-        // For now, we know it's EP0_IN... (we're cheating)
-        uint8_t len = usbh_dpram->epx_buf_ctrl & USB_BUF_CTRL_LEN_MASK;
+        // Clear all buffer bits, panic later if we missed any
+        usb_hw_clear->buf_status = (uint32_t) ~0;
 
-        if (len) {
-            printf("│> Data");
-            hexdump(usbh_dpram->epx_data, len, 1);
-        } else {
-            printf("│<ZLP\n"); // which direction?!
+        // NOTE: Miroslav says we should handle these in pairs
+        // of IN/OUT endpoints, since they "come in pairs". So,
+        // we would deal with EP3IN/EP3OUT at the same time and
+        // mask with 0b11, etc.
+
+        // Check EPX first
+        if (bits &  mask) {
+            bits ^= mask;
+            // EPX can be double-buffered, the others cannot
+            if (*epx.ecr & EP_CTRL_DOUBLE_BUFFERED_BITS) {
+                printf("│ISR\t│ EPX double buffered\n");
+            } else {
+                printf("│ISR\t│ EPX single buffered\n");
+            }
+            handle_buffer(mask, &epx);
         }
 
+        // Check the interrupt/asynchronous endpoints (IN and OUT)
+        for (uint8_t i = 1; i <= USB_HOST_INTERRUPT_ENDPOINTS && bits; i++) {
+            for (uint8_t j = 0; j < 2; j++) {
+                mask = 1 << (i * 2 + j);
+                if (bits &  mask) {
+                    bits ^= mask;
+                    handle_buffer(mask, &eps[i]); // TODO: create hw_endpoint_t eps[USB_NUM_ENDPOINTS]
+                }
+            }
+        }
 
+        // Panic if we missed any buffers
+        if (bits) panic("Unhandled buffer(s) %d\n", bits);
 
-        // Clear all buffers
-        usb_hw_clear->buf_status = (uint32_t) ~0;
 
         // set_device_address();
         // get_device_descriptor();
@@ -525,12 +553,11 @@ void isr_usbctrl() {
         if (usb_hw->sie_ctrl & USB_SIE_CTRL_SEND_SETUP_BITS) {
 
 
-            printf("│XSD\t│ Device connected\n");
-            event.type = EVENT_TRANSFER;
+            event.type = EVENT_TRANS_COMPLETE;
             // TODO: Do we set the EP number, transferred length, and result?
             event.xfer.ep_addr = 37;
-            event.xfer.result  = 42;
-            event.xfer.len     = 22;
+            event.xfer.result  = TRANSFER_SUCCESS;
+            event.xfer.len     = 8; // TODO: Is this fixed? Is this output/input, etc.?
             queue_add_blocking(queue, &event); // TODO: How "quick" is this queue? Race condition?
         }
 
