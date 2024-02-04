@@ -125,7 +125,6 @@ typedef struct {
 } event_t;
 
 static queue_t queue_struct, *queue = &queue_struct;
-static event_t event;
 
 // ==[ Endpoints ]=============================================================
 
@@ -345,6 +344,7 @@ bool still_transferring(endpoint_t *ep) {
 }
 
 void handle_buffer(uint32_t bit, endpoint_t *ep) {
+    static event_t event; // TODO: We can probably push event queueing to one function
     if (still_transferring(ep)) return;
 
     assert(ep->active);
@@ -589,8 +589,8 @@ void isr_usbctrl() {
     volatile uint32_t intr = usb_hw->intr;
     volatile uint32_t ints = usb_hw->ints;
     uint16_t size = 0;
-    static event_t event;
     endpoint_t *ep = NULL; // TODO: Confirm that we need this and it's helpful...
+    static event_t event; // TODO: We can probably push event queueing to one function
 
     printf("┌───────┬──────┬──────────────────────────────────────────────────┐\n");
     printf("│Frame\t│ %4u │%50s│\n", usb_hw->sof_rd, "");
