@@ -193,32 +193,30 @@ SDK_WEAK void epx_cb(uint8_t *buf, uint16_t len) {
     printf("Inside the EPX callback...\n");
 }
 
-// Setup endpoint control register (ECR)
+// Setup an endpoint
 void setup_endpoint(endpoint_t *ep) {
     if (!ep || !ep->ecr) return;
 
-    // Determine configuration
+    // Endpoint details
+    uint8_t ep_addr = ep->usb->bEndpointAddress;
+    uint8_t ep_num = ep_addr & 0x0f;
+    bool in = ep_addr & USB_DIR_IN;
+    ep->rx = in; // TODO: ep->rx = host ? in : !in;
+
+    // Endpoint control register (ECR)
     uint32_t type = ep->usb->bmAttributes;
     uint32_t ms = ep->usb->bInterval;
     uint32_t interval_lsb = EP_CTRL_HOST_INTERRUPT_INTERVAL_LSB;
     uint32_t offset = ((uint32_t) ep->buf) ^ ((uint32_t) usbh_dpram); // TODO: Why not just use subtraction?
-
-    // Summarize endpoint configuration
-    uint8_t ep_addr = ep->usb->bEndpointAddress;
-    uint8_t ep_num = ep_addr & 0x0f;
-    bool in = ep_addr & USB_DIR_IN;
-    printf(" EP%d_%s│ 0x%02x │ Buffer offset 0x%04x\n",
-           ep_num, in ? "IN " : "OUT", ep_addr, offset);
-
-    // Determine rx
-    ep->rx = in; // TODO: ep->rx = host ? in : !in;
-
-    // Set the endpoint control register
     *ep->ecr = EP_CTRL_ENABLE_BITS               // Enable endpoint
              | EP_CTRL_INTERRUPT_PER_BUFFER      // One interrupt per buffer
              | type << EP_CTRL_BUFFER_TYPE_LSB   // Set transfer type
              | (ms ? ms - 1 : 0) << interval_lsb // Interrupt interval in ms
              | offset;                           // Data buffer offset
+
+    // Summarize configuration
+    printf(" EP%d_%s│ 0x%02x │ Buffer offset 0x%04x\n",
+           ep_num, in ? "IN " : "OUT", ep_addr, offset);
 
     bindump(" ECR", *ep->ecr);
 
