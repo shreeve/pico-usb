@@ -668,27 +668,12 @@ void isr_usbctrl() {
         // Clear all buffer bits, panic later if we missed any
         usb_hw_clear->buf_status = (uint32_t) ~0;
 
-        // NOTE: Miroslav says we should handle these in pairs
-        // of IN/OUT endpoints, since they "come in pairs". So,
-        // we would deal with EP3IN/EP3OUT at the same time and
-        // mask with 0b11, etc.
-
-        // TODO: Why do we split this into two blocks of code?
-        //       Can't we just has epx and eps[i] in the same loop?
-
-        // Check EPX first (can be double buffered, others can't)
-        if (bits &  mask) {
-            bits ^= mask;
-            if (*epx->ecr & EP_CTRL_DOUBLE_BUFFERED_BITS) {
-                printf("│ISR\t│ EPX double buffered\n");
-            } else {
-                printf("│ISR\t│ EPX single buffered\n");
-            }
-            handle_buffer(mask, epx);
-        }
+        // NOTE: Miroslav says we should handle these in pairs of IN/OUT
+        // endpoints, since they "come in pairs". So, we would deal with
+        // EP3IN/EP3OUT at the same time and mask with 0b11, etc.
 
         // Check the interrupt/asynchronous endpoints (IN and OUT)
-        for (uint8_t i = 1; i <= USB_HOST_INTERRUPT_ENDPOINTS && bits; i++) {
+        for (uint8_t i = 0; i <= USB_HOST_INTERRUPT_ENDPOINTS && bits; i++) {
             for (uint8_t j = 0; j < 2; j++) {
                 mask = 1 << (i * 2 + j);
                 if (bits &  mask) {
