@@ -611,10 +611,11 @@ void isr_usbctrl() {
     if (ints &  USB_INTS_HOST_CONN_DIS_BITS) {
         ints ^= USB_INTS_HOST_CONN_DIS_BITS;
 
+        // Get the device speed and clear the interrupt
         uint8_t speed = dev_speed();
+        usb_hw_clear->sie_status = USB_SIE_STATUS_SPEED_BITS;
 
         if (speed) {
-            printf("│ISR\t│ Device connected\n");
             event.type = EVENT_HOST_CONN_DIS;
             event.dev_addr = 0;
             event.conn.speed = speed;
@@ -622,9 +623,6 @@ void isr_usbctrl() {
         } else {
             printf("│ISR\t│ Device disconnected\n");
         }
-
-        // Clear speed change interrupt
-        usb_hw_clear->sie_status = USB_SIE_STATUS_SPEED_BITS;
     }
 
     // Stall detected (higher priority than BUFF_STATUS and TRANS_COMPLETE)
@@ -812,8 +810,8 @@ void usb_task() {
     if (queue_try_remove(queue, &event)) {
         switch (event.type) {
             case EVENT_HOST_CONN_DIS:
-                printf("Device connected\n");
-                printf("Speed: %u\n", event.conn.speed);
+                char *str = event.conn.speed == 1 ? "low" : "high";
+                printf("Device connected (%s speed)\n", str);
                 start_enumeration();
                 break;
 
