@@ -189,8 +189,7 @@ typedef struct endpoint {
 
 static endpoint_t eps[USB_MAX_ENDPOINTS], *epx = eps;
 
-// TODO: Is this helpful? Maybe as a WEAK (override-able function) or for debugging?
-void epx_cb(uint8_t *buf, uint16_t len) {
+SDK_WEAK void epx_cb(uint8_t *buf, uint16_t len) {
     printf("Inside the EPX callback...\n");
 }
 
