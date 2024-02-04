@@ -125,6 +125,7 @@ typedef struct {
 } event_t;
 
 static queue_t queue_struct, *queue = &queue_struct;
+static event_t event;
 
 // ==[ Endpoints ]=============================================================
 
@@ -346,21 +347,13 @@ bool still_transferring(endpoint_t *ep) {
 void handle_buffer(uint32_t bit, endpoint_t *ep) {
     if (still_transferring(ep)) return;
 
-    // Prepare a successful transfer completion evebt
-    event_t event      = { 0 };
+    assert(ep->active);
     event.type         = EVENT_TRANS_COMPLETE;
     event.dev_addr     = ep->dev_addr;
     event.xfer.ep_addr = ep->ep_addr;
     event.xfer.result  = TRANSFER_SUCCESS;
     event.xfer.len     = ep->bytes_done;
-
-    // Reset the endpoint settings
-    ep->active     = false;
-    ep->bytes_left = 0;
-    ep->bytes_done = 0;
-    // TODO: What else do we need to clear or reset?
-
-    // Queue the event
+    reset_endpoint(ep);
     queue_add_blocking(queue, &event);
 }
 
@@ -597,6 +590,7 @@ void isr_usbctrl() {
     volatile uint32_t ints = usb_hw->ints;
     uint16_t size = 0;
     static event_t event;
+    endpoint_t *ep = NULL; // TODO: Confirm that we need this and it's helpful...
 
     printf("┌───────┬──────┬──────────────────────────────────────────────────┐\n");
     printf("│Frame\t│ %4u │%50s│\n", usb_hw->sof_rd, "");
@@ -703,18 +697,19 @@ void isr_usbctrl() {
 
         usb_hw_clear->sie_status = USB_SIE_STATUS_TRANS_COMPLETE_BITS;
 
+        // TODO: Nearly same as BUFF_STATUS, how can we share code better?
         if (usb_hw->sie_ctrl & USB_SIE_CTRL_SEND_SETUP_BITS) {
+            printf("│ISR\t│      │ Setup packet sent\n");
 
-        printf("│ISR\t│ Transfer complete (from ISR)\n");
-
+            assert(ep->active);
             event.type         = EVENT_TRANS_COMPLETE;
-            event.xfer.ep_addr = 0; // TODO: wtf?
+            event.dev_addr     = ep->dev_addr;
+            event.xfer.ep_addr = ep->ep_addr;
             event.xfer.result  = TRANSFER_SUCCESS;
-            event.xfer.len     = 8;
+            event.xfer.len     = ep->bytes_done = 8; // Size of a setup packet
+            reset_endpoint(ep);
             queue_add_blocking(queue, &event);
         }
-
-        // hw_trans_complete();
     }
 
     // Receive timeout (too long without an ACK)
