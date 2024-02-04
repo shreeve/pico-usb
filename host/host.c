@@ -215,9 +215,9 @@ void setup_hw_endpoint(hw_endpoint_t *ep) {
     ep->rx = in; // TODO: ep->rx = host ? in : !in;
 
     // Set the endpoint control register
-    *ep->ecr = EP_CTRL_ENABLE_BITS               // Endpoint enabled
+    *ep->ecr = EP_CTRL_ENABLE_BITS               // Enable endpoint
              | EP_CTRL_INTERRUPT_PER_BUFFER      // One interrupt per buffer
-             | type << EP_CTRL_BUFFER_TYPE_LSB   // Transfer type
+             | type << EP_CTRL_BUFFER_TYPE_LSB   // Set transfer type
              | (ms ? ms - 1 : 0) << interval_lsb // Interrupt interval in ms
              | offset;                           // Data buffer offset
 
