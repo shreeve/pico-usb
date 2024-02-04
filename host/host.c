@@ -389,7 +389,8 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet, size_t s
     // Control transfers start with a setup packet
     if (!ep->usb->bmAttributes) {
         memcpy((void *) usbh_dpram->setup_packet, packet, size); // TODO: is for (i=0; i<8; i++) needed? better?
-        bool in = packet->bmRequestType & USB_DIR_IN;
+        bool in = ep->rx = packet->bmRequestType & USB_DIR_IN;
+        ep->ep_addr = in ? EP0_IN_ADDR : EP0_OUT_ADDR;
 
         // Set BCR
         bcr = USB_BUF_CTRL_LAST
