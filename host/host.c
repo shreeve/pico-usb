@@ -707,12 +707,11 @@ void isr_usbctrl() {
 
         printf("│ISR\t│ Transfer complete (from ISR)\n");
 
-            event.type = EVENT_TRANS_COMPLETE;
-            // TODO: Do we set the EP number, transferred length, and result?
-            event.xfer.ep_addr = 37;
+            event.type         = EVENT_TRANS_COMPLETE;
+            event.xfer.ep_addr = 0; // TODO: wtf?
             event.xfer.result  = TRANSFER_SUCCESS;
-            event.xfer.len     = 8; // TODO: Is this fixed? Is this output/input, etc.?
-            queue_add_blocking(queue, &event); // TODO: How "quick" is this queue? Race condition?
+            event.xfer.len     = 8;
+            queue_add_blocking(queue, &event);
         }
 
         // hw_trans_complete();
