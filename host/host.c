@@ -140,17 +140,17 @@ static usb_endpoint_descriptor_t usb_epx = {
     .bInterval        = 0
 };
 
-typedef void (*hw_endpoint_cb)(uint8_t *buf, uint16_t len);
+typedef void (*endpoint_cb)(uint8_t *buf, uint16_t len);
 
 // TODO: Pack this structure!
-typedef struct hw_endpoint {
+typedef struct endpoint {
     usb_endpoint_descriptor_t *usb; // USB descriptor
     volatile uint32_t         *dac; // Device address control
     volatile uint32_t         *ecr; // Endpoint control register
     volatile uint32_t         *bcr; // Buffer control register
     volatile uint8_t          *buf; // Data buffer
     uint8_t                    pid; // Toggle DATA0/DATA1 each packet
-    hw_endpoint_cb             cb ; // Callback function
+    endpoint_cb             cb ; // Callback function
 
     bool      on        ; // Endpoint is on
     bool      rx        ; // Endpoint is for receiving
@@ -161,9 +161,9 @@ typedef struct hw_endpoint {
     uint16_t  bytes_left; // Bytes remaining
     uint8_t  *user_buf  ; // User buffer
 
-} hw_endpoint_t;
+} endpoint_t;
 
-/*  TinyUSB hw_endpoint:
+/*  TinyUSB endpoint:
     ====================
     bool     configured          <= on
     bool     active              <= active
@@ -187,7 +187,7 @@ typedef struct hw_endpoint {
                                  <= cb (callback)
 */
 
-static hw_endpoint_t eps[USB_MAX_ENDPOINTS], *epx = eps;
+static endpoint_t eps[USB_MAX_ENDPOINTS], *epx = eps;
 
 // TODO: Is this helpful? Maybe as a WEAK (override-able function) or for debugging?
 void epx_cb(uint8_t *buf, uint16_t len) {
@@ -195,7 +195,7 @@ void epx_cb(uint8_t *buf, uint16_t len) {
 }
 
 // Setup endpoint control register (ECR)
-void setup_hw_endpoint(hw_endpoint_t *ep) {
+void setup_endpoint(endpoint_t *ep) {
     if (!ep || !ep->ecr) return;
 
     // Determine configuration
@@ -227,13 +227,13 @@ void setup_hw_endpoint(hw_endpoint_t *ep) {
 }
 
 // Setup endpoints
-void setup_hw_endpoints() {
+void setup_endpoints() {
 
     // Clear out all endpoints
     memclr(eps, sizeof(eps));
 
     // Configure the first endpoint as EPX
-    *epx = (hw_endpoint_t){
+    *epx = (endpoint_t){
         .usb = &usb_epx,
         .dac = 0, // dev_addr 0, ep_num 0 // TODO: How should this be set? What is it exactly???
         .ecr = &usbh_dpram->epx_ctrl,
@@ -243,7 +243,7 @@ void setup_hw_endpoints() {
         .cb  = epx_cb,
         .on  = false,
     };
-    setup_hw_endpoint(epx);
+    setup_endpoint(epx);
 
     // Dynamically allocate the others
 }
@@ -251,7 +251,7 @@ void setup_hw_endpoints() {
 // ==[ Buffers ]===============================================================
 
 // Prepare endpoint buffer and return BCR
-uint32_t prepare_buffer(hw_endpoint_t *ep, uint8_t buf_id) {
+uint32_t prepare_buffer(endpoint_t *ep, uint8_t buf_id) {
     uint16_t len = MIN(ep->bytes_left, ep->usb->wMaxPacketSize);
     ep->bytes_left -= len;
 
@@ -281,7 +281,7 @@ uint32_t prepare_buffer(hw_endpoint_t *ep, uint8_t buf_id) {
 // THe hardware for HOST "interrupt" EPs only supports single buffering and
 // HOST "bulk" EPs are based on these.
 
-void prepare_buffers(hw_endpoint_t *ep) {
+void prepare_buffers(endpoint_t *ep) {
     const bool host = is_host_mode();
     const bool in = ep->usb->bEndpointAddress & USB_DIR_IN;
     const bool allow_double = host ? !in : in;
@@ -301,7 +301,7 @@ void prepare_buffers(hw_endpoint_t *ep) {
 }
 
 // Sync an endpoint buffer by updating and returning byte counts
-uint16_t sync_buffer(hw_endpoint_t *ep, uint8_t buf_id) {
+uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
     uint32_t bcr = *ep->bcr;
     if (buf_id) bcr = bcr >> 16;
     uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK;
@@ -324,12 +324,12 @@ uint16_t sync_buffer(hw_endpoint_t *ep, uint8_t buf_id) {
     return len;
 }
 
-// TODO: Later, find all of the hw_endpoint_lock_update calls and put something in there...
+// TODO: Later, find all of the endpoint_lock_update calls and put something in there...
 
-bool still_transferring(hw_endpoint_t *ep) {
+bool still_transferring(endpoint_t *ep) {
     if (!ep->active) panic("EP 0x%02x not active\n", ep->ep_addr);
 
-    // Update hw_endpoint with latest buffer status
+    // Update endpoint with latest buffer status
     if (sync_buffer(ep, 0) == ep->usb->wMaxPacketSize) { // Full buf_0
         if (*ep->ecr & EP_CTRL_DOUBLE_BUFFERED_BITS) { // Check double buffer
             sync_buffer(ep, 1); // TODO: What if buf_1 is 0 bytes or short?
@@ -348,7 +348,7 @@ bool still_transferring(hw_endpoint_t *ep) {
     return true; // Transfer should continue
 }
 
-void handle_buffer(uint32_t bit, hw_endpoint_t *ep) {
+void handle_buffer(uint32_t bit, endpoint_t *ep) {
     if (still_transferring(ep)) return;
 
     // NOTE: Queue an event for a successful transfer completion
@@ -385,9 +385,9 @@ void handle_buffer(uint32_t bit, hw_endpoint_t *ep) {
 // • SCR (sie_ctrl) <- EPx ints, setup packet logic, start transfer, etc.
 
 // Start a transfer
-void start_transfer(hw_endpoint_t *ep, usb_setup_packet_t *packet, size_t size) {
+void start_transfer(endpoint_t *ep, usb_setup_packet_t *packet, size_t size) {
     if (!ep) panic("Invalid endpoint\n");
-    if (!ep->on) setup_hw_endpoint(ep);
+    if (!ep->on) setup_endpoint(ep);
 
     uint32_t bcr, scr;
 
@@ -459,7 +459,7 @@ void start_transfer(hw_endpoint_t *ep, usb_setup_packet_t *packet, size_t size) 
 }
 
 // Send a zero length status packet (ZLP)
-SDK_ALWAYS_INLINE static inline void send_zlp(hw_endpoint_t *ep) {
+SDK_ALWAYS_INLINE static inline void send_zlp(endpoint_t *ep) {
     start_transfer(ep, NULL, 0); // TODO: This isn't correct... it should be the end of a transfer
 }
 
@@ -803,7 +803,7 @@ void usb_host_reset() {
                       | USB_INTE_ERROR_RX_TIMEOUT_BITS;           // Receive timeout
 
     // Setup hardware endpoints
-    setup_hw_endpoints();
+    setup_endpoints();
 
     bindump(" INT", usb_hw->inte);
 
