@@ -157,8 +157,8 @@ typedef struct endpoint {
     bool      active    ; // Transfer is active
     uint8_t   dev_addr  ; // Device address   // HOST ONLY
     uint8_t   ep_addr   ; // Endpoint address
-    uint16_t  bytes_done; // Bytes transferred
     uint16_t  bytes_left; // Bytes remaining
+    uint16_t  bytes_done; // Bytes transferred
     uint8_t  *user_buf  ; // User buffer
 
 } endpoint_t;
