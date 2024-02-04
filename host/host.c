@@ -317,20 +317,20 @@ uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
     uint32_t bcr = *ep->bcr;
     if (buf_id) bcr = bcr >> 16;
     uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK;
+    bool full    = bcr & USB_BUF_CTRL_FULL;
+
+    // Buffer must be full for reads, empty for writes
+    assert(!(ep->rx ^ full));
 
     if (ep->rx) {
-        assert(bcr & USB_BUF_CTRL_FULL); // For reads, ensure buffer is full
         memcpy(ep->user_buf, (void *) (ep->buf + buf_id * 64), len);
-        ep->bytes_done += len;
         ep->user_buf += len;
-    } else {
-        assert(!(bcr & USB_BUF_CTRL_FULL)); // For writes, ensure buffer not full
-        ep->bytes_done += len;
     }
+    ep->bytes_done += len;
 
+    // A short packet will become the last
     if (len < ep->usb->wMaxPacketSize) {
-        printf("Short packet on buffer %u with %u bytes\n", buf_id, len); // TODO: Get rid of this...
-        ep->bytes_left = 0; // TODO: Why is this "the last packet"? Isn't it just an interim update?
+        ep->bytes_left = 0;
     }
 
     return len;
