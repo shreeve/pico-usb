@@ -275,9 +275,6 @@ uint32_t prepare_buffer(endpoint_t *ep, uint8_t buf_id) {
     return bcr;
 }
 
-// THe hardware for HOST "interrupt" EPs only supports single buffering and
-// HOST "bulk" EPs are based on these.
-
 void prepare_buffers(endpoint_t *ep) {
     const bool host = is_host_mode();
     const bool in = ep->usb->bEndpointAddress & USB_DIR_IN;
