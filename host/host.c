@@ -370,7 +370,7 @@ void handle_buffer(uint32_t bit, endpoint_t *ep) {
     event.dev_addr     = dev_addr;
     event.xfer.ep_addr = 64; // TODO: gotta fix, obviously... ep;
     event.xfer.result  = TRANSFER_SUCCESS;
-    event.xfer.len     = 123; // will we have the total size transferred in the hw_ep?
+    event.xfer.len     = 123; // will we have the total size transferred in the ep?
     queue_add_blocking(queue, &event);
 }
 
