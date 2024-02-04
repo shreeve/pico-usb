@@ -232,7 +232,7 @@ void setup_endpoints() {
     // Configure the first endpoint as EPX
     *epx = (endpoint_t){
         .usb = &usb_epx,
-        .dac = 0, // dev_addr 0, ep_num 0 // TODO: How should this be set? What is it exactly???
+     // .dac = 0, // Starts at 0 // TODO: Can this be "skipped" and thus zero?
         .ecr = &usbh_dpram->epx_ctrl,
         .bcr = &usbh_dpram->epx_buf_ctrl,
         .buf = &usbh_dpram->epx_data[0],
@@ -247,7 +247,7 @@ void setup_endpoints() {
 
 // ==[ Buffers ]===============================================================
 
-// Prepare endpoint buffer and return BCR
+// Prepare an endpoint buffer and return its buffer control register value
 uint32_t prepare_buffer(endpoint_t *ep, uint8_t buf_id) {
     uint16_t len = MIN(ep->bytes_left, ep->usb->wMaxPacketSize);
     ep->bytes_left -= len;
@@ -281,11 +281,12 @@ uint32_t prepare_buffer(endpoint_t *ep, uint8_t buf_id) {
 void prepare_buffers(endpoint_t *ep) {
     const bool host = is_host_mode();
     const bool in = ep->usb->bEndpointAddress & USB_DIR_IN;
-    const bool allow_double = host ? !in : in;
+    const bool allow_double = host ? !in : in; // TODO: host/out and device/in? Doesn't seem right
 
     uint32_t ecr = *ep->ecr;
     uint32_t bcr = prepare_buffer(ep, 0) | USB_BUF_CTRL_SEL;
 
+    // Double buffering is only supported in specific cases // TODO: Properly determine this
     if (ep->bytes_left && allow_double) {
         bcr |=  prepare_buffer(ep, 1); // TODO: Fix isochronous for buf_1!
         ecr |=  EP_CTRL_DOUBLE_BUFFERED_BITS;
@@ -297,7 +298,7 @@ void prepare_buffers(endpoint_t *ep) {
     *ep->bcr = bcr;
 }
 
-// Sync an endpoint buffer by updating and returning byte counts
+// Sync an endpoint buffer, while updating and returning byte counts
 uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
     uint32_t bcr = *ep->bcr;
     if (buf_id) bcr = bcr >> 16;
