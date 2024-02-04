@@ -374,8 +374,8 @@ void handle_buffer(uint32_t bit, endpoint_t *ep) {
 // • BCR (epx_buf_ctrl) <- buf, size, available, setup, len, etc.
 // • SCR (sie_ctrl) <- EPx ints, setup packet logic, start transfer, etc.
 
-// Start a transfer
-void start_transfer(endpoint_t *ep, usb_setup_packet_t *packet, size_t size) {
+// Start a control transfer
+void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet, size_t size) { // TODO: Rename to start_control_transfer
     if (!ep) panic("Invalid endpoint\n");
     if (!ep->on) setup_endpoint(ep);
 
