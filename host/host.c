@@ -150,7 +150,7 @@ typedef struct endpoint {
     volatile uint32_t         *bcr; // Buffer control register
     volatile uint8_t          *buf; // Data buffer
     uint8_t                    pid; // Toggle DATA0/DATA1 each packet
-    endpoint_cb             cb ; // Callback function
+    endpoint_cb                cb ; // Callback function
 
     bool      on        ; // Endpoint is on
     bool      rx        ; // Endpoint is for receiving
