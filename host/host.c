@@ -397,11 +397,11 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet, size_t s
             | USB_BUF_CTRL_SEL
             | size;
 
-        // Send the setup packet, using SIE_CTRL // TODO: preamble (LS on FS)
-        scr =          USB_SIE_CTRL_BASE              // SIE_CTRL defaults
-                    | USB_SIE_CTRL_SEND_SETUP_BITS   // Send a SETUP packet
+        // Send the setup packet, using SIE_CTRL   // TODO: preamble (LS on FS)
+        scr = USB_SIE_CTRL_BASE                    // SIE_CTRL defaults
+            | USB_SIE_CTRL_SEND_SETUP_BITS         // Send a SETUP packet
             | (in ? USB_SIE_CTRL_RECEIVE_DATA_BITS // IN to host is receive
-                    : USB_SIE_CTRL_SEND_DATA_BITS);  // OUT from host is send
+                  : USB_SIE_CTRL_SEND_DATA_BITS);  // OUT from host is send
     } else if (size != 0) {
         // something here...
         printf("WTF? I'm stuck in the weeds...\n");
