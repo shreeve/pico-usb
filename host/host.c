@@ -629,10 +629,9 @@ void isr_usbctrl() {
     if (ints &  USB_INTS_STALL_BITS) {
         ints ^= USB_INTS_STALL_BITS;
 
-        printf("│ISR\t│ Stall detected\n");
-
-        // Clear the stall
         usb_hw_clear->sie_status = USB_SIE_STATUS_STALL_REC_BITS;
+
+        printf("│ISR\t│ Stall detected\n");
 
         // Queue the stalled transfer
         event.type = EVENT_TRANS_COMPLETE;
@@ -702,10 +701,11 @@ void isr_usbctrl() {
     if (ints &  USB_INTS_TRANS_COMPLETE_BITS) {
         ints ^= USB_INTS_TRANS_COMPLETE_BITS;
 
-        printf("│ISR\t│ Transfer complete\n");
+        usb_hw_clear->sie_status = USB_SIE_STATUS_TRANS_COMPLETE_BITS;
 
         if (usb_hw->sie_ctrl & USB_SIE_CTRL_SEND_SETUP_BITS) {
 
+        printf("│ISR\t│ Transfer complete (from ISR)\n");
 
             event.type = EVENT_TRANS_COMPLETE;
             // TODO: Do we set the EP number, transferred length, and result?
@@ -715,7 +715,6 @@ void isr_usbctrl() {
             queue_add_blocking(queue, &event); // TODO: How "quick" is this queue? Race condition?
         }
 
-        usb_hw_clear->sie_status = USB_SIE_STATUS_TRANS_COMPLETE_BITS;
         // hw_trans_complete();
     }
 
@@ -723,18 +722,19 @@ void isr_usbctrl() {
     if (ints &  USB_INTS_ERROR_RX_TIMEOUT_BITS) {
         ints ^= USB_INTS_ERROR_RX_TIMEOUT_BITS;
 
-        printf("│ISR\t│ Receive timeout\n");
-
         usb_hw_clear->sie_status = USB_SIE_STATUS_RX_TIMEOUT_BITS;
+
+        printf("│ISR\t│ Receive timeout\n");
     }
 
     // Data error (IN packet from device has wrong data PID)
     if (ints &  USB_INTS_ERROR_DATA_SEQ_BITS) {
         ints ^= USB_INTS_ERROR_DATA_SEQ_BITS;
 
+        usb_hw_clear->sie_status = USB_SIE_STATUS_DATA_SEQ_ERROR_BITS;
+
         printf("│ISR\t│ Data error\n");
 
-        usb_hw_clear->sie_status = USB_SIE_STATUS_DATA_SEQ_ERROR_BITS;
         panic("ERROR: USB Host data sequence error\n");
     }
 
@@ -742,9 +742,9 @@ void isr_usbctrl() {
     if (ints &  USB_INTS_HOST_RESUME_BITS) {
         ints ^= USB_INTS_HOST_RESUME_BITS;
 
-        printf("│ISR\t│ Device resume\n");
-
         usb_hw_clear->sie_status = USB_SIE_STATUS_RESUME_BITS;
+
+        printf("│ISR\t│ Device resume\n");
     }
 
     // Any missed?
