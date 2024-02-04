@@ -26,6 +26,8 @@
 
 #include "helpers.h"              // Helper functions
 
+#define memclr(ptr, len) memset((ptr), 0, (len))
+
 #define MAKE_U16(x, y) (((x) << 8) | ((y)     ))
 #define SWAP_U16(x)    (((x) >> 8) | ((x) << 8))
 
@@ -38,8 +40,6 @@
 
 #define usb_hw_set   ((usb_hw_t *) hw_set_alias_untyped  (usb_hw))
 #define usb_hw_clear ((usb_hw_t *) hw_clear_alias_untyped(usb_hw))
-
-#define memclr(ptr, len) memset((ptr), 0, (len))
 
 // NOTE: Which is better? Same? Should they use an inlined function?
 //
