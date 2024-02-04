@@ -281,7 +281,7 @@ uint32_t prepare_buffer(hw_endpoint_t *ep, uint8_t buf_id) {
 // THe hardware for HOST "interrupt" EPs only supports single buffering and
 // HOST "bulk" EPs are based on these.
 
-void start_next_buffer(hw_endpoint_t *ep) {
+void prepare_buffers(hw_endpoint_t *ep) {
     const bool host = is_host_mode();
     const bool in = ep->usb->bEndpointAddress & USB_DIR_IN;
     const bool allow_double = host ? !in : in;
@@ -342,7 +342,7 @@ bool still_transferring(hw_endpoint_t *ep) {
     // if (e15_is_critical_frame_period(ep)) {
     //     ep->pending = 1;
     // } else {
-        start_next_buffer(ep); // Calculate and set ECR/BCR to transfer next buffer
+        prepare_buffers(ep); // Calculate and set ECR/BCR to transfer next buffer
     // }
 
     return true; // Transfer should continue
