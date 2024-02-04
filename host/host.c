@@ -255,6 +255,13 @@ endpoint_t *find_endpoint(uint8_t dev_addr, uint8_t ep_addr) {
     return NULL;
 }
 
+SDK_ALWAYS_INLINE static inline void reset_endpoint(endpoint_t *ep) {
+    ep->active     = false;
+    ep->bytes_left = 0;
+    ep->bytes_done = 0;
+    ep->user_buf   = 0;
+}
+
 // ==[ Buffers ]===============================================================
 
 // Prepare an endpoint buffer and return its buffer control register value
