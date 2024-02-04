@@ -346,26 +346,21 @@ bool still_transferring(endpoint_t *ep) {
 void handle_buffer(uint32_t bit, endpoint_t *ep) {
     if (still_transferring(ep)) return;
 
-    // NOTE: Queue an event for a successful transfer completion
+    // Prepare a successful transfer completion evebt
+    event_t event      = { 0 };
+    event.type         = EVENT_TRANS_COMPLETE;
+    event.dev_addr     = ep->dev_addr;
+    event.xfer.ep_addr = ep->ep_addr;
+    event.xfer.result  = TRANSFER_SUCCESS;
+    event.xfer.len     = ep->bytes_done;
 
-    // Get values
-    uint8_t  dev_addr   = ep->dev_addr;
-    uint8_t  ep_addr    = ep->ep_addr;
-    uint16_t bytes_done = ep->bytes_done;
-
-    // Reset values
+    // Reset the endpoint settings
     ep->active     = false;
     ep->bytes_left = 0;
     ep->bytes_done = 0;
-    ep->user_buf   = 0;
+    // TODO: What else do we need to clear or reset?
 
-    // Queue an event
-    event_t event = { 0 };
-    event.type         = EVENT_TRANS_COMPLETE; // NOTE: This means succeess!
-    event.dev_addr     = dev_addr;
-    event.xfer.ep_addr = 64; // TODO: gotta fix, obviously... ep;
-    event.xfer.result  = TRANSFER_SUCCESS;
-    event.xfer.len     = 123; // will we have the total size transferred in the ep?
+    // Queue the event
     queue_add_blocking(queue, &event);
 }
 
