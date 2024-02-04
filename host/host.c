@@ -659,7 +659,11 @@ void isr_usbctrl() {
         // Find the buffer(s) that are ready
         uint32_t bits = usb_hw->buf_status;
         uint32_t mask = 1u;
-        bindump("│BUF", bits);
+
+        // Show single vs double buffer status. // TODO: Switch to better logging.
+        bool epx_2buf = ((bits & mask) && (*epx->ecr & EP_CTRL_DOUBLE_BUFFERED_BITS));
+        char *str = epx_2buf ? "│BUF(2)" : "│BUF(1)";
+        bindump(str, bits);
 
         // Clear all buffer bits, panic later if we missed any
         usb_hw_clear->buf_status = (uint32_t) ~0;
