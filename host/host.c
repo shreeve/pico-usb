@@ -816,7 +816,7 @@ void usb_task() {
                 break;
 
             case EVENT_TRANS_COMPLETE:
-                printf("Transfer complete\n");
+                printf("Transfer complete (from queue)\n");
                 if (event.xfer.len == 0) {
                     send_zlp(epx);
                 }
