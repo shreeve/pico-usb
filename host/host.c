@@ -433,7 +433,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet, size_t s
     }
 
     // A transfer is now active // TODO: Where exactly should this be set?
-    ep->active = true
+    ep->active = true;
 
     // NOTE: We might be able to collapse the 3 and 6 cycle delays into one!
 
