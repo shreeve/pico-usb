@@ -431,6 +431,9 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet, size_t s
         hexdump(packet, size, 1);
     }
 
+    // A transfer is now active // TODO: Where exactly should this be set?
+    ep->active = true
+
     // NOTE: We might be able to collapse the 3 and 6 cycle delays into one!
 
     // Datasheet § 4.1.2.5.1 (p. 383) says that when clk_sys (usually 133Mhz)
