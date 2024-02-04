@@ -245,6 +245,16 @@ void setup_endpoints() {
     // Dynamically allocate the others
 }
 
+endpoint_t *find_endpoint(uint8_t dev_addr, uint8_t ep_addr) {
+    if (!(ep_addr & 0x7f)) return epx; // EP0 is special
+    for (uint8_t i = 0; i < USB_MAX_ENDPOINTS; i++) {
+        if (eps[i].on && eps[i].dev_addr == dev_addr && eps[i].ep_addr == ep_addr) {
+            return &eps[i];
+        }
+    }
+    return NULL;
+}
+
 // ==[ Buffers ]===============================================================
 
 // Prepare an endpoint buffer and return its buffer control register value
