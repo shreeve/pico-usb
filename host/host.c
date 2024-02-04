@@ -453,7 +453,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet, size_t s
 
 // Send a zero length status packet (ZLP)
 SDK_ALWAYS_INLINE static inline void send_zlp(endpoint_t *ep) {
-    start_transfer(ep, NULL, 0); // TODO: This isn't correct... it should be the end of a transfer
+    start_control_transfer(ep, NULL, 0); // TODO: This isn't correct... it should be the end of a transfer
 }
 
 // NOTE: This is a single/global/static control transfer object.
@@ -556,7 +556,7 @@ void get_device_descriptor() {
         .wLength       = 8, // If dev_addr > 0, then use: sizeof(usb_device_descriptor_t)
     };
 
-    start_transfer(epx, &packet, sizeof(packet));
+    start_control_transfer(epx, &packet, sizeof(packet));
 }
 
 // Set device address
@@ -576,7 +576,7 @@ void set_device_address() {
         .wLength       = 0,
     };
 
-    start_transfer(epx, &packet, sizeof(packet));
+    start_control_transfer(epx, &packet, sizeof(packet));
 }
 
 void start_enumeration() {
