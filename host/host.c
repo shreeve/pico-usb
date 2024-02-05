@@ -243,10 +243,10 @@ SDK_ALWAYS_INLINE static inline void reset_endpoint(endpoint_t *ep) {
 // Prepare an endpoint buffer and return its buffer control register value
 uint32_t prepare_buffer(endpoint_t *ep, uint8_t buf_id) {
     uint16_t len = MIN(ep->bytes_left, ep->usb->wMaxPacketSize);
+    uint32_t bcr = ep->pid ? USB_BUF_CTRL_DATA1_PID : USB_BUF_CTRL_DATA0_PID
+                 | USB_BUF_CTRL_AVAIL
+                 | len;
     ep->bytes_left -= len;
-
-    uint32_t bcr = len | USB_BUF_CTRL_AVAIL;
-    bcr |= ep->pid ? USB_BUF_CTRL_DATA1_PID : USB_BUF_CTRL_DATA0_PID;
     ep->pid ^= 1u;
 
     // Copy data to buffer if we're sending
