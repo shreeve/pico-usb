@@ -89,8 +89,8 @@ enum {
 // ==[ Events ]================================================================
 
 enum {
-    EVENT_HOST_CONN_DIS,
-    EVENT_TRANS_COMPLETE,
+    EVENT_CONNECT,
+    EVENT_TRANSFER,
     EVENT_FUNCTION,
 };
 
@@ -341,7 +341,7 @@ void handle_buffer(uint32_t bit, endpoint_t *ep) {
     if (still_transferring(ep)) return;
 
     assert(ep->active);
-    event.type         = EVENT_TRANS_COMPLETE;
+    event.type         = EVENT_TRANSFER;
     event.dev_addr     = ep->dev_addr;
     event.xfer.ep_addr = ep->ep_addr;
     event.xfer.result  = TRANSFER_SUCCESS;
@@ -448,9 +448,9 @@ SDK_ALWAYS_INLINE static inline void send_zlp(endpoint_t *ep) {
 // transfers on multiple devices concurrently and control transfers are mainly
 // used for enumeration, we will only execute control transfers one at a time.
 
-// Submit a transfer and, when complete, push an EVENT_TRANS_COMPLETE completed event
+// Submit a transfer and, when complete, queue an EVENT_TRANSFER event
 // Abort a transfer, only if not yet started. Return true if queue xfer aborted
-// Send a SETUP transfer. When complete, push an EVENT_TRANS_COMPLETE completed event
+// Send a SETUP transfer. When complete, queue an EVENT_TRANSFER event
 // Clear a stall and toggle data PID back to DATA0
 
 // struct tuh_xfer_t {
@@ -603,7 +603,7 @@ void isr_usbctrl() {
         usb_hw_clear->sie_status = USB_SIE_STATUS_SPEED_BITS;
 
         if (speed) {
-            event.type = EVENT_HOST_CONN_DIS;
+            event.type = EVENT_CONNECT;
             event.dev_addr = 0;
             event.conn.speed = speed;
             queue_add_blocking(queue, &event);
@@ -621,7 +621,7 @@ void isr_usbctrl() {
         printf("│ISR\t│ Stall detected\n");
 
         // Queue the stalled transfer
-        event.type = EVENT_TRANS_COMPLETE;
+        event.type = EVENT_TRANSFER;
         event.xfer.ep_addr = 37; // TODO: Will need this and maybe some more info?
         event.xfer.result  = TRANSFER_STALLED;
         event.xfer.len     = 0; // TODO: Do we need this?
@@ -685,7 +685,7 @@ void isr_usbctrl() {
             printf("│ISR\t│      │ Setup packet sent\n");
 
             assert(ep->active);
-            event.type         = EVENT_TRANS_COMPLETE;
+            event.type         = EVENT_TRANSFER;
             event.dev_addr     = ep->dev_addr;
             event.xfer.ep_addr = ep->ep_addr;
             event.xfer.result  = TRANSFER_SUCCESS;
@@ -786,13 +786,13 @@ void usb_task() {
 
     if (queue_try_remove(queue, &event)) {
         switch (event.type) {
-            case EVENT_HOST_CONN_DIS:
+            case EVENT_CONNECT:
                 char *str = event.conn.speed == 1 ? "low" : "high";
                 printf("Device connected (%s speed)\n", str);
                 start_enumeration();
                 break;
 
-            case EVENT_TRANS_COMPLETE:
+            case EVENT_TRANSFER:
                 printf("Transfer complete (from queue)\n");
                 if (event.xfer.len == 0) {
                     send_zlp(epx);
