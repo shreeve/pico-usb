@@ -305,7 +305,7 @@ uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
     }
     ep->bytes_done += len;
 
-    // A short packet will become the last
+    // A short packet (below maxsize) means the transfer is done
     if (len < ep->maxsize) {
         ep->bytes_left = 0;
     }
