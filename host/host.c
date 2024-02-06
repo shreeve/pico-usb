@@ -293,7 +293,7 @@ void prepare_buffers(endpoint_t *ep) {
 uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
     uint32_t bcr = usbh_dpram->epx_buf_ctrl; if (buf_id) bcr = bcr >> 16;
     uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK;
-    bool full    = bcr & USB_BUF_CTRL_FULL;
+    bool    full = bcr & USB_BUF_CTRL_FULL;
 
     // Buffer must be full for reads, empty for writes
     assert(ep->sender ^ full);
