@@ -759,7 +759,7 @@ void isr_usbctrl() {
 
         usb_hw_clear->sie_status = USB_SIE_STATUS_TRANS_COMPLETE_BITS;
 
-        // NOTE: TRANS_COMPLETE will fire in these cases (see datasheet p. 401)
+        // NOTE: TRANS_COMPLETE fires when: (see datasheet, p. 401)
         //
         // 1. A setup packet was sent without a following IN or OUT. This can
         //    occur if USB_SIE_CTRL_{RECEIVE,SEND}_DATA_BITS are NOT set when
