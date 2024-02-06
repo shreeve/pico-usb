@@ -340,15 +340,18 @@ bool still_transferring(endpoint_t *ep) {
 void handle_buffer(uint32_t bit, endpoint_t *ep) {
     if (still_transferring(ep)) return;
 
-    static event_t event;
     assert(ep->active);
-    event.type         = EVENT_TRANSFER;
-    event.dev_addr     = ep->dev_addr;
-    event.xfer.ep_addr = ep->ep_addr;
-    event.xfer.result  = TRANSFER_SUCCESS;
-    event.xfer.len     = ep->bytes_done;
+
+    queue_add_blocking(queue, &((event_t) {
+        .type     = EVENT_TRANSFER,
+        .dev_addr = ep->dev_addr,
+        .xfer     = {
+            .ep_addr = ep->ep_addr,
+            .result  = TRANSFER_SUCCESS,
+            .len     = ep->bytes_done,
+        },
+    }));
     reset_endpoint(ep);
-    queue_add_blocking(queue, &event);
 }
 
 // ==[ Transfers ]=============================================================
