@@ -412,6 +412,8 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     uint8_t size = sizeof(usb_setup_packet_t);
 
     // TODO: Add assert conditions...
+    // Transfer is now active
+    ep->active = true;
 
     // Determine direction
     bool in = packet->bmRequestType & USB_DIR_IN; // TODO: Do we need a "packet_dir" and "data_dir" type of thing?
@@ -445,8 +447,6 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         hexdump(packet, size, 1);
     }
 
-    // Transfer is now active
-    ep->active = true;
 
     // TODO: See if we can analyze the timing here and optimize it
 
