@@ -412,6 +412,12 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     uint8_t size = sizeof(usb_setup_packet_t);
 
     // TODO: Add assert conditions...
+    // Locate the device and ensure it's in the right state
+    uint8_t dev_addr = ep->dev_addr;
+    device_t *dev = dev_addr ? get_device(dev_addr) : dev0;
+    if (dev_addr)       { if (dev->state <  DEVICE_ACTIVE) return; }
+    else { if (!dev->state || dev->state >= DEVICE_ACTIVE) return; }
+
     // Transfer is now active
     ep->active = true;
 
@@ -424,6 +430,8 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 
     // Calculate register values
     uint32_t dar, ecr, bcr, scr;
+    dar = dev_addr << USB_ADDR_ENDP_ENDPOINT_LSB
+        | ep->ep_num;
     ecr = usbh_dpram->epx_ctrl;
     bcr = USB_BUF_CTRL_LAST
         | USB_BUF_CTRL_DATA1_PID
@@ -436,6 +444,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         // TODO: preamble (LS on FS)
 
     // Debug output
+    bindump(" DAR", dar);
     bindump(" ECR", ecr);
     bindump(" BCR", bcr | USB_BUF_CTRL_AVAIL);
     bindump(" SCR", scr | USB_SIE_CTRL_START_TRANS_BITS);
@@ -447,6 +456,8 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         hexdump(packet, size, 1);
     }
 
+    // Set DAR (dev_addr_ctrl)
+    usb_hw->dev_addr_ctrl = dar;
 
     // TODO: See if we can analyze the timing here and optimize it
 
