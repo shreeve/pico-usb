@@ -129,23 +129,23 @@ static queue_t queue_struct, *queue = &queue_struct;
 typedef void (*endpoint_c)(uint8_t *buf, uint16_t len);
 
 typedef struct endpoint {
-    uint8_t    dev_addr   ; // Device address // HOST ONLY
-    uint8_t    ep_addr    ; // Endpoint address
-    uint16_t   maxsize    ; // Maximum packet size
-    uint8_t    type       ; // Transfer type
-    uint8_t    data_pid   ; // Toggle DATA0/DATA1 each packet
-    uint16_t   interval   ; // Polling interval in ms
+    uint8_t    dev_addr  ; // Device address // HOST ONLY
+    uint8_t    ep_addr   ; // Endpoint address
+    uint16_t   maxsize   ; // Maximum packet size
+    uint8_t    type      ; // Transfer type
+    uint8_t    data_pid  ; // Toggle DATA0/DATA1 each packet
+    uint16_t   interval  ; // Polling interval in ms
 
-    uint8_t    ep_num     ; // Endpoint number         // TODO: Needed? Use a define? Inline?
-    bool       sender     ; // Endpoint is for sending // TODO: Needed? Derived...
-    bool       active     ; // Transfer is active      // TODO: Needed? Other ways to check?
+    uint8_t    ep_num    ; // Endpoint number         // TODO: Needed? Use a define? Inline?
+    bool       sender    ; // Endpoint is for sending // TODO: Needed? Derived...
+    bool       active    ; // Transfer is active      // TODO: Needed? Other ways to check?
 
     volatile
-    uint8_t   *data_buf   ; // Data buffer
-    uint8_t   *user_buf   ; // User buffer
-    uint16_t   bytes_left ; // Bytes remaining
-    uint16_t   bytes_done ; // Bytes transferred
-    endpoint_c cb         ; // Callback function
+    uint8_t   *data_buf  ; // Data buffer
+    uint8_t   *user_buf  ; // User buffer
+    uint16_t   bytes_left; // Bytes remaining
+    uint16_t   bytes_done; // Bytes transferred
+    endpoint_c cb        ; // Callback function
 } endpoint_t;
 
 // TODO: For right now, only define EPX. Later, we'll make this dynamic.
