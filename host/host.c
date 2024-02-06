@@ -291,8 +291,7 @@ void prepare_buffers(endpoint_t *ep) {
 
 // Sync an endpoint buffer, while updating and returning byte counts
 uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
-    uint32_t bcr = usbh_dpram->epx_buf_ctrl;
-    if (buf_id) bcr = bcr >> 16;
+    uint32_t bcr = usbh_dpram->epx_buf_ctrl; if (buf_id) bcr = bcr >> 16;
     uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK;
     bool full    = bcr & USB_BUF_CTRL_FULL;
 
