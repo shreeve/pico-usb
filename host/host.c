@@ -676,10 +676,11 @@ void isr_usbctrl() {
 
         if (speed) {
             printf("│ISR\t│ Device connected\n");
-            event.type = EVENT_CONNECT;
-            event.dev_addr = 0;
-            event.conn.speed = speed;
-            queue_add_blocking(queue, &event);
+            queue_add_blocking(queue, &((event_t) {
+                .type       = EVENT_CONNECT,
+                .dev_addr   = 0,
+                .conn.speed = speed,
+            }));
         } else {
             printf("│ISR\t│ Device disconnected\n");
         }
