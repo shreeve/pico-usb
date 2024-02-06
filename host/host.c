@@ -297,6 +297,8 @@ uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
 
     // Buffer must be full for reads, empty for writes
     assert(ep->sender ^ full);
+
+    // Copy data if we're receiving
     if (!ep->sender) {
         memcpy(ep->user_buf, (void *) (ep->data_buf + buf_id * 64), len);
         ep->user_buf += len;
