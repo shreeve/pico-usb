@@ -126,7 +126,7 @@ static queue_t queue_struct, *queue = &queue_struct;
 
 // ==[ Endpoints ]=============================================================
 
-typedef void (*endpoint_cb)(uint8_t *buf, uint16_t len);
+typedef void (*endpoint_c)(uint8_t *buf, uint16_t len);
 
 typedef struct endpoint {
     uint8_t    dev_addr   ; // Device address // HOST ONLY
@@ -145,7 +145,7 @@ typedef struct endpoint {
     uint8_t   *user_buf   ; // User buffer
     uint16_t   bytes_left ; // Bytes remaining
     uint16_t   bytes_done ; // Bytes transferred
-    endpoint_cb cb       ; // Callback function
+    endpoint_c cb         ; // Callback function
 } endpoint_t;
 
 // TODO: For right now, only define EPX. Later, we'll make this dynamic.
