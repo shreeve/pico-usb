@@ -695,7 +695,7 @@ void isr_usbctrl() {
         printf("│ISR\t│ Stall detected\n");
 
         // Queue the stalled transfer
-        event.type = EVENT_TRANSFER;
+        event.type         = EVENT_TRANSFER;
         event.xfer.ep_addr = 37; // TODO: Will need this and maybe some more info?
         event.xfer.result  = TRANSFER_STALLED;
         event.xfer.len     = 0; // TODO: Do we need this?
