@@ -410,7 +410,6 @@ void handle_buffer(uint32_t bit, endpoint_t *ep) {
 // Start a control transfer
 void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     uint8_t size = sizeof(usb_setup_packet_t);
-    uint32_t ecr, bcr, scr;
 
     // TODO: Add assert conditions...
 
@@ -422,6 +421,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     memcpy((void *) usbh_dpram->setup_packet, packet, size);
 
     // Calculate register values
+    uint32_t dar, ecr, bcr, scr;
     ecr = usbh_dpram->epx_ctrl;
     bcr = USB_BUF_CTRL_LAST
         | USB_BUF_CTRL_DATA1_PID
