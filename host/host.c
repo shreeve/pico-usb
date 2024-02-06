@@ -411,7 +411,11 @@ void handle_buffer(uint32_t bit, endpoint_t *ep) {
 void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     uint8_t size = sizeof(usb_setup_packet_t);
 
-    // TODO: Add assert conditions...
+    // TODO: Review assertions and sanity checks
+    assert(!ep->ep_num); // Control transfers must use EP0
+    assert(!ep->active); // Only one control transfer at a time
+    // assert(ep->configured); // TODO: Endpoint must be configured
+
     // Locate the device and ensure it's in the right state
     uint8_t dev_addr = ep->dev_addr;
     device_t *dev = dev_addr ? get_device(dev_addr) : dev0;
