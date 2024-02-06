@@ -448,7 +448,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     // Transfer is now active
     ep->active = true;
 
-    // NOTE: We might be able to collapse theses delays...
+    // TODO: See if we can analyze the timing here and optimize it
 
     // Set BCR (epx_buf_ctrl)
     // Datasheet § 4.1.2.5.1 (p. 383) says that when clk_sys (usually 133Mhz)
