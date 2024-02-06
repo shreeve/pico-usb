@@ -355,6 +355,54 @@ void handle_buffer(uint32_t bit, endpoint_t *ep) {
 // TODO: Is there a "generic" transfer here that we can call from control...
 // Start a transfer
 
+// NOTE: This is a single/global/static control transfer object.
+// Control transfers: since most controllers do not support multiple control
+// transfers on multiple devices concurrently and control transfers are mainly
+// used for enumeration, we will only execute control transfers one at a time.
+
+// Control transfers: since most controllers do not support multiple control transfers
+// on multiple devices concurrently and control transfers are not used much except for
+// enumeration, we will only execute control transfers one at a time.
+//
+// CFG_TUH_MEM_SECTION struct {
+//   CFG_TUH_MEM_ALIGN tusb_control_request_t request;
+//   uint8_t* buffer;
+//   tuh_xfer_cb_t complete_cb;
+//   uintptr_t user_data;
+//
+//   uint8_t daddr;
+//   volatile uint8_t stage;
+//   volatile uint16_t actual_len;
+// } _ctrl_xfer;
+
+// Submit a transfer and, when complete, queue an EVENT_TRANSFER event
+// Abort a transfer, only if not yet started. Return true if queue xfer aborted
+// Send a SETUP transfer. When complete, queue an EVENT_TRANSFER event
+// Clear a stall and toggle data PID back to DATA0
+
+// struct tuh_xfer_t {
+//   uint8_t daddr;
+//   uint8_t ep_addr;
+//   xfer_result_t result;
+//   uint32_t actual_len;      // excluding setup packet
+//   union {
+//     tusb_control_request_t const* setup; // setup packet pointer if control transfer
+//     uint32_t buflen;                     // expected length if not control transfer (not available in callback)
+//   };
+//   uint8_t*      buffer; // not available in callback if not control transfer
+//   tuh_xfer_cb_t complete_cb;
+//   uintptr_t     user_data;
+// };
+//
+// tuh_xfer_t xfer = {
+//   .daddr       = daddr,
+//   .ep_addr     = 0,
+//   .setup       = &request,
+//   .buffer      = buffer,
+//   .complete_cb = complete_cb,
+//   .user_data   = user_data
+// };
+
 // Start a control transfer
 void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     uint8_t size = sizeof(usb_setup_packet_t);
@@ -415,16 +463,6 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     hw_set_staged6(usb_hw->sie_ctrl, scr, USB_SIE_CTRL_START_TRANS_BITS);
 }
 
-// • DAC (dev_addr_ctrl) <- dev_addr, ep_num
-// • ECR (epx_ctrl) <- enable ep, set type, interval, offset, etc.
-// • BUF by copying message to it
-// • BCR (epx_buf_ctrl) <- buf, size, available, setup, len, etc.
-// • SCR (sie_ctrl) <- EPx ints, setup packet logic, start transfer, etc.
-//
-// volatile uint32_t *dac; // Device address control
-// volatile uint32_t *ecr; // Endpoint control register
-// volatile uint32_t *bcr; // Buffer control register
-//
 //     // Set target device address and endpoint number
 //     // NOTE: 19:16=ep_num, 6:0=dev_addr
 //     // *ep->dac = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB));
@@ -441,72 +479,12 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 //         scr = USB_SIE_CTRL_BASE            // SIE_CTRL defaults
 //             | USB_SIE_CTRL_SEND_DATA_BITS; // OUT from host is send
 
-
 // // Send a zero length status packet (ZLP)
 // SDK_ALWAYS_INLINE static inline void send_zlp(endpoint_t *ep) {
 //     start_control_transfer(ep, NULL, 0); // TODO: This isn't correct... it should be the end of a transfer
 // }
-//
-// // NOTE: This is a single/global/static control transfer object.
-// // Control transfers: since most controllers do not support multiple control
-// // transfers on multiple devices concurrently and control transfers are mainly
-// // used for enumeration, we will only execute control transfers one at a time.
-//
-// // Submit a transfer and, when complete, queue an EVENT_TRANSFER event
-// // Abort a transfer, only if not yet started. Return true if queue xfer aborted
-// // Send a SETUP transfer. When complete, queue an EVENT_TRANSFER event
-// // Clear a stall and toggle data PID back to DATA0
-//
-// // struct tuh_xfer_t {
-// //   uint8_t daddr;
-// //   uint8_t ep_addr;
-// //   xfer_result_t result;
-// //   uint32_t actual_len;      // excluding setup packet
-// //   union {
-// //     tusb_control_request_t const* setup; // setup packet pointer if control transfer
-// //     uint32_t buflen;                     // expected length if not control transfer (not available in callback)
-// //   };
-// //   uint8_t*      buffer; // not available in callback if not control transfer
-// //   tuh_xfer_cb_t complete_cb;
-// //   uintptr_t     user_data;
-// // };
-//
-// //   tuh_xfer_t xfer = {
-// //     .daddr       = daddr,
-// //     .ep_addr     = 0,
-// //     .setup       = &request,
-// //     .buffer      = buffer,
-// //     .complete_cb = complete_cb,
-// //     .user_data   = user_data
-// //   };
-//
-// // CFG_TUSB_MEM_SECTION struct {
-// //   tusb_control_request_t request TU_ATTR_ALIGNED(4);
-// //   uint8_t* buffer;
-// //   tuh_xfer_cb_t complete_cb;
-// //   uintptr_t user_data;
-// //
-// //   uint8_t daddr;
-// //   volatile uint8_t stage;
-// //   volatile uint16_t actual_len;
-// // } _ctrl_xfer;
-//
-// //   bool const ret = tuh_control_xfer(&xfer);
-// //
-// //   // if blocking, user_data could be pointed to xfer_result
-// //   if ( !complete_cb && user_data ) {
-// //     *((xfer_result_t*) user_data) = xfer.result;
-// //   }
-//
-// // typedef enum {
-// //   XFER_RESULT_SUCCESS = 0,
-// //   XFER_RESULT_FAILED,
-// //   XFER_RESULT_STALLED,
-// //   XFER_RESULT_TIMEOUT,
-// //   XFER_RESULT_INVALID
-// // } xfer_result_t;
 
-// // ==[ Device Enumeration ]=================================================
+// ==[ Device Enumeration ]=================================================
 
 enum {
     DISCONNECTED,
@@ -568,21 +546,6 @@ void get_device_descriptor() {
     };
 
     start_control_transfer(epx, &packet);
-
-// // Control transfers: since most controllers do not support multiple control transfers
-// // on multiple devices concurrently and control transfers are not used much except for
-// // enumeration, we will only execute control transfers one at a time.
-// CFG_TUH_MEM_SECTION struct {
-//     CFG_TUH_MEM_ALIGN tusb_control_request_t request;
-//     uint8_t* buffer;
-//     tuh_xfer_cb_t complete_cb;
-//     uintptr_t user_data;
-//
-//     uint8_t daddr;
-//     volatile uint8_t stage;
-//     volatile uint16_t actual_len;
-// }_ctrl_xfer;
-
 }
 
 // // Set device address
@@ -605,24 +568,24 @@ void get_device_descriptor() {
 //     start_control_transfer(epx, &packet, sizeof(packet));
 // }
 
-    // static uint8_t get_new_address(bool is_hub) {
-    //   uint8_t start;
-    //   uint8_t end;
-    //
-    //   if ( is_hub ) {
-    //     start = CFG_TUH_DEVICE_MAX;
-    //     end   = start + CFG_TUH_HUB;
-    //   } else {
-    //     start = 0;
-    //     end   = start + CFG_TUH_DEVICE_MAX;
-    //   }
-    //
-    //   for (uint8_t idx = start; idx < end; idx++) {
-    //     if (!_usbh_devices[idx].connected) return (idx+1);
-    //   }
-    //
-    //   return 0; // invalid address
-    // }
+// static uint8_t get_new_address(bool is_hub) {
+//   uint8_t start;
+//   uint8_t end;
+//
+//   if ( is_hub ) {
+//     start = CFG_TUH_DEVICE_MAX;
+//     end   = start + CFG_TUH_HUB;
+//   } else {
+//     start = 0;
+//     end   = start + CFG_TUH_DEVICE_MAX;
+//   }
+//
+//   for (uint8_t idx = start; idx < end; idx++) {
+//     if (!_usbh_devices[idx].connected) return (idx+1);
+//   }
+//
+//   return 0; // invalid address
+// }
 
 void enumerate() {
     static uint8_t step;
