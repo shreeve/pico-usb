@@ -157,20 +157,24 @@ SDK_WEAK void epx_cb(uint8_t *buf, uint16_t len) {
 
 // Setup an endpoint
 void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
-    ep->dev_addr   = 0;                            // TODO: Where do we get this?
-    ep->ep_addr    = usb->bEndpointAddress;
-    ep->maxsize    = 0;                            // TODO: Where do we set this?
-    ep->type       = usb->bmAttributes;
-    ep->interval   = usb->bInterval;
-    ep->data_pid   = 1;                            // TODO: What does this start as?
-    ep->ep_num     = usb->bEndpointAddress & 0x0f; // TODO: Is this needed? Easy to derive...
-    ep->sender     = false;
-    ep->active     = false;
-    ep->data_buf   = (uint8_t *) 0x0180;           // TODO: Hard coded for now...
-    ep->user_buf   = 0;
-    ep->bytes_left = 0;
-    ep->bytes_done = 0;
-    ep->cb         = 0;
+
+    // Populate the endpoint
+    *ep = (endpoint_t) {
+        .dev_addr   = 0,                            // Device address // HOST ONLY
+        .ep_addr    = usb->bEndpointAddress,
+        .maxsize    = 0,                            // Maximum packet size
+        .type       = usb->bmAttributes,
+        .interval   = usb->bInterval,
+        .data_pid   = 1,                            // Toggle DATA0/DATA1 each packet
+        .ep_num     = usb->bEndpointAddress & 0x0f, // Endpoint number
+        .sender     = false,                        // Endpoint is for sending
+        .active     = false,                        // Transfer is active
+        .data_buf   = (uint8_t *) 0x0180,           // Data buffer
+        .user_buf   = 0,                            // User buffer
+        .bytes_left = 0,                            // Bytes remaining
+        .bytes_done = 0,                            // Bytes transferred
+        .cb         = epx_cb,                       // Callback function
+    };
 
     // Helper variables
     bool     in           = ep->ep_addr & USB_DIR_IN;
