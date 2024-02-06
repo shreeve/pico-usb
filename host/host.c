@@ -469,8 +469,8 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 
 //     // Set target device address and endpoint number
 //     // NOTE: 19:16=ep_num, 6:0=dev_addr
-//     // *ep->dac = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB));
-//     *ep->dac = 0;
+//     // *ep->dar = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB));
+//     *ep->dar = 0;
 //
 //         // Set BCR
 //         bcr = USB_BUF_CTRL_FULL // Indicates we've populated the buffer
@@ -664,7 +664,7 @@ void isr_usbctrl() {
     bindump("│INTR", intr);
     bindump("│INTS", ints);
     bindump("│SIE", usb_hw->sie_status);
-    bindump("│DAC", usb_hw->dev_addr_ctrl);
+    bindump("│DAR", usb_hw->dev_addr_ctrl);
     bindump("│ECR", usbh_dpram->epx_ctrl);
     bindump("│BCR", usbh_dpram->epx_buf_ctrl);
 
