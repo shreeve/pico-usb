@@ -467,22 +467,6 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     hw_set_staged6(usb_hw->sie_ctrl, scr, USB_SIE_CTRL_START_TRANS_BITS);
 }
 
-//     // Set target device address and endpoint number
-//     // NOTE: 19:16=ep_num, 6:0=dev_addr
-//     // *ep->dar = (uint32_t) (dev_addr | (ep_num << USB_ADDR_ENDP_ENDPOINT_LSB));
-//     *ep->dar = 0;
-//
-//         // Set BCR
-//         bcr = USB_BUF_CTRL_FULL // Indicates we've populated the buffer
-//             | USB_BUF_CTRL_LAST
-//             | USB_BUF_CTRL_DATA1_PID
-//             | USB_BUF_CTRL_SEL;
-//         //  | size; // just happens to be zero
-//
-//         // Set SCR
-//         scr = USB_SIE_CTRL_BASE            // SIE_CTRL defaults
-//             | USB_SIE_CTRL_SEND_DATA_BITS; // OUT from host is send
-
 // // Send a zero length status packet (ZLP)
 // SDK_ALWAYS_INLINE static inline void send_zlp(endpoint_t *ep) {
 //     start_control_transfer(ep, NULL, 0); // TODO: This isn't correct... it should be the end of a transfer
