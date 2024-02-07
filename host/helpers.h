@@ -46,5 +46,5 @@ void bindump(uint8_t *str, uint32_t val) {
         if (i % 8 == 7) printf(" ");
     }
 
-    printf("             │ 0x%08x\n", val);
+    printf("│ 0x%08x │\n", val);
 }
