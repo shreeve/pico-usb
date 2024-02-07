@@ -780,6 +780,9 @@ void isr_usbctrl() {
         // 2. An IN packet is received and the LAST_BUFF bit was set in the BCR
         // 3. An IN packet is received with a zero length packet (ZLP)
         // 4. An OUT packet is sent and the LAST_BUFF bit was set in the BCR
+        //
+        // Question: For a ZLP OUT, will this fire without LAST_BUFF?
+        // Question: For a ZLP IN, will BUFF_STATUS fire also?
 
         // TODO: Nearly same as BUFF_STATUS, how can we share code better?
         if (usb_hw->sie_ctrl & USB_SIE_CTRL_SEND_SETUP_BITS) {
