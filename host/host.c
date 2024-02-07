@@ -464,7 +464,6 @@ void set_device_address() {
 
     printf("Set device address to %u\n", dev_addr);
 
-void enumerate() {
     start_control_transfer(epx, &((usb_setup_packet_t) {
         .bmRequestType = USB_DIR_OUT
                        | USB_REQ_TYPE_STANDARD
@@ -475,6 +474,8 @@ void enumerate() {
         .wLength       = 0,
     }));
 }
+
+void enumerate(bool reset) {
     static uint8_t step;
     if (!dev0->maxsize) step = ENUMERATION_START;
 
