@@ -148,6 +148,9 @@ typedef struct endpoint {
     endpoint_c cb        ; // Callback function
 } endpoint_t;
 
+// TODO: Figure a way to handle this forward declaration
+void start_control_transfer(endpoint_t *, usb_setup_packet_t *);
+
 // TODO: For right now, only define EPX. Later, we'll make this dynamic.
 static endpoint_t eps[MAX_ENDPOINTS], *epx = eps;
 
@@ -354,6 +357,175 @@ void handle_buffer(uint32_t bit, endpoint_t *ep) {
     reset_endpoint(ep);
 }
 
+// ==[ Devices ]===============================================================
+
+enum {
+    DISCONNECTED,
+    LOW_SPEED,
+    FULL_SPEED,
+};
+
+enum {
+    DEVICE_DISCONNECTED,
+    DEVICE_CONNECTED,
+    DEVICE_ADDRESSED,
+    DEVICE_CONFIGURED,
+    DEVICE_ACTIVE,
+    DEVICE_SUSPENDED,
+};
+
+// TODO: We might be able to use the above DEVICE_* states to drive the enumeration
+enum {
+    ENUMERATION_START,
+    ENUMERATION_GET_MAXSIZE,
+    ENUMERATION_SET_ADDRESS,
+    ENUMERATION_GET_DEVICE,
+    ENUMERATION_GET_CONFIG,
+    ENUMERATION_SET_CONFIG,
+    ENUMERATION_END,
+};
+
+typedef struct device {
+    uint8_t  speed       ; // Device speed (0:disconnected, 1:full, 2:high)
+    uint8_t  state       ; // Current device state
+    uint8_t  maxsize     ; // Maximum packet size // TODO: Is this just EP0?
+    uint16_t vid         ; // Vendor Id  (0x0403: FTDI)
+    uint16_t pid         ; // Product Id (0xcd18: Abaxis Piccolo Xpress)
+    uint8_t  manufacturer; // String index of manufacturer
+    uint8_t  product     ; // String index of product
+    uint8_t  serial      ; // String index of serial number
+} device_t;
+
+// TODO: For right now, only define dev0 and 1 device. Later, we'll make this dynamic.
+static device_t devices[MAX_DEVICES], *dev0 = devices;
+
+// Get a pointer to a device
+device_t *get_device(uint8_t dev_addr) {
+    return dev_addr ? &devices[dev_addr] : dev0; // TODO: Add bounds checking
+}
+
+// Get device descriptor
+void get_device_descriptor() {
+    printf("Get device descriptor\n");
+
+    // Determine the device and how many bytes to ask for
+    device_t *dev = &devices[epx->dev_addr]; // TODO: Make this a function call, with bounds checking, etc.
+    uint16_t len = dev->maxsize;
+
+    // Setup packet
+    usb_setup_packet_t packet = {
+        .bmRequestType = USB_DIR_IN
+                       | USB_REQ_TYPE_STANDARD
+                       | USB_REQ_TYPE_RECIPIENT_DEVICE,
+        .bRequest      = USB_REQUEST_GET_DESCRIPTOR,
+        .wValue        = MAKE_U16(USB_DT_DEVICE, 0),
+        .wIndex        = 0,
+        .wLength       = len ? len : 8, // Only 8 bytes if we don't know
+    };
+
+    start_control_transfer(epx, &packet);
+}
+
+// // Set device address
+// void set_device_address() {
+//     uint8_t dev_addr = 1;
+//
+//     printf("Set device address to %u\n", dev_addr);
+//
+//     // Setup packet
+//     usb_setup_packet_t packet = {
+//         .bmRequestType = USB_DIR_OUT
+//                        | USB_REQ_TYPE_STANDARD
+//                        | USB_REQ_TYPE_RECIPIENT_DEVICE,
+//         .bRequest      = USB_REQUEST_SET_ADDRESS,
+//         .wValue        = dev_addr,
+//         .wIndex        = 0,
+//         .wLength       = 0,
+//     };
+//
+//     start_control_transfer(epx, &packet, sizeof(packet));
+// }
+
+// static uint8_t get_new_address(bool is_hub) {
+//   uint8_t start;
+//   uint8_t end;
+//
+//   if ( is_hub ) {
+//     start = CFG_TUH_DEVICE_MAX;
+//     end   = start + CFG_TUH_HUB;
+//   } else {
+//     start = 0;
+//     end   = start + CFG_TUH_DEVICE_MAX;
+//   }
+//
+//   for (uint8_t idx = start; idx < end; idx++) {
+//     if (!_usbh_devices[idx].connected) return (idx+1);
+//   }
+//
+//   return 0; // invalid address
+// }
+
+void enumerate() {
+    static uint8_t step;
+    if (!dev0->maxsize) step = ENUMERATION_START;
+
+    // Handle prior step
+    switch (step) {
+        case ENUMERATION_START:
+            printf("Start enumeration\n");
+            break;
+
+        case ENUMERATION_GET_MAXSIZE:
+            // Set dev0->maxsize
+            break;
+
+        case ENUMERATION_SET_ADDRESS:
+            // Set device address
+            break;
+
+        case ENUMERATION_GET_DEVICE:
+            // Load the device info
+            break;
+
+        case ENUMERATION_GET_CONFIG:
+            // Load the vid, pid, manufacturer, product, and serial
+            break;
+
+        case ENUMERATION_SET_CONFIG:
+            // Set device configuration
+            break;
+    }
+
+    // Handle next step
+    switch (++step) {
+        case ENUMERATION_GET_MAXSIZE:
+            printf("Get maximum packet size\n");
+            get_device_descriptor();
+            break;
+
+        case ENUMERATION_SET_ADDRESS:
+            printf("Set device address\n");
+            break;
+
+        case ENUMERATION_GET_DEVICE:
+            printf("Get device descriptor\n");
+            break;
+
+        case ENUMERATION_GET_CONFIG:
+            printf("Get configuration descriptor\n");
+            break;
+
+        case ENUMERATION_SET_CONFIG:
+            printf("Set device configuration\n");
+            break;
+
+        case ENUMERATION_END:
+            printf("End enumeration\n");
+            dev0->state = DEVICE_CONFIGURED;
+            break;
+    }
+}
+
 // ==[ Transfers ]=============================================================
 
 // TODO: Is there a "generic" transfer here that we can call from control...
@@ -486,170 +658,6 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 // SDK_ALWAYS_INLINE static inline void send_zlp(endpoint_t *ep) {
 //     start_control_transfer(ep, NULL, 0); // TODO: This isn't correct... it should be the end of a transfer
 // }
-
-// ==[ Device Enumeration ]=================================================
-
-enum {
-    DISCONNECTED,
-    LOW_SPEED,
-    FULL_SPEED,
-};
-
-enum {
-    DEVICE_DISCONNECTED,
-    DEVICE_CONNECTED,
-    DEVICE_ADDRESSED,
-    DEVICE_CONFIGURED,
-    DEVICE_ACTIVE,
-    DEVICE_SUSPENDED,
-};
-
-// TODO: We might be able to use the above DEVICE_* states to drive the enumeration
-enum {
-    ENUMERATION_START,
-    ENUMERATION_GET_MAXSIZE,
-    ENUMERATION_SET_ADDRESS,
-    ENUMERATION_GET_DEVICE,
-    ENUMERATION_GET_CONFIG,
-    ENUMERATION_SET_CONFIG,
-    ENUMERATION_END,
-};
-
-typedef struct device {
-    uint8_t  speed       ; // Device speed (0:disconnected, 1:full, 2:high)
-    uint8_t  state       ; // Current device state
-    uint8_t  maxsize     ; // Maximum packet size // TODO: Is this just EP0?
-    uint16_t vid         ; // Vendor Id  (0x0403: FTDI)
-    uint16_t pid         ; // Product Id (0xcd18: Abaxis Piccolo Xpress)
-    uint8_t  manufacturer; // String index of manufacturer
-    uint8_t  product     ; // String index of product
-    uint8_t  serial      ; // String index of serial number
-} device_t;
-
-// TODO: For right now, only define dev0 and 1 device. Later, we'll make this dynamic.
-static device_t devices[MAX_DEVICES], *dev0 = devices;
-
-// Get device descriptor
-void get_device_descriptor() {
-    printf("Get device descriptor\n");
-
-    // Determine the device and how many bytes to ask for
-    device_t *dev = &devices[epx->dev_addr]; // TODO: Make this a function call, with bounds checking, etc.
-    uint16_t len = dev->maxsize;
-
-    // Setup packet
-    usb_setup_packet_t packet = {
-        .bmRequestType = USB_DIR_IN
-                       | USB_REQ_TYPE_STANDARD
-                       | USB_REQ_TYPE_RECIPIENT_DEVICE,
-        .bRequest      = USB_REQUEST_GET_DESCRIPTOR,
-        .wValue        = MAKE_U16(USB_DT_DEVICE, 0),
-        .wIndex        = 0,
-        .wLength       = len ? len : 8, // Only 8 bytes if we don't know
-    };
-
-    start_control_transfer(epx, &packet);
-}
-
-// // Set device address
-// void set_device_address() {
-//     uint8_t dev_addr = 1;
-//
-//     printf("Set device address to %u\n", dev_addr);
-//
-//     // Setup packet
-//     usb_setup_packet_t packet = {
-//         .bmRequestType = USB_DIR_OUT
-//                        | USB_REQ_TYPE_STANDARD
-//                        | USB_REQ_TYPE_RECIPIENT_DEVICE,
-//         .bRequest      = USB_REQUEST_SET_ADDRESS,
-//         .wValue        = dev_addr,
-//         .wIndex        = 0,
-//         .wLength       = 0,
-//     };
-//
-//     start_control_transfer(epx, &packet, sizeof(packet));
-// }
-
-// static uint8_t get_new_address(bool is_hub) {
-//   uint8_t start;
-//   uint8_t end;
-//
-//   if ( is_hub ) {
-//     start = CFG_TUH_DEVICE_MAX;
-//     end   = start + CFG_TUH_HUB;
-//   } else {
-//     start = 0;
-//     end   = start + CFG_TUH_DEVICE_MAX;
-//   }
-//
-//   for (uint8_t idx = start; idx < end; idx++) {
-//     if (!_usbh_devices[idx].connected) return (idx+1);
-//   }
-//
-//   return 0; // invalid address
-// }
-
-void enumerate() {
-    static uint8_t step;
-    if (!dev0->maxsize) step = ENUMERATION_START;
-
-    // Handle prior step
-    switch (step) {
-        case ENUMERATION_START:
-            printf("Start enumeration\n");
-            break;
-
-        case ENUMERATION_GET_MAXSIZE:
-            // Set dev0->maxsize
-            break;
-
-        case ENUMERATION_SET_ADDRESS:
-            // Set device address
-            break;
-
-        case ENUMERATION_GET_DEVICE:
-            // Load the device info
-            break;
-
-        case ENUMERATION_GET_CONFIG:
-            // Load the vid, pid, manufacturer, product, and serial
-            break;
-
-        case ENUMERATION_SET_CONFIG:
-            // Set device configuration
-            break;
-    }
-
-    // Handle next step
-    switch (++step) {
-        case ENUMERATION_GET_MAXSIZE:
-            printf("Get maximum packet size\n");
-            get_device_descriptor();
-            break;
-
-        case ENUMERATION_SET_ADDRESS:
-            printf("Set device address\n");
-            break;
-
-        case ENUMERATION_GET_DEVICE:
-            printf("Get device descriptor\n");
-            break;
-
-        case ENUMERATION_GET_CONFIG:
-            printf("Get configuration descriptor\n");
-            break;
-
-        case ENUMERATION_SET_CONFIG:
-            printf("Set device configuration\n");
-            break;
-
-        case ENUMERATION_END:
-            printf("End enumeration\n");
-            dev0->state = DEVICE_CONFIGURED;
-            break;
-    }
-}
 
 // ==[ Interrupts ]============================================================
 
