@@ -580,7 +580,8 @@ void enumerate() {
 
 // Start a control transfer
 void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
-    uint8_t size = packet ? sizeof(usb_setup_packet_t) : 0;
+    bool zlp = (packet == NULL);
+    uint8_t size = zlp ? 0 : sizeof(usb_setup_packet_t);
 
     // TODO: Review assertions and sanity checks
     assert(!ep->ep_num); // Control transfers must use EP0
@@ -597,7 +598,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     ep->active = true;
 
     // Determine direction
-    bool in = packet->bmRequestType & USB_DIR_IN; // TODO: Do we need a "packet_dir" and "data_dir" type of thing?
+    bool in = zlp ? false : packet->bmRequestType & USB_DIR_IN;
     ep->sender = !in;
 
     // Control transfers start with a setup packet // TODO: is "for (i=0; i<8; i++)"" better???
@@ -612,10 +613,10 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         | USB_BUF_CTRL_DATA1_PID
         | USB_BUF_CTRL_SEL // TODO: Says device only?
         | size;
-    scr = USB_SIE_CTRL_BASE                    // SIE_CTRL defaults
-        | USB_SIE_CTRL_SEND_SETUP_BITS         // Send a SETUP packet
-        | (in ? USB_SIE_CTRL_RECEIVE_DATA_BITS // Receive if IN to host
-              : USB_SIE_CTRL_SEND_DATA_BITS);  // Send if OUT from host
+    scr =            USB_SIE_CTRL_BASE              // SIE_CTRL defaults
+        | (zlp ? 0 : USB_SIE_CTRL_SEND_SETUP_BITS)  // Send a SETUP packet
+        | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS // Receive if IN to host
+               :     USB_SIE_CTRL_SEND_DATA_BITS);  // Send if OUT from host
         // TODO: preamble (LS on FS)
 
     // Debug output
