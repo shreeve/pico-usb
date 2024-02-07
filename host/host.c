@@ -719,8 +719,8 @@ void isr_usbctrl() {
         // 3. An IN packet is received with a zero length packet (ZLP)
         // 4. An OUT packet is sent and the LAST_BUFF bit was set in the BCR
         //
-        // Question: For a ZLP OUT, will this fire without LAST_BUFF?
-        // Question: For a ZLP IN, will BUFF_STATUS fire also?
+        // Question on #3: For a ZLP IN, will BUFF_STATUS fire also?
+        // Question on #4: For a ZLP OUT, will this fire without LAST_BUFF?
 
         endpoint_t *ep = epx; // TODO: Look this up or pluck from event struct
         if (!ep->active) panic("EP should still be active in TRANS_COMPLETE");
