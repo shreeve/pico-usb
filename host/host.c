@@ -797,9 +797,7 @@ void isr_usbctrl() {
 
         usb_hw_clear->sie_status = USB_SIE_STATUS_DATA_SEQ_ERROR_BITS;
 
-        printf("│ISR\t│ Data error\n");
-
-        panic("ERROR: USB Host data sequence error\n");
+        panic("│ERROR: USB Host data sequence error\n");
     }
 
     // Device resumed (device initiated)
