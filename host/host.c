@@ -895,7 +895,7 @@ void usb_task() {
 
             case EVENT_TRANSFER:
                 printf("QUEUE: Transfer complete (len=%u and active? %s)\n", event.xfer.len, epx->active ? "yes" : "no");
-                if (event.xfer.len) {
+                if (event.xfer.len) { // TODO: When do we send ZLP?
                     send_zlp(epx); // TODO: What EP should be used? Should this be queued?
                 // } else {
                 //     clear_endpoint(epx);
