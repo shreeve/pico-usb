@@ -313,8 +313,6 @@ void prepare_buffers(endpoint_t *ep) {
     usbh_dpram->epx_buf_ctrl = bcr;
 }
 
-// TODO: Later, find all of the endpoint_lock_update calls and put something there...
-
 // If transfer is still active, push it along... when complete, return false
 bool still_transferring(endpoint_t *ep) {
 
