@@ -531,33 +531,10 @@ void enumerate() {
 
 // ==[ Transfers ]=============================================================
 
-// TODO: Is there a "generic" transfer here that we can call from control...
-// Start a transfer
-
-// NOTE: This is a single/global/static control transfer object.
-// Control transfers: since most controllers do not support multiple control
-// transfers on multiple devices concurrently and control transfers are mainly
-// used for enumeration, we will only execute control transfers one at a time.
-
-// Control transfers: since most controllers do not support multiple control transfers
-// on multiple devices concurrently and control transfers are not used much except for
-// enumeration, we will only execute control transfers one at a time.
-//
-// CFG_TUH_MEM_SECTION struct {
-//   CFG_TUH_MEM_ALIGN tusb_control_request_t request;
-//   uint8_t* buffer;
-//   tuh_xfer_cb_t complete_cb;
-//   uintptr_t user_data;
-//
-//   uint8_t daddr;
-//   volatile uint8_t stage;
-//   volatile uint16_t actual_len;
-// } _ctrl_xfer;
-
-// Submit a transfer and, when complete, queue an EVENT_TRANSFER event
-// Abort a transfer, only if not yet started. Return true if queue xfer aborted
-// Send a SETUP transfer. When complete, queue an EVENT_TRANSFER event
+// Start a generic transfer and queue an EVENT_TRANSFER when complete
+// Start a control transfer by setting it up and calling the generic transfer
 // Clear a stall and toggle data PID back to DATA0
+// Abort a transfer if not yet started and return true on success
 
 // struct tuh_xfer_t {
 //   uint8_t daddr;
