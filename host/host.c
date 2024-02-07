@@ -204,7 +204,7 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
 
 // Configure the first endpoint as EPX
 void reset_epx() {
-    static usb_endpoint_descriptor_t usb_epx = {
+    usb_endpoint_descriptor_t usb_epx = {
         .bLength          = sizeof(usb_endpoint_descriptor_t),
         .bDescriptorType  = USB_DT_ENDPOINT,
         .bEndpointAddress = 0,
