@@ -273,16 +273,14 @@ uint32_t prepare_buffer(endpoint_t *ep, uint8_t buf_id) {
     ep->bytes_left -= len;
     ep->data_pid ^= 1u;
 
-    // Copy data to buffer if we're sending
+    // If we're sending, copy to the data buffer
     if (ep->sender) {
         memcpy((void *) (ep->data_buf + buf_id * 64), ep->user_buf, len);
         ep->user_buf += len;
         bcr |= USB_BUF_CTRL_FULL;
     }
 
-    // Is this the last buffer? This only really matters for host mode. It will
-    // trigger the TRANS_COMPLETE interrupt but will also stop it polling. We
-    // only really care about this for setup packets being sent, though.
+    // If we're done, set LAST which will fire TRANS_COMPLETE and stop polling
     if (!ep->bytes_left) {
         bcr |= USB_BUF_CTRL_LAST;
     }
