@@ -668,6 +668,7 @@ SDK_ALWAYS_INLINE static inline void send_zlp(endpoint_t *ep) {
 void isr_usbctrl() {
     volatile uint32_t intr = usb_hw->intr;
     volatile uint32_t ints = usb_hw->ints;
+    static event_t event;
 
     printf("┌───────┬──────┬──────────────────────────────────────────────────┐\n");
     printf("│Frame\t│ %4u │%50s│\n", usb_hw->sof_rd, "");
@@ -786,11 +787,13 @@ void isr_usbctrl() {
             printf("│ISR\t│      │ Setup packet sent\n");
             endpoint_t *ep = epx;
             assert(ep->active);
-            event.type         = EVENT_TRANSFER;
-            event.dev_addr     = ep->dev_addr;
-            event.xfer.ep_addr = ep->ep_addr;
-            event.xfer.result  = TRANSFER_SUCCESS;
-            event.xfer.len     = ep->bytes_done = 8; // Size of a setup packet
+            event = (event_t) {
+                .type         = EVENT_TRANSFER,
+                .dev_addr     = ep->dev_addr,
+                .xfer.ep_addr = ep->ep_addr,
+                .xfer.result  = TRANSFER_SUCCESS,
+                .xfer.len     = ep->bytes_done,
+            };
             clear_endpoint(ep);
             queue_add_blocking(queue, &event);
         } else {
