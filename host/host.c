@@ -122,7 +122,7 @@ typedef struct {
     };
 } event_t;
 
-static queue_t queue_struct, *queue = &queue_struct;
+static queue_t *queue = &((queue_t) { 0 });
 
 // ==[ Endpoints ]=============================================================
 
@@ -613,6 +613,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         | ep->ep_num;
     ecr = usbh_dpram->epx_ctrl;
     bcr = USB_BUF_CTRL_LAST
+        | (zlp ? 0 : USB_BUF_CTRL_DATA1_PID) // TODO: Tried this... but?
         | USB_BUF_CTRL_DATA1_PID
         | USB_BUF_CTRL_SEL // TODO: Says device only?
         | size;
