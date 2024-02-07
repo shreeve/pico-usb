@@ -821,10 +821,6 @@ void isr_usbctrl() {
 
 // ==[ Resets ]================================================================
 
-// Reset USB host
-void usb_host_reset() {
-    printf("USB host reset\n\n");
-
 // static void clear_device(usbh_device_t* dev) {
 //   tu_memclr(dev, sizeof(usbh_device_t));
 //   memset(dev->itf2drv, TUSB_INDEX_INVALID_8, sizeof(dev->itf2drv)); // invalid mapping
@@ -833,6 +829,10 @@ void usb_host_reset() {
 //   tu_memclr(&_dev0, sizeof(_dev0));
 //   tu_memclr(_usbh_devices, sizeof(_usbh_devices));
 //   tu_memclr(&_ctrl_xfer, sizeof(_ctrl_xfer));
+
+// Reset USB host
+void usb_host_reset() {
+    printf("USB host reset\n\n");
 
     // Reset controller
     reset_block       (RESETS_RESET_USBCTRL_BITS);
