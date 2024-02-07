@@ -796,9 +796,6 @@ void isr_usbctrl() {
 //   memset(dev->itf2drv, TUSB_INDEX_INVALID_8, sizeof(dev->itf2drv)); // invalid mapping
 //   memset(dev->ep2drv , TUSB_INDEX_INVALID_8, sizeof(dev->ep2drv )); // invalid mapping
 // }
-//   tu_memclr(&_dev0, sizeof(_dev0));
-//   tu_memclr(_usbh_devices, sizeof(_usbh_devices));
-//   tu_memclr(&_ctrl_xfer, sizeof(_ctrl_xfer));
 
 // Reset USB host
 void usb_host_reset() {
