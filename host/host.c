@@ -669,7 +669,7 @@ SDK_ALWAYS_INLINE static inline void send_zlp(endpoint_t *ep) {
 void isr_usbctrl() {
     volatile uint32_t intr = usb_hw->intr;
     volatile uint32_t ints = usb_hw->ints;
-    static event_t event;
+    event_t event; // TODO: Is there any advantage to making this static?
 
     printf("┌───────┬──────┬──────────────────────────────────────────────────┐\n");
     printf("│Frame\t│ %4u │%50s│\n", usb_hw->sof_rd, "");
@@ -890,7 +890,7 @@ void usb_host_reset() {
 // ==[ Main ]==================================================================
 
 void usb_task() {
-    static event_t event;
+    static event_t event; // TODO: Is there any advantage to making this static?
 
     while (queue_try_remove(queue, &event)) { // TODO: Can this starve out other work? Should it be "if (...) {" instead?
         switch (event.type) {
