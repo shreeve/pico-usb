@@ -202,13 +202,8 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
     usbh_dpram->epx_ctrl = ecr;
 }
 
-// Setup endpoints
-void setup_endpoints() {
-
-    // Clear out all endpoints
-    memclr(eps, sizeof(eps));
-
-    // Configure the first endpoint as EPX
+// Configure the first endpoint as EPX
+void setup_epx() {
     static usb_endpoint_descriptor_t usb_epx = {
         .bLength          = sizeof(usb_endpoint_descriptor_t),
         .bDescriptorType  = USB_DT_ENDPOINT,
@@ -218,8 +213,17 @@ void setup_endpoints() {
         .bInterval        = 0
     };
     setup_endpoint(epx, &usb_epx);
+}
 
-    // Dynamically allocate the others
+// Setup endpoints
+void setup_endpoints() {
+
+    // Clear out all endpoints
+    memclr(eps, sizeof(eps));
+
+    // Allocate the endpoints
+    setup_epx();
+    // TODO: Add the rest here
 }
 
 // endpoint_t *find_endpoint(uint8_t dev_addr, uint8_t ep_addr) {
