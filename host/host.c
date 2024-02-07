@@ -473,26 +473,27 @@ void enumerate(bool reset) {
         case ENUMERATION_GET_MAXSIZE:
             // Set dev0->maxsize
             dev0->maxsize = 64; // TODO: Fix this...
-            printf("We survived get_maxsize!\n");
+            printf("Processing GET_MAXSIZE\n");
             break;
 
         case ENUMERATION_SET_ADDRESS:
             // Set device address
-            printf("Holy crap! We survived set_device_address()!\n");
-clear_endpoint(epx); // TODO: This is absurdly stupid
+            printf("Processing SET_ADDRESS\n");
             break;
 
         case ENUMERATION_GET_DEVICE:
             // Load the device info
-            printf("Holy holy holy crap! We're in ENUMERATION_GET_DEVICE!\n");
+            printf("Processing GET_DEVICE\n");
             break;
 
         case ENUMERATION_GET_CONFIG:
             // Load the vid, pid, manufacturer, product, and serial
+            printf("Processing GET_CONFIG\n");
             break;
 
         case ENUMERATION_SET_CONFIG:
             // Set device configuration
+            printf("Processing SET_CONFIG\n");
             break;
     }
 
