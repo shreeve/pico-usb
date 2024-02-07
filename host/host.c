@@ -45,10 +45,6 @@
 #define usb_hw_set   ((usb_hw_t *) hw_set_alias_untyped  (usb_hw))
 #define usb_hw_clear ((usb_hw_t *) hw_clear_alias_untyped(usb_hw))
 
-// NOTE: Which is better? Same? Should they use an inlined function?
-// #define INLINE   __forceinline             // request to inline this function
-// #define NOINLINE __attribute__((noinline)) // request to not inline this function
-
 #define busy_wait_2_cycles() __asm volatile("b 1f\n1:\n"     :::"memory") // remove?
 #define busy_wait_3_cycles() __asm volatile("nop\nnop\nnop\n":::"memory") // static inline?
 
