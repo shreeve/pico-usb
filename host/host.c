@@ -587,8 +587,8 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     uint8_t size = zlp ? 0 : sizeof(usb_setup_packet_t);
 
     // TODO: Review assertions and sanity checks
-    assert(!ep->ep_num); // Control transfers must use EP0
-    assert(!ep->active); // Only one control transfer at a time
+    if (ep->ep_num) panic("Control transfers must use EP0");
+    if (ep->active) panic("Only one control transfer at a time");
     // assert(ep->configured); // TODO: Endpoint must be configured
 
     // Locate the device and ensure it's in the right state
