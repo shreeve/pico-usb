@@ -354,6 +354,7 @@ void handle_buffer(uint32_t bit, endpoint_t *ep) {
             .len     = ep->bytes_done,
         },
     }));
+
     reset_endpoint(ep);
 }
 
@@ -712,7 +713,6 @@ void isr_usbctrl() {
                 .len     = 0, // TODO: Do we need this?
             },
         }));
-
     }
 
     // Buffer(s) ready
