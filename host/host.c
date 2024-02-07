@@ -237,6 +237,7 @@ void setup_endpoints() {
 // }
 
 SDK_ALWAYS_INLINE static inline void clear_endpoint(endpoint_t *ep) {
+    printf("Clearing endpoint 0x%02x\n", ep->ep_addr);
     ep->active     = false;
     ep->user_buf   = 0; // TODO: Add something like a ring buffer here?
     ep->bytes_left = 0;
