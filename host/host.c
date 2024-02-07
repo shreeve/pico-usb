@@ -136,7 +136,7 @@ typedef struct endpoint {
 
     uint8_t    ep_num    ; // Endpoint number         // TODO: Needed? Use a define? Inline?
     bool       sender    ; // Endpoint is for sending // TODO: Needed? Derived...
-    bool       active    ; // Transfer is active      // TODO: Needed? Other ways to check?
+    bool       active    ; // Transfer is active
 
     volatile
     uint8_t   *data_buf  ; // Data buffer
