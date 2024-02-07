@@ -657,8 +657,8 @@ void isr_usbctrl() {
     volatile uint32_t ints = usb_hw->ints;
     event_t event; // TODO: Is there any advantage to making this static?
 
-    printf("┌───────┬──────┬──────────────────────────────────────────────────┐\n");
-    printf("│Frame\t│ %4u │%50s│\n", usb_hw->sof_rd, "");
+    printf( "┌───────┬──────┬──────────────────────────────────────────────────┐\n");
+    printf( "│Frame\t│ %4u │%50s│\n", usb_hw->sof_rd, "");
     bindump("│INTR", intr);
     bindump("│INTS", ints);
     bindump("│SIE", usb_hw->sie_status);
