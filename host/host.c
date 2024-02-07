@@ -322,8 +322,8 @@ uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
 
 // TODO: Later, find all of the endpoint_lock_update calls and put something there...
 
+// If transfer is still active, push it along... when complete, return false
 bool still_transferring(endpoint_t *ep) {
-    if (!ep->active) panic("EP 0x%02x not active\n", ep->ep_addr);
 
     // Update endpoint with buffer status, honor double buffering if present
     if (sync_buffer(ep, 0) == ep->maxsize) { // Full buf_0
@@ -345,16 +345,16 @@ bool still_transferring(endpoint_t *ep) {
 }
 
 void handle_buffer(uint32_t bit, endpoint_t *ep) {
+    if (!ep->active) panic("EP 0x%02x not active\n", ep->ep_addr);
     if (still_transferring(ep)) return;
 
-    assert(ep->active);
-
-    static event_t event;
-    event.type         = EVENT_TRANSFER;
-    event.dev_addr     = ep->dev_addr;
-    event.xfer.ep_addr = ep->ep_addr;
-    event.xfer.result  = TRANSFER_SUCCESS;
-    event.xfer.len     = ep->bytes_done;
+    event_t event = {
+        .type         = EVENT_TRANSFER,
+        .dev_addr     = ep->dev_addr,
+        .xfer.ep_addr = ep->ep_addr,
+        .xfer.result  = TRANSFER_SUCCESS,
+        .xfer.len     = ep->bytes_done,
+    };
 
     clear_endpoint(ep);
 
