@@ -414,7 +414,7 @@ void get_device_descriptor() {
     uint16_t len = dev->maxsize;
 
     // Setup packet
-    usb_setup_packet_t packet = {
+    start_control_transfer(epx, &((usb_setup_packet_t) {
         .bmRequestType = USB_DIR_IN
                        | USB_REQ_TYPE_STANDARD
                        | USB_REQ_TYPE_RECIPIENT_DEVICE,
@@ -422,9 +422,7 @@ void get_device_descriptor() {
         .wValue        = MAKE_U16(USB_DT_DEVICE, 0),
         .wIndex        = 0,
         .wLength       = len ? len : 8, // Only 8 bytes if we don't know
-    };
-
-    start_control_transfer(epx, &packet);
+    }));
 }
 
 // // Set device address
