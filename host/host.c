@@ -706,7 +706,7 @@ void isr_usbctrl() {
         }));
     }
 
-    // Buffer(s) ready
+    // Buffer processing is needed
     if (ints &  USB_INTS_BUFF_STATUS_BITS) {
         ints ^= USB_INTS_BUFF_STATUS_BITS;
 
