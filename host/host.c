@@ -458,27 +458,23 @@ void get_device_descriptor() {
 //   return 0; // invalid address
 // }
 
-// // Set device address
-// void set_device_address() {
-//     uint8_t dev_addr = 1;
-//
-//     printf("Set device address to %u\n", dev_addr);
-//
-//     // Setup packet
-//     usb_setup_packet_t packet = {
-//         .bmRequestType = USB_DIR_OUT
-//                        | USB_REQ_TYPE_STANDARD
-//                        | USB_REQ_TYPE_RECIPIENT_DEVICE,
-//         .bRequest      = USB_REQUEST_SET_ADDRESS,
-//         .wValue        = dev_addr,
-//         .wIndex        = 0,
-//         .wLength       = 0,
-//     };
-//
-//     start_control_transfer(epx, &packet, sizeof(packet));
-// }
+// Set device address
+void set_device_address() {
+    uint8_t dev_addr = 1;
+
+    printf("Set device address to %u\n", dev_addr);
 
 void enumerate() {
+    start_control_transfer(epx, &((usb_setup_packet_t) {
+        .bmRequestType = USB_DIR_OUT
+                       | USB_REQ_TYPE_STANDARD
+                       | USB_REQ_TYPE_RECIPIENT_DEVICE,
+        .bRequest      = USB_REQUEST_SET_ADDRESS,
+        .wValue        = dev_addr,
+        .wIndex        = 0,
+        .wLength       = 0,
+    }));
+}
     static uint8_t step;
     if (!dev0->maxsize) step = ENUMERATION_START;
 
