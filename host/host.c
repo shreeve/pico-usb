@@ -781,10 +781,9 @@ void isr_usbctrl() {
         // 4. An OUT packet is sent and the LAST_BUFF bit was set.
         // 5. QUESTION: What if we sent an OUT with buflen=0? Would it trigger?
 
-//         // TODO: Nearly same as BUFF_STATUS, how can we share code better?
-//         if (usb_hw->sie_ctrl & USB_SIE_CTRL_SEND_SETUP_BITS) {
-//             printf("│ISR\t│      │ Setup packet sent\n");
-//
+        // TODO: Nearly same as BUFF_STATUS, how can we share code better?
+        if (usb_hw->sie_ctrl & USB_SIE_CTRL_SEND_SETUP_BITS) {
+            printf("│ISR\t│      │ Setup packet sent\n");
 //             endpoint_t *ep = epx;
 //             assert(ep->active);
 //             event.type         = EVENT_TRANSFER;
