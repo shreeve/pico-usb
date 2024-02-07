@@ -670,10 +670,13 @@ void isr_usbctrl() {
     if (ints &  USB_INTS_HOST_CONN_DIS_BITS) {
         ints ^= USB_INTS_HOST_CONN_DIS_BITS;
 
-        // Get the device speed and clear the interrupt
+        // Get the device speed
         uint8_t speed = get_speed();
-        usb_hw_clear->sie_status = USB_SIE_STATUS_SPEED_BITS; // TODO: If I clear too soon, will it block reading the speed? If I don't clear it, will it continue to fire?
 
+        // Clear the interrupt
+        usb_hw_clear->sie_status = USB_SIE_STATUS_SPEED_BITS;
+
+        // Handle connect and disconnect events
         if (speed) {
             printf("│ISR\t│ Device connected\n");
             queue_add_blocking(queue, &((event_t) {
