@@ -776,12 +776,10 @@ void isr_usbctrl() {
         // 1. A setup packet was sent without a following IN or OUT. This can
         //    occur if USB_SIE_CTRL_{RECEIVE,SEND}_DATA_BITS are NOT set when
         //    sending the setup packet (like TinyUSB does). In our case, we DO
-        //    set those bits, so we should NOT see a TRANS_COMPLETE. (Verified!)
-        // 2. An IN packet is received and the LAST_BUFF bit was set in the
-        //    buffer control register. (Who would set this? Us? Why?)
-        // 3. An IN packet is received with zero length (ZLP). QUESTION: Does this also set LAST_BUFF? Is this why (2) is here?
-        // 4. An OUT packet is sent and the LAST_BUFF bit was set.
-        // 5. QUESTION: What if we sent an OUT with buflen=0? Would it trigger?
+        //    set those bits, so we do NOT see a TRANS_COMPLETE for this.
+        // 2. An IN packet is received and the LAST_BUFF bit was set in the BCR
+        // 3. An IN packet is received with a zero length packet (ZLP)
+        // 4. An OUT packet is sent and the LAST_BUFF bit was set in the BCR
 
         // TODO: Nearly same as BUFF_STATUS, how can we share code better?
         if (usb_hw->sie_ctrl & USB_SIE_CTRL_SEND_SETUP_BITS) {
