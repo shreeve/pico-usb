@@ -363,7 +363,6 @@ enum {
     DEVICE_SUSPENDED,
 };
 
-// TODO: We might be able to use the above DEVICE_* states to drive the enumeration
 enum {
     ENUMERATION_START,
     ENUMERATION_GET_MAXSIZE,
