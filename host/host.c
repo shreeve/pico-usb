@@ -149,9 +149,6 @@ typedef struct endpoint {
     endpoint_c cb        ; // Callback function
 } endpoint_t;
 
-// TODO: Figure a way to handle this forward declaration
-void start_control_transfer(endpoint_t *, usb_setup_packet_t *);
-
 // TODO: For right now, only define EPX. Later, we'll make this dynamic.
 static endpoint_t eps[MAX_ENDPOINTS], *epx = eps;
 
@@ -418,6 +415,9 @@ static device_t devices[MAX_DEVICES], *dev0 = devices;
 device_t *get_device(uint8_t dev_addr) {
     return dev_addr ? &devices[dev_addr] : dev0; // TODO: Add bounds checking
 }
+
+// Forward function declaration
+void start_control_transfer(endpoint_t *, usb_setup_packet_t *);
 
 // Get device descriptor
 void get_device_descriptor() {
