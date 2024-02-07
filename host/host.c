@@ -88,6 +88,7 @@ enum {
 
 enum {
     EVENT_CONNECT,
+    EVENT_ENUMERATE,
     EVENT_TRANSFER,
     EVENT_FUNCTION,
 };
@@ -476,7 +477,8 @@ void set_device_address() {
 
 void enumerate(bool reset) {
     static uint8_t step;
-    if (!dev0->maxsize) step = ENUMERATION_START;
+
+    if (reset) step = ENUMERATION_START;
 
     // Handle prior step
     switch (step) {
@@ -486,14 +488,19 @@ void enumerate(bool reset) {
 
         case ENUMERATION_GET_MAXSIZE:
             // Set dev0->maxsize
+            dev0->maxsize = 64; // TODO: Fix this...
+            printf("We survived get_maxsize!\n");
             break;
 
         case ENUMERATION_SET_ADDRESS:
             // Set device address
+            printf("Holy crap! We survived set_device_address()!\n");
+clear_endpoint(epx); // TODO: This is absurdly stupid
             break;
 
         case ENUMERATION_GET_DEVICE:
             // Load the device info
+            printf("Holy holy holy crap! We're in ENUMERATION_GET_DEVICE!\n");
             break;
 
         case ENUMERATION_GET_CONFIG:
@@ -513,11 +520,17 @@ void enumerate(bool reset) {
             break;
 
         case ENUMERATION_SET_ADDRESS:
-            printf("Set device address\n");
-            break;
+printf("Get device descriptor\n");
+get_device_descriptor();
+break;
+            // printf("Set device address\n");
+            // uint8_t dev_addr = 1; // TODO: Get the next address
+            // set_device_address(dev_addr);
+            // break;
 
         case ENUMERATION_GET_DEVICE:
             printf("Get device descriptor\n");
+            get_device_descriptor();
             break;
 
         case ENUMERATION_GET_CONFIG:
@@ -596,8 +609,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     dar = dev_addr << USB_ADDR_ENDP_ENDPOINT_LSB
         | ep->ep_num;
     ecr = usbh_dpram->epx_ctrl;
-    bcr = USB_BUF_CTRL_LAST
-        | (zlp ? 0 : USB_BUF_CTRL_DATA1_PID) // TODO: Tried this... but?
+    bcr = USB_BUF_CTRL_LAST // (in  ? 0 : USB_BUF_CTRL_LAST) // Triggers TRANS_COMPLETE for OUT
         | USB_BUF_CTRL_DATA1_PID
         | size;
     scr =            USB_SIE_CTRL_BASE              // SIE_CTRL defaults
@@ -764,7 +776,6 @@ void isr_usbctrl() {
         // TODO: Nearly same as BUFF_STATUS, how can we share code better?
         if (usb_hw->sie_ctrl & USB_SIE_CTRL_SEND_SETUP_BITS) {
             endpoint_t *ep = epx;
-            // assert(ep->active); // TODO: This gets cleared in BUFF_STATUS
             printf("│ISR\t│      │ Setup packet sent (active? %s)\n", ep->active ? "yes" : "no");
             event = (event_t) {
                 .type         = EVENT_TRANSFER,
@@ -773,7 +784,7 @@ void isr_usbctrl() {
                 .xfer.result  = TRANSFER_SUCCESS,
                 .xfer.len     = ep->bytes_done,
             };
-            // clear_endpoint(ep); // TODO: This gets cleared in BUFF_STATUS
+            if (ep->active) clear_endpoint(ep);
             queue_add_blocking(queue, &event);
         } else {
             printf("│ISR\t│      │ Transfer complete (but not from a setup)\n");
@@ -889,14 +900,30 @@ void usb_task() {
                 printf("Device connected (%s speed)\n", str);
 
                 // Start the enumeration process
-                enumerate();
+                enumerate(true);
+                break;
+
+            case EVENT_ENUMERATE:
+                enumerate(false);
                 break;
 
             case EVENT_TRANSFER:
-                printf("Transfer complete (from queue)\n");
+                printf("QUEUE: Transfer complete (len=%u and active? %s)\n", event.xfer.len, epx->active ? "yes" : "no");
                 if (event.xfer.len) {
                     send_zlp(epx); // TODO: What EP should be used? Should this be queued?
+                // } else {
+                //     clear_endpoint(epx);
                 }
+
+clear_endpoint(epx); // TODO: When should this happen?
+
+                // TODO: Can we just call enumerate() directly? Or, must it be queued?
+                if (dev0->state < DEVICE_ACTIVE) {
+                    queue_add_blocking(queue, &((event_t) {
+                        .type       = EVENT_ENUMERATE,
+                    }));
+                }
+
                 break;
 
             case EVENT_FUNCTION:
