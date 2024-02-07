@@ -616,7 +616,6 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     bcr = USB_BUF_CTRL_LAST
         | (zlp ? 0 : USB_BUF_CTRL_DATA1_PID) // TODO: Tried this... but?
         | USB_BUF_CTRL_DATA1_PID
-        | USB_BUF_CTRL_SEL // TODO: Says device only?
         | size;
     scr =            USB_SIE_CTRL_BASE              // SIE_CTRL defaults
         | (zlp ? 0 : USB_SIE_CTRL_SEND_SETUP_BITS)  // Send a SETUP packet
