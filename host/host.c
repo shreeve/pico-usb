@@ -535,33 +535,8 @@ break;
 
 // ==[ Transfers ]=============================================================
 
-// Start a generic transfer and queue an EVENT_TRANSFER when complete
-// Start a control transfer by setting it up and calling the generic transfer
-// Clear a stall and toggle data PID back to DATA0
-// Abort a transfer if not yet started and return true on success
-
-// struct tuh_xfer_t {
-//   uint8_t daddr;
-//   uint8_t ep_addr;
-//   xfer_result_t result;
-//   uint32_t actual_len;      // excluding setup packet
-//   union {
-//     tusb_control_request_t const* setup; // setup packet pointer if control transfer
-//     uint32_t buflen;                     // expected length if not control transfer (not available in callback)
-//   };
-//   uint8_t*      buffer; // not available in callback if not control transfer
-//   tuh_xfer_cb_t complete_cb;
-//   uintptr_t     user_data;
-// };
-//
-// tuh_xfer_t xfer = {
-//   .daddr       = daddr,
-//   .ep_addr     = 0,
-//   .setup       = &request,
-//   .buffer      = buffer,
-//   .complete_cb = complete_cb,
-//   .user_data   = user_data
-// };
+// TODO: Clear a stall and toggle data PID back to DATA0
+// TODO: Abort a transfer if not yet started and return true on success
 
 // Start a control transfer
 void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
