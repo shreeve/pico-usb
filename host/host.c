@@ -203,7 +203,7 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
 }
 
 // Configure the first endpoint as EPX
-void setup_epx() {
+void reset_epx() {
     static usb_endpoint_descriptor_t usb_epx = {
         .bLength          = sizeof(usb_endpoint_descriptor_t),
         .bDescriptorType  = USB_DT_ENDPOINT,
@@ -222,7 +222,7 @@ void setup_endpoints() {
     memclr(eps, sizeof(eps));
 
     // Allocate the endpoints
-    setup_epx();
+    reset_epx();
     // TODO: Add the rest here
 }
 
@@ -696,6 +696,7 @@ void isr_usbctrl() {
             }));
         } else {
             printf("│ISR\t│ Device disconnected\n");
+            reset_epx(); // TODO: There's a lot more to do here
         }
     }
 
