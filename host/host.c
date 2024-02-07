@@ -33,6 +33,7 @@
 
 #define SDK_ALIGNED(bytes) __attribute__ ((aligned(bytes)))
 #define SDK_ALWAYS_INLINE  __attribute__ ((always_inline))
+#define SDK_NOINLINE       __attribute__ ((noinline))
 #define SDK_PACKED         __attribute__ ((packed))
 #define SDK_WEAK           __attribute__ ((weak))
 
