@@ -505,13 +505,10 @@ void enumerate(bool reset) {
             break;
 
         case ENUMERATION_SET_ADDRESS:
-printf("Get device descriptor\n");
-get_device_descriptor();
-break;
-            // printf("Set device address\n");
-            // uint8_t dev_addr = 1; // TODO: Get the next address
-            // set_device_address(dev_addr);
-            // break;
+            printf("Set device address\n");
+            uint8_t dev_addr = 1; // TODO: Get the next address
+            set_device_address(dev_addr);
+            break;
 
         case ENUMERATION_GET_DEVICE:
             printf("Get device descriptor\n");
