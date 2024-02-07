@@ -240,6 +240,30 @@ void setup_endpoints() {
 
 // ==[ Buffers ]===============================================================
 
+// Sync an endpoint buffer, while updating and returning byte counts
+uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
+    uint32_t bcr = usbh_dpram->epx_buf_ctrl; if (buf_id) bcr = bcr >> 16;
+    uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK;
+    bool    full = bcr & USB_BUF_CTRL_FULL;
+
+    // Buffer must be full for reads, empty for writes
+    assert(ep->sender ^ full);
+
+    // If we're receiving, copy to the user buffer
+    if (!ep->sender) {
+        memcpy(ep->user_buf, (void *) (ep->data_buf + buf_id * 64), len);
+        ep->user_buf += len;
+    }
+    ep->bytes_done += len;
+
+    // A short packet (below maxsize) means the transfer is done
+    if (len < ep->maxsize) {
+        ep->bytes_left = 0;
+    }
+
+    return len;
+}
+
 // Prepare an endpoint buffer and return its buffer control register value
 uint32_t prepare_buffer(endpoint_t *ep, uint8_t buf_id) {
     uint16_t len = MIN(ep->bytes_left, ep->maxsize);
@@ -289,30 +313,6 @@ void prepare_buffers(endpoint_t *ep) {
     // Update ECR and BCR
     usbh_dpram->epx_ctrl     = ecr;
     usbh_dpram->epx_buf_ctrl = bcr;
-}
-
-// Sync an endpoint buffer, while updating and returning byte counts
-uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
-    uint32_t bcr = usbh_dpram->epx_buf_ctrl; if (buf_id) bcr = bcr >> 16;
-    uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK;
-    bool    full = bcr & USB_BUF_CTRL_FULL;
-
-    // Buffer must be full for reads, empty for writes
-    assert(ep->sender ^ full);
-
-    // Copy data if we're receiving
-    if (!ep->sender) {
-        memcpy(ep->user_buf, (void *) (ep->data_buf + buf_id * 64), len);
-        ep->user_buf += len;
-    }
-    ep->bytes_done += len;
-
-    // A short packet (below maxsize) means the transfer is done
-    if (len < ep->maxsize) {
-        ep->bytes_left = 0;
-    }
-
-    return len;
 }
 
 // TODO: Later, find all of the endpoint_lock_update calls and put something there...
