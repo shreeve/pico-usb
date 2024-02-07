@@ -783,9 +783,9 @@ void isr_usbctrl() {
 
         // TODO: Nearly same as BUFF_STATUS, how can we share code better?
         if (usb_hw->sie_ctrl & USB_SIE_CTRL_SEND_SETUP_BITS) {
-            printf("│ISR\t│      │ Setup packet sent\n");
             endpoint_t *ep = epx;
             assert(ep->active);
+            printf("│ISR\t│      │ Setup packet sent (active? %s)\n", ep->active ? "yes" : "no");
             event = (event_t) {
                 .type         = EVENT_TRANSFER,
                 .dev_addr     = ep->dev_addr,
