@@ -357,6 +357,15 @@ void handle_buffer(uint32_t bit, endpoint_t *ep) {
         .xfer.len     = ep->bytes_done,
     };
 
+    // TODO: This is a hack
+    uint16_t len = ep->bytes_done;
+    if (len) {
+        printf("│? Data");
+        hexdump(usbh_dpram->epx_data, len, 1);
+    } else {
+        printf("│?ZLP\n");
+    }
+
     clear_endpoint(ep);
 
     queue_add_blocking(queue, &event);
@@ -732,14 +741,6 @@ void isr_usbctrl() {
 
         // Panic if we missed any buffers
         if (bits) panic("Unhandled buffer mask: %032b\n", bits);
-
-        uint8_t len = 8;
-        if (len) {
-            printf("│> Data");
-            hexdump(usbh_dpram->epx_data, len, 1);
-        } else {
-            printf("│<ZLP\n"); // which direction?!
-        }
     }
 
     // Transfer complete (last packet)
