@@ -582,7 +582,7 @@ void enumerate() {
 
 // Start a control transfer
 void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
-    uint8_t size = sizeof(usb_setup_packet_t);
+    uint8_t size = packet ? sizeof(usb_setup_packet_t) : 0;
 
     // TODO: Review assertions and sanity checks
     assert(!ep->ep_num); // Control transfers must use EP0
@@ -603,7 +603,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     ep->sender = !in;
 
     // Control transfers start with a setup packet // TODO: is "for (i=0; i<8; i++)"" better???
-    memcpy((void *) usbh_dpram->setup_packet, packet, size);
+    if (size) memcpy((void *) usbh_dpram->setup_packet, packet, size);
 
     // Calculate register values
     uint32_t dar, ecr, bcr, scr;
@@ -626,11 +626,11 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     bindump(" BCR", bcr | USB_BUF_CTRL_AVAIL);
     bindump(" SCR", scr | USB_SIE_CTRL_START_TRANS_BITS);
 
-    if (size == 0) {
-        printf("<ZLP\n");
-    } else {
+    if (size) {
         printf("<Setup");
         hexdump(packet, size, 1);
+    } else {
+        printf("<ZLP\n");
     }
 
     // Set DAR (dev_addr_ctrl)
@@ -655,10 +655,10 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     hw_set_staged6(usb_hw->sie_ctrl, scr, USB_SIE_CTRL_START_TRANS_BITS);
 }
 
-// // Send a zero length status packet (ZLP)
-// SDK_ALWAYS_INLINE static inline void send_zlp(endpoint_t *ep) {
-//     start_control_transfer(ep, NULL, 0); // TODO: This isn't correct... it should be the end of a transfer
-// }
+// Send a zero length status packet (ZLP)
+SDK_ALWAYS_INLINE static inline void send_zlp(endpoint_t *ep) {
+    start_control_transfer(ep, NULL);
+}
 
 // ==[ Interrupts ]============================================================
 
@@ -909,9 +909,7 @@ void usb_task() {
 
             case EVENT_TRANSFER:
                 printf("Transfer complete (from queue)\n");
-                // if (event.xfer.len == 0) {
-                //     send_zlp(epx);
-                // }
+                if (event.xfer.len) send_zlp(epx); // TODO: What EP should be used? Should this be queued?
                 break;
 
             case EVENT_FUNCTION:
