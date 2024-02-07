@@ -200,17 +200,24 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
     usbh_dpram->epx_ctrl = ecr;
 }
 
-// Configure the first endpoint as EPX
-void reset_epx() {
-    usb_endpoint_descriptor_t usb_epx = {
+// Setup the USB struct for EP0_OUT/Control
+SDK_ALWAYS_INLINE static inline void reset_ep0() {
+    setup_endpoint(epx, &((usb_endpoint_descriptor_t) {
         .bLength          = sizeof(usb_endpoint_descriptor_t),
         .bDescriptorType  = USB_DT_ENDPOINT,
         .bEndpointAddress = 0,
         .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
-        .wMaxPacketSize   = 64,
+        .wMaxPacketSize   = 64, // TODO: Should come from dev->maxsize and type
         .bInterval        = 0
-    };
-    setup_endpoint(epx, &usb_epx);
+    }));
+}
+
+SDK_ALWAYS_INLINE static inline void clear_endpoint(endpoint_t *ep) {
+    printf("Clearing endpoint 0x%02x\n", ep->ep_addr);
+    ep->active     = false;
+    ep->user_buf   = 0; // TODO: Add something like a ring buffer here?
+    ep->bytes_left = 0;
+    ep->bytes_done = 0;
 }
 
 // Setup endpoints
@@ -220,7 +227,7 @@ void setup_endpoints() {
     memclr(eps, sizeof(eps));
 
     // Allocate the endpoints
-    reset_epx();
+    reset_ep0();
     // TODO: Add the rest here
 }
 
@@ -233,14 +240,6 @@ void setup_endpoints() {
 //     }
 //     return NULL;
 // }
-
-SDK_ALWAYS_INLINE static inline void clear_endpoint(endpoint_t *ep) {
-    printf("Clearing endpoint 0x%02x\n", ep->ep_addr);
-    ep->active     = false;
-    ep->user_buf   = 0; // TODO: Add something like a ring buffer here?
-    ep->bytes_left = 0;
-    ep->bytes_done = 0;
-}
 
 // ==[ Buffers ]===============================================================
 
@@ -695,7 +694,7 @@ void isr_usbctrl() {
             }));
         } else {
             printf("│ISR\t│ Device disconnected\n");
-            reset_epx(); // TODO: There's a lot more to do here
+            reset_ep0(); // TODO: There's a lot more to do here
         }
     }
 
