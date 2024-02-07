@@ -345,27 +345,12 @@ bool still_transferring(endpoint_t *ep) {
 void handle_buffer(uint32_t bit, endpoint_t *ep) {
     if (!ep->active) panic("EP 0x%02x not active\n", ep->ep_addr);
     if (still_transferring(ep)) return;
-
-    event_t event = {
-        .type         = EVENT_TRANSFER,
-        .dev_addr     = ep->dev_addr,
-        .xfer.ep_addr = ep->ep_addr,
-        .xfer.result  = TRANSFER_SUCCESS,
-        .xfer.len     = ep->bytes_done,
-    };
-
-    // TODO: This is a hack
-    uint16_t len = ep->bytes_done;
-    if (len) {
+    if (ep->bytes_done) {
         printf("│? Data");
-        hexdump(usbh_dpram->epx_data, len, 1);
+        hexdump(usbh_dpram->epx_data, ep->bytes_done, 1);
     } else {
         printf("│?ZLP\n");
     }
-
-    clear_endpoint(ep);
-
-    queue_add_blocking(queue, &event);
 }
 
 // ==[ Devices ]===============================================================
@@ -772,9 +757,11 @@ void isr_usbctrl() {
         // Question: For a ZLP OUT, will this fire without LAST_BUFF?
         // Question: For a ZLP IN, will BUFF_STATUS fire also?
 
+        endpoint_t *ep = epx; // TODO: Look this up or pluck from event struct
+        if (!ep->active) panic("EP should still be active in TRANS_COMPLETE");
+
         // TODO: Nearly same as BUFF_STATUS, how can we share code better?
         if (usb_hw->sie_ctrl & USB_SIE_CTRL_SEND_SETUP_BITS) {
-            endpoint_t *ep = epx;
             printf("│ISR\t│      │ Setup packet sent (active? %s)\n", ep->active ? "yes" : "no");
             event = (event_t) {
                 .type         = EVENT_TRANSFER,
@@ -783,11 +770,11 @@ void isr_usbctrl() {
                 .xfer.result  = TRANSFER_SUCCESS,
                 .xfer.len     = ep->bytes_done,
             };
-            if (ep->active) clear_endpoint(ep);
+            clear_endpoint(ep); // TODO: Does this HAVE to come before queuing? Probably...
             queue_add_blocking(queue, &event);
         } else {
             printf("│ISR\t│      │ Transfer complete (but not from a setup)\n");
-            reset_epx();
+            clear_endpoint(ep);
         }
     }
 
