@@ -777,7 +777,7 @@ void isr_usbctrl() {
         //    set those bits, so we should NOT see a TRANS_COMPLETE. (Verified!)
         // 2. An IN packet is received and the LAST_BUFF bit was set in the
         //    buffer control register. (Who would set this? Us? Why?)
-// *==> // 3. An IN packet is received with zero length (ZLP). QUESTION: Does this also set LAST_BUFF? Is this why (2) is here?
+        // 3. An IN packet is received with zero length (ZLP). QUESTION: Does this also set LAST_BUFF? Is this why (2) is here?
         // 4. An OUT packet is sent and the LAST_BUFF bit was set.
         // 5. QUESTION: What if we sent an OUT with buflen=0? Would it trigger?
 
