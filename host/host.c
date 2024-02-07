@@ -236,7 +236,7 @@ void setup_endpoints() {
 //     return NULL;
 // }
 
-SDK_ALWAYS_INLINE static inline void reset_endpoint(endpoint_t *ep) {
+SDK_ALWAYS_INLINE static inline void clear_endpoint(endpoint_t *ep) {
     ep->active     = false;
     ep->user_buf   = 0; // TODO: Add something like a ring buffer here?
     ep->bytes_left = 0;
@@ -356,7 +356,7 @@ void handle_buffer(uint32_t bit, endpoint_t *ep) {
     event.xfer.result  = TRANSFER_SUCCESS;
     event.xfer.len     = ep->bytes_done;
 
-    reset_endpoint(ep);
+    clear_endpoint(ep);
 
     queue_add_blocking(queue, &event);
 }
@@ -784,16 +784,19 @@ void isr_usbctrl() {
         // TODO: Nearly same as BUFF_STATUS, how can we share code better?
         if (usb_hw->sie_ctrl & USB_SIE_CTRL_SEND_SETUP_BITS) {
             printf("│ISR\t│      │ Setup packet sent\n");
-//             endpoint_t *ep = epx;
-//             assert(ep->active);
-//             event.type         = EVENT_TRANSFER;
-//             event.dev_addr     = ep->dev_addr;
-//             event.xfer.ep_addr = ep->ep_addr;
-//             event.xfer.result  = TRANSFER_SUCCESS;
-//             event.xfer.len     = ep->bytes_done = 8; // Size of a setup packet
-//             // reset_endpoint(ep);
-//             queue_add_blocking(queue, &event);
-//         }
+            endpoint_t *ep = epx;
+            assert(ep->active);
+            event.type         = EVENT_TRANSFER;
+            event.dev_addr     = ep->dev_addr;
+            event.xfer.ep_addr = ep->ep_addr;
+            event.xfer.result  = TRANSFER_SUCCESS;
+            event.xfer.len     = ep->bytes_done = 8; // Size of a setup packet
+            clear_endpoint(ep);
+            queue_add_blocking(queue, &event);
+        } else {
+            printf("│ISR\t│      │ Transfer complete (but not from a setup)\n");
+            reset_epx();
+        }
     }
 
     // Receive timeout (too long without an ACK)
