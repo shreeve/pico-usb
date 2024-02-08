@@ -37,6 +37,7 @@
 #define SDK_PACKED         __attribute__ ((packed))
 #define SDK_WEAK           __attribute__ ((weak))
 
+#define MAX_HUBS      0
 #define MAX_DEVICES   2
 #define MAX_ENDPOINTS 1
 
