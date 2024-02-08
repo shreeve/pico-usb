@@ -82,13 +82,13 @@ enum {
                       | USB_SIE_CTRL_EP0_INT_1BUF_BITS  // One bit per EP0 buf
 };
 
-// ==[ Events ]================================================================
+// ==[ Tasks ]=================================================================
 
 enum {
-    EVENT_CONNECT,
-    EVENT_TRANSFER,
-    EVENT_ENUMERATE,
-    EVENT_FUNCTION,
+    TASK_CONNECT,
+    TASK_TRANSFER,
+    TASK_ENUMERATE,
+    TASK_FUNCTION,
 };
 
 enum {
@@ -119,16 +119,16 @@ typedef struct {
             void *arg;
         } fn;
     };
-} event_t;
+} task_t;
 
 static queue_t *queue = &((queue_t) { 0 });
 
-const char *event_name(uint8_t type) {
+const char *task_name(uint8_t type) {
     switch (type) {
-        case EVENT_CONNECT:   return "EVENT_CONNECT";
-        case EVENT_TRANSFER:  return "EVENT_TRANSFER";
-        case EVENT_ENUMERATE: return "EVENT_ENUMERATE";
-        case EVENT_FUNCTION:  return "EVENT_FUNCTION";
+        case TASK_CONNECT:   return "TASK_CONNECT";
+        case TASK_TRANSFER:  return "TASK_TRANSFER";
+        case TASK_ENUMERATE: return "TASK_ENUMERATE";
+        case TASK_FUNCTION:  return "TASK_FUNCTION";
         default:              return "UNKNOWN";
     }
 }
@@ -585,8 +585,8 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     } else {
         printf("<ZLP\n");
         if (dev0->state < DEVICE_ACTIVE) {
-            queue_add_blocking(queue, &((event_t) {
-                .type = EVENT_ENUMERATE,
+            queue_add_blocking(queue, &((task_t) {
+                .type = TASK_ENUMERATE,
             }));
         }
     }
@@ -665,12 +665,12 @@ void usb_host_reset() {
 // ==[ Queue ]=================================================================
 
 void usb_task() {
-    static event_t event; // TODO: Is there any advantage to making this static?
+    static task_t task; // TODO: Is there any advantage to making this static?
 
-    while (queue_try_remove(queue, &event)) { // TODO: Can this starve out other work? Should it be "if (...) {" instead?
-        printf("EVENT: %s\n", event_name(event.type));
-        switch (event.type) {
-            case EVENT_CONNECT:
+    while (queue_try_remove(queue, &task)) { // TODO: Can this starve out other work? Should it be "if (...) {" instead?
+        printf("\n=> New TASK: %s\n", task_name(task.type));
+        switch (task.type) {
+            case TASK_CONNECT:
 
                 // TODO: See if we can get this to work
                 // // Prevent nested connections
@@ -681,7 +681,7 @@ void usb_task() {
 
                 // Initialize device 0
                 memclr(dev0, sizeof(device_t));
-                dev0->speed = event.conn.speed;
+                dev0->speed = task.conn.speed;
                 dev0->state = DEVICE_CONNECTED;
 
                 // Show the device connection and speed
@@ -692,25 +692,25 @@ void usb_task() {
                 enumerate(true);
                 break;
 
-            case EVENT_ENUMERATE:
+            case TASK_ENUMERATE:
                 enumerate(false);
                 break;
 
-            case EVENT_TRANSFER:
-                printf("Transfer complete (len=%u and active? %s)\n", event.xfer.len, epx->active ? "yes" : "no");
-                hexdump(usbh_dpram->epx_data, event.xfer.len, 1);
-                if (event.xfer.len) { // TODO: When do we send ZLP?
+            case TASK_TRANSFER:
+                printf("Transfer complete (len=%u and active? %s)\n", task.xfer.len, epx->active ? "yes" : "no");
+                hexdump(usbh_dpram->epx_data, task.xfer.len, 1);
+                if (task.xfer.len) { // TODO: When do we send ZLP?
                     send_zlp(epx); // TODO: What EP should be used? Should this be queued?
                 }
                 break;
 
-            case EVENT_FUNCTION:
+            case TASK_FUNCTION:
                 printf("Function call\n");
-                event.fn.call(event.fn.arg);
+                task.fn.call(task.fn.arg);
                 break;
 
             default:
-                printf("Unknown event type\n");
+                printf("Unknown task type\n");
                 break;
         }
     }
@@ -722,10 +722,11 @@ void usb_task() {
 void isr_usbctrl() {
     volatile uint32_t intr = usb_hw->intr;
     volatile uint32_t ints = usb_hw->ints;
-    event_t event; // TODO: Is there any advantage to making this static?
+    task_t task; // TODO: Is there any advantage to making this static?
 
-    printf("\n┌───────┬──────┬─────────────────────────────────────┬────────────┐\n");
-    printf("│Frame\t│ %4u │%37s│%12s│\n", usb_hw->sof_rd, "", "");
+    printf("\n=> New ISR:\n")
+    printf( "┌───────┬──────┬─────────────────────────────────────┬────────────┐\n");
+    printf( "│Frame\t│ %4u │%37s│%12s│\n", usb_hw->sof_rd, "", "");
     bindump("│INTR", intr);
     bindump("│INTS", ints);
     bindump("│SIE", usb_hw->sie_status);
@@ -733,7 +734,7 @@ void isr_usbctrl() {
     bindump("│ECR", usbh_dpram->epx_ctrl);
     bindump("│BCR", usbh_dpram->epx_buf_ctrl);
 
-    // Connection event (attach or detach)
+    // Connection (attach or detach)
     if (ints &  USB_INTS_HOST_CONN_DIS_BITS) {
         ints ^= USB_INTS_HOST_CONN_DIS_BITS;
 
@@ -743,11 +744,11 @@ void isr_usbctrl() {
         // Clear the interrupt
         usb_hw_clear->sie_status = USB_SIE_STATUS_SPEED_BITS;
 
-        // Handle connect and disconnect events
+        // Handle connect and disconnect
         if (speed) {
             printf("│ISR\t│ Device connected\n");
-            queue_add_blocking(queue, &((event_t) {
-                .type       = EVENT_CONNECT,
+            queue_add_blocking(queue, &((task_t) {
+                .type       = TASK_CONNECT,
                 .dev_addr   = 0,
                 .conn.speed = speed,
             }));
@@ -766,8 +767,8 @@ void isr_usbctrl() {
         printf("│ISR\t│ Stall detected\n");
 
         // Queue the stalled transfer
-        queue_add_blocking(queue, &((event_t) {
-            .type = EVENT_TRANSFER,
+        queue_add_blocking(queue, &((task_t) {
+            .type = TASK_TRANSFER,
             .xfer = {
                 .ep_addr = 37, // TODO: Will need this and maybe some more info?
                 .result  = TRANSFER_STALLED,
@@ -832,11 +833,11 @@ void isr_usbctrl() {
         // Question on #3: For a ZLP IN, will BUFF_STATUS fire also?
         // Question on #4: For a ZLP OUT, will this fire without LAST_BUFF?
 
-        endpoint_t *ep = epx; // TODO: Look this up or pluck from event struct
+        endpoint_t *ep = epx; // TODO: Look this up or pluck from task struct
         if (!ep->active) panic("EP should still be active in TRANS_COMPLETE");
 
-        event = (event_t) {
-            .type         = EVENT_TRANSFER,
+        task = (task_t) {
+            .type         = TASK_TRANSFER,
             .dev_addr     = ep->dev_addr,
             .xfer.ep_addr = ep->ep_addr,
             .xfer.result  = TRANSFER_SUCCESS,
@@ -845,7 +846,7 @@ void isr_usbctrl() {
 
         clear_endpoint(ep); // TODO: Does this HAVE to come before queuing? Probably...
 
-        queue_add_blocking(queue, &event);
+        queue_add_blocking(queue, &task);
     }
 
     // Receive timeout (too long without an ACK)
@@ -890,7 +891,7 @@ int main() {
     printf("\033[2J\033[H\n==[ USB host example]==\n\n");
     usb_host_reset();
 
-    queue_init(queue, sizeof(event_t), 64);
+    queue_init(queue, sizeof(task_t), 64);
 
     while (1) {
         usb_task();
