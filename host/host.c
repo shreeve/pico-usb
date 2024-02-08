@@ -561,8 +561,9 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     dar = dev_addr << USB_ADDR_ENDP_ENDPOINT_LSB
         | ep->ep_num;
     ecr = usbh_dpram->epx_ctrl;
-    bcr = USB_BUF_CTRL_LAST // (in  ? 0 : USB_BUF_CTRL_LAST) // Triggers TRANS_COMPLETE for OUT
-        | USB_BUF_CTRL_DATA1_PID
+    bcr = (in  ? 0 : USB_BUF_CTRL_FULL)     // Empty=0 (Recv), Full=1 (Send)
+        |            USB_BUF_CTRL_LAST      // Will fire TRANS_COMPLETE
+        |            USB_BUF_CTRL_DATA1_PID // Set next IN/OUT to DATA1
         | size;
     scr =            USB_SIE_CTRL_BASE              // SIE_CTRL defaults
         | (zlp ? 0 : USB_SIE_CTRL_SEND_SETUP_BITS)  // Send a SETUP packet
