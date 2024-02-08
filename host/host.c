@@ -673,7 +673,7 @@ void usb_task() {
     static task_t task; // TODO: Is there any advantage to making this static?
 
     while (queue_try_remove(queue, &task)) { // TODO: Can this starve out other work? Should it be "if (...) {" instead?
-        printf("\n=> New TASK: %s\n", task_name(task.type));
+        printf("\n=> New task: %s\n", task_name(task.type));
         switch (task.type) {
             case TASK_CONNECT:
 
@@ -723,13 +723,25 @@ void usb_task() {
 
 // ==[ Interrupts ]============================================================
 
+void *printf_interrupts(uint32_t ints) {
+    if (ints & USB_INTS_HOST_CONN_DIS_BITS   ) printf(", device"  );
+    if (ints & USB_INTS_STALL_BITS           ) printf(", stall"   );
+    if (ints & USB_INTS_BUFF_STATUS_BITS     ) printf(", buffer"  );
+    if (ints & USB_INTS_TRANS_COMPLETE_BITS  ) printf(", transfer");
+    if (ints & USB_INTS_ERROR_RX_TIMEOUT_BITS) printf(", timeout" );
+    if (ints & USB_INTS_ERROR_DATA_SEQ_BITS  ) printf(", dataseq" );
+    if (ints & USB_INTS_HOST_RESUME_BITS     ) printf(", power"   );
+}
+
 // Interrupt handler
 void isr_usbctrl() {
     volatile uint32_t intr = usb_hw->intr;
     volatile uint32_t ints = usb_hw->ints;
     task_t task; // TODO: Is there any advantage to making this static?
 
-    printf("\n=> New ISR:\n")
+    printf("\n=> New ISR");
+    printf_interrupts(ints);
+    printf("\n");
     printf( "┌───────┬──────┬─────────────────────────────────────┬────────────┐\n");
     printf( "│Frame\t│ %4u │%37s│%12s│\n", usb_hw->sof_rd, "", "");
     bindump("│INTR", intr);
@@ -751,14 +763,12 @@ void isr_usbctrl() {
 
         // Handle connect and disconnect
         if (speed) {
-            printf("│ISR\t│ Device connected\n");
             queue_add_blocking(queue, &((task_t) {
                 .type       = TASK_CONNECT,
                 .dev_addr   = 0,
                 .conn.speed = speed,
             }));
         } else {
-            printf("│ISR\t│ Device disconnected\n");
             reset_ep0(); // TODO: There's a lot more to do here
         }
     }
@@ -768,8 +778,6 @@ void isr_usbctrl() {
         ints ^= USB_INTS_STALL_BITS;
 
         usb_hw_clear->sie_status = USB_SIE_STATUS_STALL_REC_BITS;
-
-        printf("│ISR\t│ Stall detected\n");
 
         // Queue the stalled transfer
         queue_add_blocking(queue, &((task_t) {
@@ -859,8 +867,6 @@ void isr_usbctrl() {
         ints ^= USB_INTS_ERROR_RX_TIMEOUT_BITS;
 
         usb_hw_clear->sie_status = USB_SIE_STATUS_RX_TIMEOUT_BITS;
-
-        printf("│ISR\t│ Receive timeout\n");
     }
 
     // Data error (IN packet from device has wrong data PID)
@@ -868,8 +874,7 @@ void isr_usbctrl() {
         ints ^= USB_INTS_ERROR_DATA_SEQ_BITS;
 
         usb_hw_clear->sie_status = USB_SIE_STATUS_DATA_SEQ_ERROR_BITS;
-
-        panic("│ERROR: USB Host data sequence error\n");
+        panic("Data sequence error\n");
     }
 
     // Device resumed (device initiated)
@@ -877,13 +882,11 @@ void isr_usbctrl() {
         ints ^= USB_INTS_HOST_RESUME_BITS;
 
         usb_hw_clear->sie_status = USB_SIE_STATUS_RESUME_BITS;
-
-        printf("│ISR\t│ Device resume\n");
     }
 
     // Any missed?
     if (ints) {
-        panic("│ISR\t│ Unhandled IRQ 0x%04x\n", ints);
+        panic("Unhandled IRQ 0x%04x\n", ints);
     }
 
     printf("└───────┴──────┴──────────────────────────────────────────────────┘\n");
