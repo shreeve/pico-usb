@@ -414,6 +414,18 @@ void get_device_descriptor() {
     }));
 }
 
+// // Get new device address
+// uint8_t get_new_address(bool is_hub) {
+//     uint8_t x = is_hub ? ( MAX_DEVICES) : 0;
+//     uint8_t y = is_hub ? (x + MAX_HUBS) : MAX_DEVICES;
+//
+//     for (uint8_t i = x; i < y; i++) {
+//         if (!devices[i].state) return (i + 1);
+//     }
+//
+//     return 0; // Invalid
+// }
+
 // Set device address
 void set_device_address() {
     uint8_t dev_addr = 1;
