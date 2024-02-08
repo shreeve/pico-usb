@@ -544,7 +544,10 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     else { if (!dev->state || dev->state >= DEVICE_ACTIVE) return; }
 
     // Transfer is now active
-    ep->active = true;
+    ep->active     = true;
+    ep->bytes_left = size;
+    ep->bytes_done = 0;
+//  ep->user_buf   = 0; // NOTE: This is NULL because it uses the setup packet
 
     // Determine direction
     bool in = zlp ? false : packet->bmRequestType & USB_DIR_IN;
