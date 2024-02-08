@@ -603,6 +603,113 @@ SDK_ALWAYS_INLINE static inline void send_zlp(endpoint_t *ep) {
     start_control_transfer(ep, NULL);
 }
 
+// ==[ Resets ]================================================================
+
+// static void clear_device(usbh_device_t* dev) {
+//   tu_memclr(dev, sizeof(usbh_device_t));
+//   memset(dev->itf2drv, TUSB_INDEX_INVALID_8, sizeof(dev->itf2drv)); // invalid mapping
+//   memset(dev->ep2drv , TUSB_INDEX_INVALID_8, sizeof(dev->ep2drv )); // invalid mapping
+// }
+
+// Reset USB host
+void usb_host_reset() {
+    printf("USB host reset\n\n");
+
+    // Reset controller
+    reset_block       (RESETS_RESET_USBCTRL_BITS);
+    unreset_block_wait(RESETS_RESET_USBCTRL_BITS);
+
+    // Clear state
+    memset(usb_hw    , 0, sizeof(*usb_hw    ));
+    memset(usbh_dpram, 0, sizeof(*usbh_dpram));
+
+    // Configure USB host controller
+    usb_hw->muxing    = USB_USB_MUXING_TO_PHY_BITS       // Connect to USB Phy
+                      | USB_USB_MUXING_SOFTCON_BITS;     // Soft connect
+    usb_hw->pwr       = USB_USB_PWR_VBUS_DETECT_BITS     // Enable VBUS detect
+                      | USB_USB_PWR_VBUS_DETECT_OVERRIDE_EN_BITS;
+    usb_hw->main_ctrl = USB_MAIN_CTRL_CONTROLLER_EN_BITS // Enable controller
+                      | USB_MAIN_CTRL_HOST_NDEVICE_BITS; // Enable USB Host
+    usb_hw->sie_ctrl  = USB_SIE_CTRL_BASE;               // SIE_CTRL defaults
+    usb_hw->inte      = USB_INTE_HOST_CONN_DIS_BITS      // Connect/disconnect
+                      | USB_INTE_STALL_BITS              // Stall detected
+                      | USB_INTE_BUFF_STATUS_BITS        // Buffer ready
+                      | USB_INTE_TRANS_COMPLETE_BITS     // Transfer complete
+                      | USB_INTE_HOST_RESUME_BITS        // Device resumed
+                      | USB_INTE_ERROR_DATA_SEQ_BITS     // Data error
+                      | USB_INTE_ERROR_RX_TIMEOUT_BITS;  // Receive timeout
+
+    // Setup hardware endpoints
+    setup_endpoints();
+
+    bindump(" INT", usb_hw->inte);
+
+    irq_set_enabled(USBCTRL_IRQ, true);
+}
+
+// ==[ Queue ]=================================================================
+
+void usb_task() {
+    static event_t event; // TODO: Is there any advantage to making this static?
+
+    while (queue_try_remove(queue, &event)) { // TODO: Can this starve out other work? Should it be "if (...) {" instead?
+        printf("DEQUEUED: Event type %u\n", event.type);
+        switch (event.type) {
+            case EVENT_CONNECT:
+
+                // TODO: See if we can get this to work
+                // // Prevent nested connections
+                // if (dev0->state == DEVICE_ENUMERATING) {
+                //     printf("Only one device can be enumerated at a time\n");
+                //     break;
+                // }
+
+                // Initialize device 0
+                memclr(dev0, sizeof(device_t));
+                dev0->speed = event.conn.speed;
+                dev0->state = DEVICE_CONNECTED;
+
+                // Show the device connection and speed
+                char *str = dev0->speed == LOW_SPEED ? "low" : "full";
+                printf("Device connected (%s speed)\n", str);
+
+                // Start the enumeration process
+                enumerate(true);
+                break;
+
+            case EVENT_ENUMERATE:
+                enumerate(false);
+                break;
+
+            case EVENT_TRANSFER:
+                printf("QUEUE: Transfer complete (len=%u and active? %s)\n", event.xfer.len, epx->active ? "yes" : "no");
+                if (event.xfer.len) { // TODO: When do we send ZLP?
+                    send_zlp(epx); // TODO: What EP should be used? Should this be queued?
+                }
+
+// clear_endpoint(epx); // TODO: When should this happen?
+
+                // TODO: Can we just call enumerate() directly? Or, must it be queued?
+                if (dev0->state < DEVICE_ACTIVE) {
+                    queue_add_blocking(queue, &((event_t) {
+                        .type       = EVENT_ENUMERATE,
+                    }));
+                }
+
+                break;
+
+            case EVENT_FUNCTION:
+                printf("Function call\n");
+                event.fn.call(event.fn.arg);
+                break;
+
+            default:
+                printf("Unknown event type\n");
+                break;
+        }
+    }
+}
+
 // ==[ Interrupts ]============================================================
 
 // Interrupt handler
@@ -775,111 +882,7 @@ void isr_usbctrl() {
     printf("└───────┴──────┴──────────────────────────────────────────────────┘\n");
 }
 
-// ==[ Resets ]================================================================
-
-// static void clear_device(usbh_device_t* dev) {
-//   tu_memclr(dev, sizeof(usbh_device_t));
-//   memset(dev->itf2drv, TUSB_INDEX_INVALID_8, sizeof(dev->itf2drv)); // invalid mapping
-//   memset(dev->ep2drv , TUSB_INDEX_INVALID_8, sizeof(dev->ep2drv )); // invalid mapping
-// }
-
-// Reset USB host
-void usb_host_reset() {
-    printf("USB host reset\n\n");
-
-    // Reset controller
-    reset_block       (RESETS_RESET_USBCTRL_BITS);
-    unreset_block_wait(RESETS_RESET_USBCTRL_BITS);
-
-    // Clear state
-    memset(usb_hw    , 0, sizeof(*usb_hw    ));
-    memset(usbh_dpram, 0, sizeof(*usbh_dpram));
-
-    // Configure USB host controller
-    usb_hw->muxing    = USB_USB_MUXING_TO_PHY_BITS                // Connect USB Phy
-                      | USB_USB_MUXING_SOFTCON_BITS;              // TODO: What is this?
-    usb_hw->pwr       = USB_USB_PWR_VBUS_DETECT_BITS              // Enable VBUS detection
-                      | USB_USB_PWR_VBUS_DETECT_OVERRIDE_EN_BITS; // Enable VBUS detection
-    usb_hw->main_ctrl = USB_MAIN_CTRL_CONTROLLER_EN_BITS          // Enable controller
-                      | USB_MAIN_CTRL_HOST_NDEVICE_BITS;          // Enable USB Host mode
-    usb_hw->sie_ctrl  = USB_SIE_CTRL_BASE;                        // Default SIE_CTRL bits
-    usb_hw->inte      = USB_INTE_HOST_CONN_DIS_BITS               // Device connect/disconnect
-                      | USB_INTE_STALL_BITS                       // Stall detected
-                      | USB_INTE_BUFF_STATUS_BITS                 // Buffer ready
-                      | USB_INTE_TRANS_COMPLETE_BITS              // Transfer complete
-                      | USB_INTE_HOST_RESUME_BITS                 // Device resumed
-                      | USB_INTE_ERROR_DATA_SEQ_BITS              // Data error
-                      | USB_INTE_ERROR_RX_TIMEOUT_BITS;           // Receive timeout
-
-    // Setup hardware endpoints
-    setup_endpoints();
-
-    bindump(" INT", usb_hw->inte);
-
-    irq_set_enabled(USBCTRL_IRQ, true);
-}
-
 // ==[ Main ]==================================================================
-
-void usb_task() {
-    static event_t event; // TODO: Is there any advantage to making this static?
-
-    while (queue_try_remove(queue, &event)) { // TODO: Can this starve out other work? Should it be "if (...) {" instead?
-        switch (event.type) {
-            case EVENT_CONNECT:
-
-                // TODO: See if we can get this to work
-                // // Prevent nested connections
-                // if (dev0->state == DEVICE_ENUMERATING) {
-                //     printf("Only one device can be enumerated at a time\n");
-                //     break;
-                // }
-
-                // Initialize device 0
-                memclr(dev0, sizeof(device_t));
-                dev0->speed = event.conn.speed;
-                dev0->state = DEVICE_CONNECTED;
-
-                // Show the device connection and speed
-                char *str = dev0->speed == LOW_SPEED ? "low" : "full";
-                printf("Device connected (%s speed)\n", str);
-
-                // Start the enumeration process
-                enumerate(true);
-                break;
-
-            case EVENT_ENUMERATE:
-                enumerate(false);
-                break;
-
-            case EVENT_TRANSFER:
-                printf("QUEUE: Transfer complete (len=%u and active? %s)\n", event.xfer.len, epx->active ? "yes" : "no");
-                if (event.xfer.len) { // TODO: When do we send ZLP?
-                    send_zlp(epx); // TODO: What EP should be used? Should this be queued?
-                }
-
-clear_endpoint(epx); // TODO: When should this happen?
-
-                // TODO: Can we just call enumerate() directly? Or, must it be queued?
-                if (dev0->state < DEVICE_ACTIVE) {
-                    queue_add_blocking(queue, &((event_t) {
-                        .type       = EVENT_ENUMERATE,
-                    }));
-                }
-
-                break;
-
-            case EVENT_FUNCTION:
-                printf("Function call\n");
-                event.fn.call(event.fn.arg);
-                break;
-
-            default:
-                printf("Unknown event type\n");
-                break;
-        }
-    }
-}
 
 int main() {
     stdio_init_all();
