@@ -565,11 +565,11 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         |            USB_BUF_CTRL_LAST      // Will fire TRANS_COMPLETE
         |            USB_BUF_CTRL_DATA1_PID // Set next IN/OUT to DATA1
         | size;
-    scr =            USB_SIE_CTRL_BASE              // SIE_CTRL defaults
-        | (zlp ? 0 : USB_SIE_CTRL_SEND_SETUP_BITS)  // Send a SETUP packet
-        | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS // Receive if IN to host
-               :     USB_SIE_CTRL_SEND_DATA_BITS);  // Send if OUT from host
-        // TODO: preamble (LS on FS)
+    scr =            USB_SIE_CTRL_BASE               // SIE_CTRL defaults
+     // | (fs  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS); // Preamble (LS on FS hub)
+        | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive if IN to host
+               :     USB_SIE_CTRL_SEND_DATA_BITS)    // Send if OUT from host
+        | (zlp ? 0 : USB_SIE_CTRL_SEND_SETUP_BITS);   // Send a SETUP packet
 
     // Debug output
     bindump(" DAR", dar);
