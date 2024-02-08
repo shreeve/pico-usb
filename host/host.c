@@ -814,10 +814,10 @@ void isr_usbctrl() {
 
         // NOTE: TRANS_COMPLETE fires when: (see datasheet, p. 401)
         //
-        // 1. A lone setup packet was sent without a following IN or OUT. This
+        // 1. A SETUP packet was sent without a following IN or OUT. This
         //    can occur if USB_SIE_CTRL_{RECEIVE,SEND}_DATA_BITS are NOT set
-        //     when sending the setup packet (like TinyUSB does). In our case,
-        //     we set those bits, so we don't see a TRANS_COMPLETE for this.
+        //    when sending the setup packet (like TinyUSB does). In our case,
+        //    we set those bits, so we don't see a TRANS_COMPLETE for this.
         // 2. An IN packet is received and the LAST_BUFF bit was set in the BCR
         // 3. An IN packet is received with a zero length packet (ZLP)
         // 4. An OUT packet is sent and the LAST_BUFF bit was set in the BCR
