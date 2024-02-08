@@ -594,6 +594,18 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     // Set DAR (dev_addr_ctrl)
     usb_hw->dev_addr_ctrl = dar;
 
+    // NOTE: When clk_sys (usually 133Mhz) and clk_usb (usually 48MHz) are not
+    // the same, the processor and the USB controller run at different speeds.
+    // To properly coordinate the two, we must sometimes waste clk_sys cycles
+    // to allow time for clk_usb to catch up.
+
+    // Set BCR (epx_buf_ctrl): Datasheet § 4.1.2.5.1 (p. 383) says one clk_usb
+    // 1 clk_usb = 133MHz/48MHz * 1 clk_sys = 2.8 clk_sys => wait 3 cycles
+    hw_set_staged3(usbh_dpram->epx_buf_ctrl, bcr, USB_BUF_CTRL_AVAIL);
+
+    // Set SCR (sie_ctrl): Datasheet § 4.1.2.7 (p. 390) says two clk_usb
+    // 2 clk_usb = 133MHz/48MHz * 2 clk_sys = 5.6 clk_sys => wait 6 cycles
+    hw_set_staged6(usb_hw->sie_ctrl, scr, USB_SIE_CTRL_START_TRANS_BITS);
 }
 
 // Send a zero length status packet (ZLP)
@@ -656,7 +668,8 @@ void usb_task() {
     static task_t task; // TODO: Is there any advantage to making this static?
 
     while (queue_try_remove(queue, &task)) { // TODO: Can this starve out other work? Should it be "if (...) {" instead?
-        printf("\n=> New task: %s\n", task_name(task.type));
+        uint8_t type = task.type;
+        printf("\n=> Start task: %s\n", task_name(type));
         switch (task.type) {
             case TASK_CONNECT:
 
@@ -701,6 +714,7 @@ void usb_task() {
                 printf("Unknown task type\n");
                 break;
         }
+        printf("=> Finish task: %s\n", task_name(type));
     }
 }
 
