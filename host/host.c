@@ -829,22 +829,17 @@ void isr_usbctrl() {
         endpoint_t *ep = epx; // TODO: Look this up or pluck from event struct
         if (!ep->active) panic("EP should still be active in TRANS_COMPLETE");
 
-        // TODO: Nearly same as BUFF_STATUS, how can we share code better?
-        if (usb_hw->sie_ctrl & USB_SIE_CTRL_SEND_SETUP_BITS) {
-            printf("│ISR\t│      │ Setup packet sent (active? %s)\n", ep->active ? "yes" : "no");
-            event = (event_t) {
-                .type         = EVENT_TRANSFER,
-                .dev_addr     = ep->dev_addr,
-                .xfer.ep_addr = ep->ep_addr,
-                .xfer.result  = TRANSFER_SUCCESS,
-                .xfer.len     = ep->bytes_done,
-            };
-            clear_endpoint(ep); // TODO: Does this HAVE to come before queuing? Probably...
-            queue_add_blocking(queue, &event);
-        } else {
-            printf("│ISR\t│      │ Transfer complete (but not from a setup)\n");
-            clear_endpoint(ep);
-        }
+        event = (event_t) {
+            .type         = EVENT_TRANSFER,
+            .dev_addr     = ep->dev_addr,
+            .xfer.ep_addr = ep->ep_addr,
+            .xfer.result  = TRANSFER_SUCCESS,
+            .xfer.len     = ep->bytes_done,
+        };
+
+        clear_endpoint(ep); // TODO: Does this HAVE to come before queuing? Probably...
+
+        queue_add_blocking(queue, &event);
     }
 
     // Receive timeout (too long without an ACK)
