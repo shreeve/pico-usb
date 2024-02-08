@@ -336,7 +336,7 @@ bool still_transferring(endpoint_t *ep) {
     return true; // Transfer should continue
 }
 
-void handle_buffer(uint32_t bit, endpoint_t *ep) {
+void handle_buffer(endpoint_t *ep) {
     if (!ep->active) panic("EP 0x%02x not active\n", ep->ep_addr);
     if (still_transferring(ep)) return;
     if (ep->bytes_done) {
@@ -797,7 +797,7 @@ void isr_usbctrl() {
                 mask = 1 << (i * 2 + j);
                 if (bits &  mask) {
                     bits ^= mask;
-                    handle_buffer(mask, &eps[i]);
+                    handle_buffer(&eps[i]);
                 }
             }
         }
