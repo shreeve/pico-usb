@@ -653,7 +653,7 @@ void usb_task() {
     static event_t event; // TODO: Is there any advantage to making this static?
 
     while (queue_try_remove(queue, &event)) { // TODO: Can this starve out other work? Should it be "if (...) {" instead?
-        printf("DEQUEUED: Event type %u\n", event.type);
+        printf("DEQUE: Event type %u\n", event.type);
         switch (event.type) {
             case EVENT_CONNECT:
 
