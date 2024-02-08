@@ -650,9 +650,14 @@ void usb_host_reset() {
                       | USB_INTE_STALL_BITS              // Stall detected
                       | USB_INTE_BUFF_STATUS_BITS        // Buffer ready
                       | USB_INTE_TRANS_COMPLETE_BITS     // Transfer complete
-                      | USB_INTE_HOST_RESUME_BITS        // Device resumed
-                      | USB_INTE_ERROR_DATA_SEQ_BITS     // Data error
+                      | USB_INTE_HOST_RESUME_BITS        // Device wakes host
+                      | USB_INTE_ERROR_DATA_SEQ_BITS     // DATA0/DATA1 wrong
                       | USB_INTE_ERROR_RX_TIMEOUT_BITS;  // Receive timeout
+
+    // TODO: Shouldn't we enable most of the interrupts and when we choose
+    //       not to handle them, it would lead to a general panic. For example,
+    //       we don't need a handler for CRC errors. But, if they do happen,
+    //       we probably don't want to continue, since data could be corrupt.
 
     // Setup hardware endpoints
     setup_endpoints();
