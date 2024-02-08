@@ -298,7 +298,7 @@ void prepare_buffers(endpoint_t *ep) {
     bool allow_double = false; // TODO: This is a hack for now
 
     uint32_t ecr = usbh_dpram->epx_ctrl;
-    uint32_t bcr = prepare_buffer(ep, 0) | USB_BUF_CTRL_SEL;
+    uint32_t bcr = prepare_buffer(ep, 0) | USB_BUF_CTRL_SEL; // TODO: Datasheet (p. 387) says this is for device only. Can we remove it?
 
     // Double buffering is only supported in specific cases // TODO: Properly determine this
     if (ep->bytes_left && allow_double) {
