@@ -85,8 +85,8 @@ enum {
 
 enum {
     EVENT_CONNECT,
-    EVENT_ENUMERATE,
     EVENT_TRANSFER,
+    EVENT_ENUMERATE,
     EVENT_FUNCTION,
 };
 
