@@ -123,6 +123,16 @@ typedef struct {
 
 static queue_t *queue = &((queue_t) { 0 });
 
+const char *event_name(uint8_t type) {
+    switch (type) {
+        case EVENT_CONNECT:   return "EVENT_CONNECT";
+        case EVENT_TRANSFER:  return "EVENT_TRANSFER";
+        case EVENT_ENUMERATE: return "EVENT_ENUMERATE";
+        case EVENT_FUNCTION:  return "EVENT_FUNCTION";
+        default:              return "UNKNOWN";
+    }
+}
+
 // ==[ Endpoints ]=============================================================
 
 typedef void (*endpoint_c)(uint8_t *buf, uint16_t len);
@@ -211,7 +221,6 @@ SDK_ALWAYS_INLINE static inline void reset_ep0() {
 }
 
 SDK_ALWAYS_INLINE static inline void clear_endpoint(endpoint_t *ep) {
-    printf("Clearing endpoint 0x%02x\n", ep->ep_addr);
     ep->active     = false;
     ep->user_buf   = 0; // TODO: Add something like a ring buffer here?
     ep->bytes_left = 0;
@@ -659,7 +668,7 @@ void usb_task() {
     static event_t event; // TODO: Is there any advantage to making this static?
 
     while (queue_try_remove(queue, &event)) { // TODO: Can this starve out other work? Should it be "if (...) {" instead?
-        printf("DEQUE: Event type %u\n", event.type);
+        printf("EVENT: %s\n", event_name(event.type));
         switch (event.type) {
             case EVENT_CONNECT:
 
@@ -688,7 +697,8 @@ void usb_task() {
                 break;
 
             case EVENT_TRANSFER:
-                printf("QUEUE: Transfer complete (len=%u and active? %s)\n", event.xfer.len, epx->active ? "yes" : "no");
+                printf("Transfer complete (len=%u and active? %s)\n", event.xfer.len, epx->active ? "yes" : "no");
+                hexdump(usbh_dpram->epx_data, event.xfer.len, 1);
                 if (event.xfer.len) { // TODO: When do we send ZLP?
                     send_zlp(epx); // TODO: What EP should be used? Should this be queued?
                 }
@@ -714,8 +724,8 @@ void isr_usbctrl() {
     volatile uint32_t ints = usb_hw->ints;
     event_t event; // TODO: Is there any advantage to making this static?
 
-    printf( "┌───────┬──────┬─────────────────────────────────────┬────────────┐\n");
-    printf( "│Frame\t│ %4u │%37s│%12s│\n", usb_hw->sof_rd, "", "");
+    printf("\n┌───────┬──────┬─────────────────────────────────────┬────────────┐\n");
+    printf("│Frame\t│ %4u │%37s│%12s│\n", usb_hw->sof_rd, "", "");
     bindump("│INTR", intr);
     bindump("│INTS", ints);
     bindump("│SIE", usb_hw->sie_status);
