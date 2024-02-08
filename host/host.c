@@ -414,26 +414,6 @@ void get_device_descriptor() {
     }));
 }
 
-// // Get new device address
-// static uint8_t get_new_address(bool is_hub) {
-//   uint8_t start;
-//   uint8_t end;
-//
-//   if ( is_hub ) {
-//     start = CFG_TUH_DEVICE_MAX;
-//     end   = start + CFG_TUH_HUB;
-//   } else {
-//     start = 0;
-//     end   = start + CFG_TUH_DEVICE_MAX;
-//   }
-//
-//   for (uint8_t idx = start; idx < end; idx++) {
-//     if (!_usbh_devices[idx].connected) return (idx+1);
-//   }
-//
-//   return 0; // invalid address
-// }
-
 // Set device address
 void set_device_address() {
     uint8_t dev_addr = 1;
