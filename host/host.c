@@ -385,7 +385,6 @@ typedef struct device {
     uint8_t  serial      ; // String index of serial number
 } device_t;
 
-// TODO: For right now, only define dev0 and 1 device. Later, we'll make this dynamic.
 static device_t devices[MAX_DEVICES], *dev0 = devices;
 
 // Get a pointer to a device
