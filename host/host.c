@@ -553,7 +553,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     dar = dev_addr << USB_ADDR_ENDP_ENDPOINT_LSB
         | ep->ep_num;
     ecr = usbh_dpram->epx_ctrl;
-    bcr = (in  ? 0 : USB_BUF_CTRL_FULL)     // Empty=0 (Recv), Full=1 (Send)
+    bcr = (in  ? 0 : USB_BUF_CTRL_FULL)     // 0=Empty/Recv, 1=Full/Send
         |            USB_BUF_CTRL_LAST      // Will fire TRANS_COMPLETE
         |            USB_BUF_CTRL_DATA1_PID // Set next IN/OUT to DATA1
         | size;
