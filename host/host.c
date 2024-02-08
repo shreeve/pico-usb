@@ -561,7 +561,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
      // | (fs  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS); // Preamble (LS on FS hub)
         | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive if IN to host
                :     USB_SIE_CTRL_SEND_DATA_BITS)    // Send if OUT from host
-        | (zlp ? 0 : USB_SIE_CTRL_SEND_SETUP_BITS);   // Send a SETUP packet
+        | (zlp ? 0 : USB_SIE_CTRL_SEND_SETUP_BITS);  // Send a SETUP packet
 
     // Debug output
     bindump(" DAR", dar);
