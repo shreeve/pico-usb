@@ -575,6 +575,11 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         hexdump(packet, size, 1);
     } else {
         printf("<ZLP\n");
+        if (dev0->state < DEVICE_ACTIVE) {
+            queue_add_blocking(queue, &((event_t) {
+                .type = EVENT_ENUMERATE,
+            }));
+        }
     }
 
     // Set DAR (dev_addr_ctrl)
@@ -687,16 +692,6 @@ void usb_task() {
                 if (event.xfer.len) { // TODO: When do we send ZLP?
                     send_zlp(epx); // TODO: What EP should be used? Should this be queued?
                 }
-
-// clear_endpoint(epx); // TODO: When should this happen?
-
-                // TODO: Can we just call enumerate() directly? Or, must it be queued?
-                if (dev0->state < DEVICE_ACTIVE) {
-                    queue_add_blocking(queue, &((event_t) {
-                        .type       = EVENT_ENUMERATE,
-                    }));
-                }
-
                 break;
 
             case EVENT_FUNCTION:
