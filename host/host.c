@@ -776,6 +776,7 @@ void isr_usbctrl() {
         // See if EPX is single or double buffered
         uint32_t ecr = usbh_dpram->epx_ctrl;
         bool dubs = (bits & mask) && (ecr & EP_CTRL_DOUBLE_BUFFERED_BITS);
+        printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
         bindump(dubs ? "│BUF(2)" : "│BUF(1)", bits);
 
         // Clear all buffer bits, panic later if we missed any
