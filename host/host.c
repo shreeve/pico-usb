@@ -407,7 +407,7 @@ void get_device_descriptor() {
         .bRequest      = USB_REQUEST_GET_DESCRIPTOR,
         .wValue        = MAKE_U16(USB_DT_DEVICE, 0),
         .wIndex        = 0,
-        .wLength       = len ? len : 8, // Only 8 bytes if we don't know
+        .wLength       = len ? len : 8, // If maxsize is unknown, ask for it
     }));
 }
 
