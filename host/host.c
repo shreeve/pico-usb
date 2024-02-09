@@ -396,7 +396,6 @@ void start_control_transfer(endpoint_t *, usb_setup_packet_t *);
 void get_device_descriptor() {
     printf("Get device descriptor\n");
 
-    // Determine the device and how many bytes to ask for
     device_t *dev = &devices[epx->dev_addr]; // TODO: Make this a function call, with bounds checking, etc.
     uint16_t len = dev->maxsize;
 
