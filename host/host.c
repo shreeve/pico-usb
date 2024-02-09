@@ -777,7 +777,7 @@ void isr_usbctrl() {
         uint32_t ecr = usbh_dpram->epx_ctrl;
         bool dubs = (bits & mask) && (ecr & EP_CTRL_DOUBLE_BUFFERED_BITS);
         printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
-        bindump(dubs ? "│BUF(2)" : "│BUF(1)", bits);
+        bindump(dubs ? "│BUF/2" : "│BUF/1", bits);
 
         // Clear all buffer bits, panic later if we missed any
         usb_hw_clear->buf_status = (uint32_t) ~0;
