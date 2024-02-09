@@ -174,18 +174,18 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
     };
 
     // Helper variables
-    bool     in           = ep->ep_addr & USB_DIR_IN;
-    uint32_t type         = ep->type;
-    uint32_t ms           = ep->interval;
-    uint32_t interval_lsb = EP_CTRL_HOST_INTERRUPT_INTERVAL_LSB;
-    uint32_t offset       = offsetof(usb_host_dpram_t, epx_data); // TODO: Make this generic, not epx-specific
+    bool     in     = ep->ep_addr & USB_DIR_IN;
+    uint32_t type   = ep->type;
+    uint32_t ms     = ep->interval;
+    uint32_t lsb    = EP_CTRL_HOST_INTERRUPT_INTERVAL_LSB;
+    uint32_t offset = offsetof(usb_host_dpram_t, epx_data); // TODO: Make this generic, not epx-specific
 
     // Get the ECR
-    uint32_t ecr = EP_CTRL_ENABLE_BITS               // Enable endpoint
-                 | EP_CTRL_INTERRUPT_PER_BUFFER      // An interrupt per buffer
-                 | type << EP_CTRL_BUFFER_TYPE_LSB   // Set transfer type
-                 | (ms ? ms - 1 : 0) << interval_lsb // Interrupt polling in ms
-                 | offset;                           // Data buffer offset
+    uint32_t ecr = EP_CTRL_ENABLE_BITS             // Enable endpoint
+                 | EP_CTRL_INTERRUPT_PER_BUFFER    // An interrupt per buffer
+                 | type << EP_CTRL_BUFFER_TYPE_LSB // Set transfer type
+                 | (ms ? ms - 1 : 0) << lsb        // Interrupt polling in ms
+                 | offset;                         // Data buffer offset
 
     // Debug output
     printf(" EP%d_%s│ 0x%02x │ Buffer 0x%04x\n",
