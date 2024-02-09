@@ -537,8 +537,9 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 
     // Calculate register values
     uint32_t dar, ecr, bcr, scr;
-    dar = dev_addr << USB_ADDR_ENDP_ENDPOINT_LSB
-        | ep->ep_num;
+    dar = dev_addr <<USB_ADDR_ENDP_ENDPOINT_LSB // Device address
+        | (in  ?     USB_DIR_IN : 0)            // EP direction
+        | ep->ep_num;                           // EP number
     ecr = usbh_dpram->epx_ctrl;
     bcr = (in  ? 0 : USB_BUF_CTRL_FULL)      // 0=Empty/Recv, 1=Full/Send
         |            USB_BUF_CTRL_LAST       // Will fire TRANS_COMPLETE
