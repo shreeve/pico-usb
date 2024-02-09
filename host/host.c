@@ -838,19 +838,18 @@ void isr_usbctrl() {
         // Question on #4: For a ZLP OUT, will this fire without LAST_BUFF?
 
         endpoint_t *ep = epx; // TODO: Look this up or pluck from task struct
+
         if (!ep->active) panic("EP should still be active in TRANS_COMPLETE");
 
-        task = (task_t) {
+        queue_add_blocking(queue, &((task_t) {
             .type         = TASK_TRANSFER,
             .dev_addr     = ep->dev_addr,
             .xfer.ep_addr = ep->ep_addr,
             .xfer.result  = TRANSFER_SUCCESS,
             .xfer.len     = ep->bytes_done,
-        };
+        }));
 
-        clear_endpoint(ep); // TODO: Does this HAVE to come before queuing? Probably...
-
-        queue_add_blocking(queue, &task);
+        clear_endpoint(ep);
     }
 
     // Receive timeout (too long without an ACK)
