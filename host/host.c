@@ -283,9 +283,7 @@ uint32_t prepare_buffer(endpoint_t *ep, uint8_t buf_id) {
         bcr |= USB_BUF_CTRL_LAST;
     }
 
-    if (buf_id) bcr = bcr << 16;
-
-    return bcr;
+    return buf_id ? bcr << 16 : bcr;
 }
 
 void prepare_buffers(endpoint_t *ep) {
