@@ -443,68 +443,53 @@ void set_device_address() {
 void enumerate(bool reset) {
     static uint8_t step;
 
-    if (reset) step = ENUMERATION_START;
+    if (reset) {
+        printf("Start enumeration\n");
+        step = ENUMERATION_START;
+    }
 
-    // Handle prior step
-    switch (step) {
+    switch (step++) {
         case ENUMERATION_START:
-            printf("Start enumeration\n");
+            printf("Get maximum packet size\n");
+            get_device_descriptor();
             break;
 
         case ENUMERATION_GET_MAXSIZE:
             // Set dev0->maxsize
             dev0->maxsize = 64; // TODO: Fix this...
             printf("Processing GET_MAXSIZE\n");
-            break;
 
-        case ENUMERATION_SET_ADDRESS:
-            // Set device address
-            printf("Processing SET_ADDRESS\n");
-            break;
-
-        case ENUMERATION_GET_DEVICE:
-            // Load the device info
-            printf("Processing GET_DEVICE\n");
-            break;
-
-        case ENUMERATION_GET_CONFIG:
-            // Load the vid, pid, manufacturer, product, and serial
-            printf("Processing GET_CONFIG\n");
-            break;
-
-        case ENUMERATION_SET_CONFIG:
-            // Set device configuration
-            printf("Processing SET_CONFIG\n");
-            break;
-    }
-
-    // Handle next step
-    switch (++step) {
-        case ENUMERATION_GET_MAXSIZE:
-            printf("Get maximum packet size\n");
-            get_device_descriptor();
-            break;
-
-        case ENUMERATION_SET_ADDRESS:
             printf("Set device address\n");
             uint8_t dev_addr = 1; // TODO: Get the next address
             set_device_address(dev_addr);
             break;
 
-        case ENUMERATION_GET_DEVICE:
+        case ENUMERATION_SET_ADDRESS:
+            // Set device address
+            printf("Processing SET_ADDRESS\n");
+
             printf("Get device descriptor\n");
             get_device_descriptor();
             break;
 
-        case ENUMERATION_GET_CONFIG:
+        case ENUMERATION_GET_DEVICE:
+            // Load the device info
+            printf("Processing GET_DEVICE\n");
+
             printf("Get configuration descriptor\n");
             break;
 
-        case ENUMERATION_SET_CONFIG:
+        case ENUMERATION_GET_CONFIG:
+            // Load the vid, pid, manufacturer, product, and serial
+            printf("Processing GET_CONFIG\n");
+
             printf("Set device configuration\n");
             break;
 
-        case ENUMERATION_END:
+        case ENUMERATION_SET_CONFIG:
+            // Set device configuration
+            printf("Processing SET_CONFIG\n");
+
             printf("End enumeration\n");
             dev0->state = DEVICE_CONFIGURED;
             break;
