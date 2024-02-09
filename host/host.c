@@ -527,10 +527,10 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     // assert(ep->configured); // TODO: Endpoint must be configured
 
     // Locate the device and ensure it's in the right state
-    uint8_t dev_addr = ep->dev_addr;
-    device_t *dev = dev_addr ? get_device(dev_addr) : dev0;
-    if (dev_addr)       { if (dev->state <  DEVICE_ACTIVE) return; }
-    else { if (!dev->state || dev->state >= DEVICE_ACTIVE) return; }
+    uint8_t     dev_addr =  ep->dev_addr;
+    device_t   *dev      =      dev_addr ? get_device(dev_addr) : dev0;
+    if         (dev_addr) { if (dev->state <  DEVICE_ACTIVE) return; } // TODO: Error condition?
+    else { if (!dev->state   || dev->state >= DEVICE_ACTIVE) return; } // TODO: Error condition?
 
     // Transfer is now active
     ep->active     = true;
