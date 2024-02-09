@@ -289,7 +289,7 @@ uint32_t prepare_buffer(endpoint_t *ep, uint8_t buf_id) {
 }
 
 void prepare_buffers(endpoint_t *ep) {
-    // const bool host = is_host_mode();
+    // const bool host = is_host_mode(); // TODO: Use a static variable here, not a function call
     // const bool in = ep->usb->bEndpointAddress & USB_DIR_IN;
     // const bool allow_double = host ? !in : in; // TODO: host/out and device/in? Doesn't seem right
 
