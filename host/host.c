@@ -339,12 +339,14 @@ bool still_transferring(endpoint_t *ep) {
 
 void handle_buffer(endpoint_t *ep) {
     if (!ep->active) panic("EP 0x%02x not active\n", ep->ep_addr);
-    if (still_transferring(ep)) return;
+    // if (still_transferring(ep)) return;
+    still_transferring(ep);
     if (ep->bytes_done) {
-        printf("│? Data");
+        printf("│Data");
         hexdump(usbh_dpram->epx_data, ep->bytes_done, 1);
     } else {
-        printf("│?ZLP\n");
+        char *str = ep->sender ? "│ZLP/O" : "│ZLP/I";
+        bindump(str, 0); // TODO: Is this ok?
     }
 }
 
