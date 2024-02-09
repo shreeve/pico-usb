@@ -787,8 +787,7 @@ void isr_usbctrl() {
         // EP3IN/EP3OUT at the same time and mask with 0b11, etc.
 
         // Check the interrupt/asynchronous endpoints (IN and OUT)
-        // for (uint8_t i = 0; i <= USB_HOST_INTERRUPT_ENDPOINTS && bits; i++) {
-        for (uint8_t i = 0; i <= 1 && bits; i++) { // TODO: This is hacked
+        for (uint8_t i = 0; i <= MAX_ENDPOINTS && bits; i++) {
             for (uint8_t j = 0; j < 2; j++) {
                 mask = 1 << (i * 2 + j);
                 if (bits &  mask) {
@@ -818,7 +817,6 @@ void isr_usbctrl() {
         // 3. An IN packet is received with a zero length packet (ZLP)
         // 4. An OUT packet is sent and the LAST_BUFF bit was set in the BCR
         //
-        // Question on #1: Can ZLP out use this? Or, can we catch another way?
         // Question on #3: For a ZLP IN, will BUFF_STATUS fire also?
         // Question on #4: For a ZLP OUT, will this fire without LAST_BUFF?
 
