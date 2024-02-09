@@ -265,11 +265,14 @@ uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
 // Prepare an endpoint buffer and return its buffer control register value
 uint32_t prepare_buffer(endpoint_t *ep, uint8_t buf_id) {
     uint16_t len = MIN(ep->bytes_left, ep->maxsize);
-    uint32_t bcr = ep->data_pid ? USB_BUF_CTRL_DATA1_PID : USB_BUF_CTRL_DATA0_PID
+    uint32_t bcr = ep->data_pid
+                 ? USB_BUF_CTRL_DATA1_PID
+                 : USB_BUF_CTRL_DATA0_PID
                  | USB_BUF_CTRL_AVAIL
                  | len;
+
     ep->bytes_left -= len;
-    ep->data_pid ^= 1u;
+    ep->data_pid   ^= 1u;
 
     // If we're sending, copy to the data buffer
     if (ep->sender) {
