@@ -46,19 +46,7 @@
 #define usb_hw_set   ((usb_hw_t *) hw_set_alias_untyped  (usb_hw))
 #define usb_hw_clear ((usb_hw_t *) hw_clear_alias_untyped(usb_hw))
 
-#define busy_wait_2_cycles() __asm volatile("b 1f\n1:\n"     :::"memory") // remove?
-#define busy_wait_3_cycles() __asm volatile("nop\nnop\nnop\n":::"memory") // static inline?
-
-#define hw_set_staged3(reg, value, or_mask) \
-    reg = (value); \
-    busy_wait_3_cycles(); \
-    reg = (value) | (or_mask);
-
-#define hw_set_staged6(reg, value, or_mask) \
-    reg = (value); \
-    busy_wait_3_cycles(); \
-    busy_wait_3_cycles(); \
-    reg = (value) | (or_mask);
+#define nop() __asm volatile("nop" ::: "memory")
 
 SDK_ALWAYS_INLINE static inline bool is_host_mode() {
     return (usb_hw->main_ctrl & USB_MAIN_CTRL_HOST_NDEVICE_BITS);
@@ -591,21 +579,27 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         }
     }
 
-    // Set DAR (dev_addr_ctrl)
-    usb_hw->dev_addr_ctrl = dar;
-
     // NOTE: When clk_sys (usually 133Mhz) and clk_usb (usually 48MHz) are not
     // the same, the processor and the USB controller run at different speeds.
-    // To properly coordinate the two, we must sometimes waste clk_sys cycles
-    // to allow time for clk_usb to catch up.
+    // To properly coordinate them, we must sometimes waste clk_sys cycles to
+    // allow time for clk_usb to catch up. Each clk_sys cycle is 133/48 times
+    // faster than a clk_usb cycle, which is 2.77 (roughly 3) times as fast.
+    // So, for each 1 clk_usb cycle, we should waste 3 clk_sys cycles.
 
-    // Set BCR (epx_buf_ctrl): Datasheet § 4.1.2.5.1 (p. 383) says one clk_usb
-    // 1 clk_usb = 133MHz/48MHz * 1 clk_sys = 2.8 clk_sys => wait 3 cycles
-    hw_set_staged3(usbh_dpram->epx_buf_ctrl, bcr, USB_BUF_CTRL_AVAIL);
+    // Set DAR: Datasheet says no delay needed
+    // Set BCR: Datasheet § 4.1.2.5.1 (p. 383) says AVAILABLE needs one clk_usb
+    // Set SCR: Datasheet § 4.1.2.7 (p. 390) says START_TRANS needs two clk_usb
 
-    // Set SCR (sie_ctrl): Datasheet § 4.1.2.7 (p. 390) says two clk_usb
-    // 2 clk_usb = 133MHz/48MHz * 2 clk_sys = 5.6 clk_sys => wait 6 cycles
-    hw_set_staged6(usb_hw->sie_ctrl, scr, USB_SIE_CTRL_START_TRANS_BITS);
+    // TODO: This ok? (eg - Does BCR, NOP, NOP, BCR satisfy the delay?)
+
+    // Set registers optimally => SCR, DAR, BCR, NOP, NOP, BCR, SCR
+    usb_hw->sie_ctrl         = scr;
+    usb_hw->dev_addr_ctrl    = dar;
+    usbh_dpram->epx_buf_ctrl = bcr;
+    nop();
+    nop();
+    usbh_dpram->epx_buf_ctrl = bcr | USB_BUF_CTRL_AVAIL;
+    usb_hw->sie_ctrl         = scr | USB_SIE_CTRL_START_TRANS_BITS;
 }
 
 // Send a zero length status packet (ZLP)
