@@ -541,8 +541,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     ecr = usbh_dpram->epx_ctrl;
     bcr = (in  ? 0 : USB_BUF_CTRL_FULL)      // 0=Empty/Recv, 1=Full/Send
         |            USB_BUF_CTRL_LAST       // Will fire TRANS_COMPLETE
-        | (in  ?     USB_BUF_CTRL_DATA1_PID  // Next IN should be DATA1
-               :     USB_BUF_CTRL_DATA0_PID) // Next OUT should be DATA0
+        |            USB_BUF_CTRL_DATA1_PID  // SETUP/IN/OUT are all DATA1
         | size;
     scr =            USB_SIE_CTRL_BASE               // SIE_CTRL defaults
      // | (fs  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS); // Preamble (LS on FS hub)
