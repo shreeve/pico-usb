@@ -323,7 +323,7 @@ bool still_transferring(endpoint_t *ep) {
 
     if (!ep->bytes_left) return false; // Transfer is complete
 
-    // // Handle Errata 15: Buffer status may not be set during last 200µs of a frame
+    // // Errata 15: Buffer status may not be set during last 200µs of a frame
     // if (e15_is_critical_frame_period(ep)) {
     //     ep->pending = 1;
     // } else {
