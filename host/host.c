@@ -180,7 +180,7 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
     uint32_t interval_lsb = EP_CTRL_HOST_INTERRUPT_INTERVAL_LSB;
     uint32_t offset       = offsetof(usb_host_dpram_t, epx_data); // TODO: Make this generic, not epx-specific
 
-    // Get the endpoint control register (ECR) value
+    // Get the ECR
     uint32_t ecr = EP_CTRL_ENABLE_BITS               // Enable endpoint
                  | EP_CTRL_INTERRUPT_PER_BUFFER      // An interrupt per buffer
                  | type << EP_CTRL_BUFFER_TYPE_LSB   // Set transfer type
@@ -192,7 +192,7 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
            ep->ep_num, in ? "IN " : "OUT", ep->ep_addr, offset);
     bindump(" ECR", ecr);
 
-    // Set the endpoint control register (ECR)
+    // Set the ECR
     usbh_dpram->epx_ctrl = ecr;
 }
 
