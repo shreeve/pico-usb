@@ -461,6 +461,7 @@ void enumerate(bool reset) {
         case ENUMERATION_GET_MAXSIZE:
             // Set dev0->maxsize
             dev0->maxsize = 64; // TODO: Fix this...
+            epx->maxsize  = 64; // TODO: Fix this...
             printf("Processing GET_MAXSIZE\n");
 
             printf("Set device address\n");
