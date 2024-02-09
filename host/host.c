@@ -117,7 +117,7 @@ const char *task_name(uint8_t type) {
         case TASK_TRANSFER:  return "TASK_TRANSFER";
         case TASK_ENUMERATE: return "TASK_ENUMERATE";
         case TASK_FUNCTION:  return "TASK_FUNCTION";
-        default:              return "UNKNOWN";
+        default:             return "UNKNOWN";
     }
 }
 
