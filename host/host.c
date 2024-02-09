@@ -244,7 +244,7 @@ uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
     uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK;
     bool    full = bcr & USB_BUF_CTRL_FULL;
 
-    // Buffer must be full for reads, empty for writes
+    // Buffer must be empty for writes, full for reads
     assert(ep->sender ^ full);
 
     // If we're receiving, copy to the user buffer
