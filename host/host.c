@@ -384,8 +384,7 @@ typedef struct device {
 
 static device_t devices[MAX_DEVICES], *dev0 = devices;
 
-// Get a pointer to a device
-device_t *get_device(uint8_t dev_addr) {
+device_t *get_device(uint8_t dev_addr) { // TODO: Make this inline?
     return dev_addr ? &devices[dev_addr] : dev0; // TODO: Add bounds checking
 }
 
