@@ -423,7 +423,7 @@ void get_device_descriptor() {
         .bRequest      = USB_REQUEST_GET_DESCRIPTOR,
         .wValue        = MAKE_U16(USB_DT_DEVICE, 0),
         .wIndex        = 0,
-        .wLength       = len ? len : 8, // If maxsize is unknown, ask for it
+        .wLength       = len ? len : 8, // If maxsize is unknown, ask for it // TODO: Why does this ask for maxsize? Why not the size of the struct returned in the first short GDD/8?
     }));
 }
 
