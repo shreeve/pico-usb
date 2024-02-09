@@ -389,6 +389,18 @@ device_t *get_device(uint8_t dev_addr) {
     return dev_addr ? &devices[dev_addr] : dev0; // TODO: Add bounds checking
 }
 
+// // Get new device address
+// uint8_t get_new_address(bool is_hub) {
+//     uint8_t x = is_hub ? ( MAX_DEVICES) : 0;
+//     uint8_t y = is_hub ? (x + MAX_HUBS) : MAX_DEVICES;
+//
+//     for (uint8_t i = x; i < y; i++) {
+//         if (!devices[i].state) return (i + 1);
+//     }
+//
+//     return 0; // Invalid
+// }
+
 // Forward function declaration
 void start_control_transfer(endpoint_t *, usb_setup_packet_t *);
 
@@ -409,18 +421,6 @@ void get_device_descriptor() {
         .wLength       = len ? len : 8, // If maxsize is unknown, ask for it
     }));
 }
-
-// // Get new device address
-// uint8_t get_new_address(bool is_hub) {
-//     uint8_t x = is_hub ? ( MAX_DEVICES) : 0;
-//     uint8_t y = is_hub ? (x + MAX_HUBS) : MAX_DEVICES;
-//
-//     for (uint8_t i = x; i < y; i++) {
-//         if (!devices[i].state) return (i + 1);
-//     }
-//
-//     return 0; // Invalid
-// }
 
 // Set device address
 void set_device_address() {
