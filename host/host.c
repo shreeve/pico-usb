@@ -559,11 +559,6 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         hexdump(packet, size, 1);
     } else {
         printf("<ZLP\n");
-        if (dev0->state < DEVICE_ACTIVE) {
-            queue_add_blocking(queue, &((task_t) {
-                .type = TASK_ENUMERATE,
-            }));
-        }
     }
 
     // NOTE: When clk_sys (usually 133Mhz) and clk_usb (usually 48MHz) are not
@@ -829,13 +824,21 @@ void isr_usbctrl() {
 
         if (!ep->active) panic("EP should still be active in TRANS_COMPLETE");
 
-        queue_add_blocking(queue, &((task_t) {
-            .type         = TASK_TRANSFER,
-            .dev_addr     = ep->dev_addr,
-            .xfer.ep_addr = ep->ep_addr,
-            .xfer.result  = TRANSFER_SUCCESS,
-            .xfer.len     = ep->bytes_done,
-        }));
+        if (ep->bytes_done) {
+            queue_add_blocking(queue, &((task_t) {
+                .type         = TASK_TRANSFER,
+                .dev_addr     = ep->dev_addr,
+                .xfer.ep_addr = ep->ep_addr,
+                .xfer.result  = TRANSFER_SUCCESS,
+                .xfer.len     = ep->bytes_done,
+            }));
+        } else if (dev0->state < DEVICE_ACTIVE) {
+            queue_add_blocking(queue, &((task_t) {
+                .type = TASK_ENUMERATE,
+            }));
+        } else {
+            printf("ZLP inside of TRANS_COMPLETE, but not enumerating right now\n");
+        }
 
         clear_endpoint(ep);
     }
