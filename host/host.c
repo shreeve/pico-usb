@@ -314,7 +314,7 @@ void prepare_buffers(endpoint_t *ep) {
 // If transfer is still active, push it along... when complete, return false
 bool still_transferring(endpoint_t *ep) {
 
-    // Update endpoint with buffer status, honor double buffering if present
+    // Update endpoint buffer status
     if (sync_buffer(ep, 0) == ep->maxsize) { // Full buf_0
         if (usbh_dpram->epx_ctrl & EP_CTRL_DOUBLE_BUFFERED_BITS) {
             sync_buffer(ep, 1); // TODO: What if buf_1 is 0 bytes or short?
