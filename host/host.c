@@ -536,7 +536,13 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     if (size) memcpy((void *) usbh_dpram->setup_packet, packet, size);
 
     // Calculate register values
-    uint32_t dar, ecr, bcr, scr;
+    uint32_t scr, dar, ecr, bcr;
+    scr =            USB_SIE_CTRL_BASE               // SIE_CTRL defaults
+     // | (fs  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS); // Preamble (LS on FS hub)
+        | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive if IN to host
+               :     USB_SIE_CTRL_SEND_DATA_BITS)    // Send if OUT from host
+        | (zlp ? 0 : USB_SIE_CTRL_SEND_SETUP_BITS)   // Send a SETUP packet
+        |            USB_SIE_CTRL_START_TRANS_BITS;  // Start the transfer now
     dar = dev_addr <<USB_ADDR_ENDP_ENDPOINT_LSB // Device address
         | (in  ?     USB_DIR_IN : 0)            // EP direction
         | ep->ep_num;                           // EP number
@@ -546,18 +552,12 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         |            USB_BUF_CTRL_DATA1_PID  // SETUP/IN/OUT are all DATA1
         |            USB_BUF_CTRL_AVAIL      // Buffer is available now
         | size;
-    scr =            USB_SIE_CTRL_BASE               // SIE_CTRL defaults
-     // | (fs  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS); // Preamble (LS on FS hub)
-        | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive if IN to host
-               :     USB_SIE_CTRL_SEND_DATA_BITS)    // Send if OUT from host
-        | (zlp ? 0 : USB_SIE_CTRL_SEND_SETUP_BITS)   // Send a SETUP packet
-        |            USB_SIE_CTRL_START_TRANS_BITS;  // Start the transfer now
 
     // Debug output
+    bindump(" SCR", scr);
     bindump(" DAR", dar);
     bindump(" ECR", ecr);
     bindump(" BCR", bcr);
-    bindump(" SCR", scr);
 
     if (size) {
         printf("<Setup");
@@ -573,9 +573,8 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     // faster than a clk_usb cycle, which is 2.77 (roughly 3) times as fast.
     // So, for each 1 clk_usb cycle, we should waste 3 clk_sys cycles.
 
-    // Set DAR: Datasheet says no delay needed
-    // Set BCR: Datasheet § 4.1.2.5.1 (p. 383) says AVAILABLE needs one clk_usb
     // Set SCR: Datasheet § 4.1.2.7 (p. 390) says START_TRANS needs two clk_usb
+    // Set BCR: Datasheet § 4.1.2.5.1 (p. 383) says AVAILABLE needs one clk_usb
 
     // TODO: This ok? (eg - Does BCR, NOP, NOP, BCR satisfy the delay?)
 
