@@ -680,6 +680,9 @@ void usb_task() {
             case TASK_TRANSFER:
                 printf("(%u)", task.xfer.len);
                 hexdump(usbh_dpram->epx_data, task.xfer.len, 1);
+
+                printf("Transfer complete\n");
+
                 if (task.xfer.len) { // TODO: When do we send ZLP?
                     send_zlp(epx); // TODO: What EP should be used? Should this be queued?
                 }
