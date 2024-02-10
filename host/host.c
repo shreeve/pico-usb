@@ -533,9 +533,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     bool in = true; // packet->bRequest == USB_REQUEST_SET_ADDRESS; // packet->bmRequestType & USB_DIR_IN;
     ep->sender = !in;
 
-    // TODO: Where is the EP direction really set? Shouldn't it be here for dar to use?
-
-    // Copy the setup packet, if supplied // TODO: is "for (i=0; i<8; i++)"" better???
+    // Copy the setup packet, if supplied
     if (packet) memcpy((void *) usbh_dpram->setup_packet, packet, sizeof(usb_setup_packet_t));
 
     // Calculate register values
@@ -576,15 +574,12 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     // Set SCR: Datasheet § 4.1.2.7 (p. 390) says START_TRANS needs two clk_usb
     // Set BCR: Datasheet § 4.1.2.5.1 (p. 383) says AVAILABLE needs one clk_usb
 
-    // TODO: This ok? (eg - Does BCR, NOP, NOP, BCR satisfy the delay?)
-
     // Set registers optimally => SCR, DAR, BCR, NOP, NOP, BCR, SCR
     usb_hw->sie_ctrl         = scr ^ USB_SIE_CTRL_START_TRANS_BITS;
     usb_hw->dev_addr_ctrl    = dar;
     usbh_dpram->epx_buf_ctrl = bcr ^ USB_BUF_CTRL_AVAIL;
-    nop();
-    nop(); // TODO: If we see timing errors, we might need another nop or two
-
+    nop(); // TODO: The order is important. It sets scr after 6 cycles, bcr
+    nop(); // after 3 cycles, and uses dar and two nop's efficiently.
     usbh_dpram->epx_buf_ctrl = bcr;
     usb_hw->sie_ctrl         = scr;
 }
