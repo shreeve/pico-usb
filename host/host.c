@@ -819,8 +819,6 @@ void isr_usbctrl() {
         // 2. An IN packet is received and the LAST_BUFF bit was set in the BCR
         // 3. An IN packet is received with a zero length packet (ZLP)
         // 4. An OUT packet is sent and the LAST_BUFF bit was set in the BCR
-        //
-        // Question on #3: For a ZLP IN, will BUFF_STATUS fire also?
 
         endpoint_t *ep = epx; // TODO: Look this up or pluck from task struct
 
