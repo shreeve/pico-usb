@@ -755,22 +755,22 @@ void isr_usbctrl() {
         }
     }
 
-//     // Stall detected (higher priority than BUFF_STATUS and TRANS_COMPLETE)
-//     if (ints &  USB_INTS_STALL_BITS) {
-//         ints ^= USB_INTS_STALL_BITS;
-//
-//         usb_hw_clear->sie_status = USB_SIE_STATUS_STALL_REC_BITS;
-//
-//         // Queue the stalled transfer
-//         queue_add_blocking(queue, &((task_t) {
-//             .type = TASK_TRANSFER,
-//             .xfer = {
-//                 .ep_addr = 37, // TODO: Will need this and maybe some more info?
-//                 .result  = TRANSFER_STALLED,
-//                 .len     = 0, // TODO: Do we need this?
-//             },
-//         }));
-//     }
+    // Stall detected (higher priority than BUFF_STATUS and TRANS_COMPLETE)
+    if (ints &  USB_INTS_STALL_BITS) {
+        ints ^= USB_INTS_STALL_BITS;
+
+        usb_hw_clear->sie_status = USB_SIE_STATUS_STALL_REC_BITS;
+
+        // Queue the stalled transfer
+        queue_add_blocking(queue, &((task_t) {
+            .type = TASK_TRANSFER,
+            .xfer = {
+                .ep_addr = 37, // TODO: Will need this and maybe some more info?
+                .result  = TRANSFER_STALLED,
+                .len     = 0, // TODO: Do we need this?
+            },
+        }));
+    }
 
     // Buffer processing is needed
     if (ints &  USB_INTS_BUFF_STATUS_BITS) {
