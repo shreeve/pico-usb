@@ -627,7 +627,7 @@ void usb_host_reset() {
                       | USB_INTE_HOST_RESUME_BITS        // Device wakes host
                       | USB_INTE_ERROR_DATA_SEQ_BITS     // DATA0/DATA1 wrong
                       | USB_INTE_ERROR_RX_TIMEOUT_BITS   // Receive timeout
-                      | (0xffffffff & ~0x00000004);      // TODO: This is only for full debugging
+                      | (0xffffffff ^ 0x00000004);       // TODO: Debug all on
 
     // TODO: Shouldn't we enable most of the interrupts and when we choose
     //       not to handle them, it would lead to a general panic. For example,
