@@ -411,10 +411,10 @@ void start_control_transfer(endpoint_t *, usb_setup_packet_t *);
 
 // Get device descriptor
 void get_device_descriptor() {
-    printf("Get device descriptor\n");
-
     device_t *dev = &devices[epx->dev_addr]; // TODO: Make this a function call, with bounds checking, etc.
     uint16_t len = dev->maxsize;
+
+    printf("Get device descriptor\n");
 
     start_control_transfer(epx, &((usb_setup_packet_t) {
         .bmRequestType = USB_DIR_IN
