@@ -454,15 +454,16 @@ void enumerate(bool reset) {
 
     switch (step++) {
         case ENUMERATION_START:
+            // Request maximum packet size
             printf("Get maximum packet size\n");
             get_device_descriptor();
             break;
 
         case ENUMERATION_GET_MAXSIZE:
             // Set dev0->maxsize
+            printf("Processing GET_MAXSIZE\n");
             dev0->maxsize = 64; // TODO: Fix this...
             epx->maxsize  = 64; // TODO: Fix this...
-            printf("Processing GET_MAXSIZE\n");
 
             printf("Set device address\n");
             uint8_t dev_addr = 1; // TODO: Get the next address
@@ -472,8 +473,9 @@ void enumerate(bool reset) {
         case ENUMERATION_SET_ADDRESS:
             // Set device address
             printf("Processing SET_ADDRESS\n");
+            // dev0->dev_addr = 1;
+            // dev0->state = DEVICE_ADDRESSED;
 
-            printf("Get device descriptor\n");
             get_device_descriptor();
             break;
 
