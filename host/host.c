@@ -728,7 +728,8 @@ void isr_usbctrl() {
     printf( "│Frame\t│ %4u │%37s│%12s│\n", usb_hw->sof_rd, "", "");
     bindump("│INTR", intr);
     bindump("│INTS", ints);
-    bindump("│SIE", usb_hw->sie_status);
+    bindump("│SSR", usb_hw->sie_status);
+    bindump("│SCR", usb_hw->sie_ctrl);
     bindump("│DAR", usb_hw->dev_addr_ctrl);
     bindump("│ECR", usbh_dpram->epx_ctrl);
     bindump("│BCR", usbh_dpram->epx_buf_ctrl);
