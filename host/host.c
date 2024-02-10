@@ -510,7 +510,7 @@ void enumerate(bool reset) {
 
 // Start a control transfer
 void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
-    uint8_t len = packet->wLength;
+    uint8_t len =  packet ? packet->wLength : 0;
 
     // TODO: Review assertions and sanity checks
     if (ep->ep_num) panic("Control transfers must use EP0");
