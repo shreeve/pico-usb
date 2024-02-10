@@ -705,7 +705,7 @@ void usb_task() {
 
 // ==[ Interrupts ]============================================================
 
-void *printf_interrupts(uint32_t ints) {
+void printf_interrupts(uint32_t ints) {
     if (ints & USB_INTS_HOST_CONN_DIS_BITS   ) printf(", device"  );
     if (ints & USB_INTS_STALL_BITS           ) printf(", stall"   );
     if (ints & USB_INTS_BUFF_STATUS_BITS     ) printf(", buffer"  );
