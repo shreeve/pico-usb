@@ -210,7 +210,6 @@ SDK_ALWAYS_INLINE static inline void reset_ep0() {
 
 SDK_ALWAYS_INLINE static inline void clear_endpoint(endpoint_t *ep) {
     ep->active     = false;
-    ep->user_buf   = 0; // TODO: Add something like a ring buffer here?
     ep->user_buf   = NULL; // TODO: Add something like a ring buffer here?
     ep->bytes_left = 0;
     ep->bytes_done = 0;
