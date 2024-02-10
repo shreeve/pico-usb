@@ -536,7 +536,8 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     if (size) memcpy((void *) usbh_dpram->setup_packet, packet, size);
 
     // Calculate register values
-    uint32_t scr, dar, ecr, bcr;
+    uint32_t ssr, scr, dar, ecr, bcr;
+    ssr = usb_hw->sie_status;
     scr =            USB_SIE_CTRL_BASE               // SIE_CTRL defaults
      // | (fs  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS); // Preamble (LS on FS hub)
         | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive if IN to host
@@ -554,6 +555,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         | size;
 
     // Debug output
+    bindump(" SSR", ssr);
     bindump(" SCR", scr);
     bindump(" DAR", dar);
     bindump(" ECR", ecr);
