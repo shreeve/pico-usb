@@ -284,7 +284,7 @@ uint32_t prepare_buffer(endpoint_t *ep, uint8_t buf_id) {
         bcr |= USB_BUF_CTRL_FULL;
     }
 
-    // If we're done, set LAST which will fire TRANS_COMPLETE and stop polling
+    // If we're done, set LAST to trigger TRANS_COMPLETE and stop polling
     if (!ep->bytes_left) {
         bcr |= USB_BUF_CTRL_LAST;
     }
@@ -339,14 +339,13 @@ bool still_transferring(endpoint_t *ep) {
 
 void handle_buffer(endpoint_t *ep) {
     if (!ep->active) panic("EP 0x%02x not active\n", ep->ep_addr);
-    // if (still_transferring(ep)) return;
-    still_transferring(ep);
+    still_transferring(ep); // TODO: When not debugging, return if true
     if (ep->bytes_done) {
         printf("│Data");
         hexdump(usbh_dpram->epx_data, ep->bytes_done, 1);
     } else {
         char *str = ep->sender ? "│ZLP/O" : "│ZLP/I";
-        bindump(str, 0); // TODO: Is this ok?
+        bindump(str, 0);
     }
 }
 
@@ -447,20 +446,20 @@ void set_device_address() {
 void enumerate(bool reset) {
     static uint8_t step;
 
-    if (reset) {
-        printf("Start enumeration\n");
-        step = ENUMERATION_START;
-    }
+    if (reset) step = ENUMERATION_START;
 
     switch (step++) {
         case ENUMERATION_START:
+            // Start enumeration
+            printf("Start enumeration\n");
+
             // Request maximum packet size
             printf("Get maximum packet size\n");
             get_device_descriptor();
             break;
 
         case ENUMERATION_GET_MAXSIZE:
-            // Set dev0->maxsize
+            // Set the maximum packet size
             printf("Processing GET_MAXSIZE\n");
             dev0->maxsize = 64; // TODO: Fix this...
             epx->maxsize  = 64; // TODO: Fix this...
@@ -473,6 +472,7 @@ void enumerate(bool reset) {
         case ENUMERATION_SET_ADDRESS:
             // Set device address
             printf("Processing SET_ADDRESS\n");
+            printf("dev0->maxsize is now %u\n", dev0->maxsize);
             // dev0->dev_addr = 1;
             // dev0->state = DEVICE_ADDRESSED;
 
@@ -548,7 +548,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         |            USB_SIE_CTRL_START_TRANS_BITS;  // Start the transfer now
     dar = dev_addr <<USB_ADDR_ENDP_ENDPOINT_LSB      // Device address
         | ep->ep_num;                                // EP number
-    ecr = usbh_dpram->epx_ctrl;
+    ecr = usbh_dpram->epx_ctrl;                      // EPX control register
     bcr = (in  ? 0 : USB_BUF_CTRL_FULL)              // Ready to 0=Recv, 1=Send
         |            USB_BUF_CTRL_LAST               // Trigger TRANS_COMPLETE
         |            USB_BUF_CTRL_DATA1_PID          // SETUP/IN/OUT are DATA1
@@ -575,19 +575,34 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     // allow time for clk_usb to catch up. Each clk_sys cycle is 133/48 times
     // faster than a clk_usb cycle, which is 2.77 (roughly 3) times as fast.
     // So, for each 1 clk_usb cycle, we should waste 3 clk_sys cycles.
-
-    // Set SCR: Datasheet § 4.1.2.7 (p. 390) says START_TRANS needs two clk_usb
-    // Set BCR: Datasheet § 4.1.2.5.1 (p. 383) says AVAILABLE needs one clk_usb
+    //
+    // For the USB controller, the START_TRANS bit in SCR and the AVAILABLE bit
+    // in BCR need special care. These bits trigger processor actions when they
+    // are set, but they will execute too soon since the USB controller needs
+    // more time to perform the actions specified in the other bits. Thus, we
+    // need to set the USB specific bits first, delay a few cycles, and then
+    // set the bits for the processor. The datasheet shows how long to wait:
+    //
+    // For SCR, Datasheet § 4.1.2.7 (p. 390) says START_TRANS needs two clk_usb
+    // For BCR, Datasheet § 4.1.2.5.1 (p. 383) says AVAILABLE needs one clk_usb
+    //
+    // We have several values to set, so we order them as shown below. Notice
+    // that this sets SCR without START_TRANS and then, in 6 cycles, it sets it
+    // again but this time including START_TRANS. BCR is similar, but will be
+    // set again after 3 cycles. The setting of DAR and two NOP's are inserted
+    // to make everything line up correctly.
 
     // Set registers optimally => SCR, DAR, BCR, NOP, NOP, BCR, SCR
     usb_hw->sie_ctrl         = scr ^ USB_SIE_CTRL_START_TRANS_BITS;
     usb_hw->dev_addr_ctrl    = dar;
     usbh_dpram->epx_buf_ctrl = bcr ^ USB_BUF_CTRL_AVAIL;
-    nop(); // TODO: The order is important. It sets scr after 6 cycles, bcr
-    nop(); // after 3 cycles, and uses dar and two nop's efficiently.
+    nop();
+    nop();
     usbh_dpram->epx_buf_ctrl = bcr;
     usb_hw->sie_ctrl         = scr;
 }
+
+// TODO: Should we merge these two into one "transfer_zlp" and read ep_addr for the direction?
 
 // Send a zero length status packet (ZLP)
 SDK_ALWAYS_INLINE static inline void send_zlp(endpoint_t *ep) {
@@ -636,14 +651,9 @@ void usb_host_reset() {
                       | USB_INTE_HOST_RESUME_BITS        // Device wakes host
                       | USB_INTE_ERROR_DATA_SEQ_BITS     // DATA0/DATA1 wrong
                       | USB_INTE_ERROR_RX_TIMEOUT_BITS   // Receive timeout
-                      | (0xffffffff ^ 0x00000004);       // TODO: Debug all on
+                      | (0xffffffff ^ 0x00000004);       // NOTE: Debug all on
 
-    // TODO: Shouldn't we enable most of the interrupts and when we choose
-    //       not to handle them, it would lead to a general panic. For example,
-    //       we don't need a handler for CRC errors. But, if they do happen,
-    //       we probably don't want to continue, since data could be corrupt.
-
-    // Setup hardware endpoints
+    // Setup endpoints
     setup_endpoints();
 
     bindump(" INT", usb_hw->inte);
@@ -824,7 +834,7 @@ void isr_usbctrl() {
 
         usb_hw_clear->sie_status = USB_SIE_STATUS_TRANS_COMPLETE_BITS;
 
-        // NOTE: TRANS_COMPLETE fires when: (see datasheet, p. 401)
+        // NOTE: TRANS_COMPLETE triggers when: (see datasheet, p. 401)
         //
         // 1. A SETUP packet was sent without a following IN or OUT. This
         //    can occur if USB_SIE_CTRL_{RECEIVE,SEND}_DATA_BITS are NOT set
@@ -857,7 +867,7 @@ void isr_usbctrl() {
         clear_endpoint(ep);
     }
 
-    // Receive timeout (too long without an ACK)
+    // Receive timeout (waited too long without seeing an ACK)
     if (ints &  USB_INTS_ERROR_RX_TIMEOUT_BITS) {
         ints ^= USB_INTS_ERROR_RX_TIMEOUT_BITS;
 
