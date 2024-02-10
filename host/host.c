@@ -581,11 +581,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     usb_hw->dev_addr_ctrl    = dar;
     usbh_dpram->epx_buf_ctrl = bcr ^ USB_BUF_CTRL_AVAIL;
     nop();
-    nop();
-
-    nop(); // TODO: I don't *think* these should be needed...
-    nop(); // TODO: I don't *think* these should be needed...
-    nop(); // TODO: I don't *think* these should be needed...
+    nop(); // TODO: If we see timing errors, we might need another nop or two
 
     usbh_dpram->epx_buf_ctrl = bcr;
     usb_hw->sie_ctrl         = scr;
