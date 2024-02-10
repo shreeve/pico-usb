@@ -854,6 +854,8 @@ void isr_usbctrl() {
         ints ^= USB_INTS_ERROR_RX_TIMEOUT_BITS;
 
         usb_hw_clear->sie_status = USB_SIE_STATUS_RX_TIMEOUT_BITS;
+
+        printf("Receive timeout\n");
     }
 
     // Data error (IN packet from device has wrong data PID)
@@ -861,6 +863,7 @@ void isr_usbctrl() {
         ints ^= USB_INTS_ERROR_DATA_SEQ_BITS;
 
         usb_hw_clear->sie_status = USB_SIE_STATUS_DATA_SEQ_ERROR_BITS;
+
         panic("Data sequence error\n");
     }
 
@@ -869,6 +872,8 @@ void isr_usbctrl() {
         ints ^= USB_INTS_HOST_RESUME_BITS;
 
         usb_hw_clear->sie_status = USB_SIE_STATUS_RESUME_BITS;
+
+        printf("Device initiated resume\n");
     }
 
     // Any missed?
