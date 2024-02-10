@@ -508,8 +508,7 @@ void enumerate(bool reset) {
 
 // Start a control transfer
 void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
-    bool zlp = (packet == NULL);
-    uint8_t size = zlp ? 0 : sizeof(usb_setup_packet_t);
+    uint8_t len = packet->wLength;
 
     // TODO: Review assertions and sanity checks
     if (ep->ep_num) panic("Control transfers must use EP0");
@@ -524,16 +523,18 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 
     // Transfer is now active
     ep->active     = true;
-    ep->bytes_left = size;
+    ep->bytes_left = len;
     ep->bytes_done = 0;
 //  ep->user_buf   = 0; // NOTE: This is NULL because it uses the setup packet
 
     // Determine direction
-    bool in = zlp ? false : packet->bmRequestType & USB_DIR_IN;
+    bool in = true; // packet->bRequest == USB_REQUEST_SET_ADDRESS; // packet->bmRequestType & USB_DIR_IN;
     ep->sender = !in;
 
-    // Control transfers start with a setup packet // TODO: is "for (i=0; i<8; i++)"" better???
-    if (size) memcpy((void *) usbh_dpram->setup_packet, packet, size);
+    // TODO: Where is the EP direction really set? Shouldn't it be here for dar to use?
+
+    // Copy the setup packet, if supplied // TODO: is "for (i=0; i<8; i++)"" better???
+    if (packet) memcpy((void *) usbh_dpram->setup_packet, packet, sizeof(usb_setup_packet_t));
 
     // Calculate register values
     uint32_t ssr, scr, dar, ecr, bcr;
@@ -542,17 +543,16 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
      // | (fs  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS); // Preamble (LS on FS hub)
         | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive if IN to host
                :     USB_SIE_CTRL_SEND_DATA_BITS)    // Send if OUT from host
-        | (zlp ? 0 : USB_SIE_CTRL_SEND_SETUP_BITS)   // Send a SETUP packet
+        |            USB_SIE_CTRL_SEND_SETUP_BITS    // Send a SETUP packet
         |            USB_SIE_CTRL_START_TRANS_BITS;  // Start the transfer now
     dar = dev_addr <<USB_ADDR_ENDP_ENDPOINT_LSB // Device address
-        | (in  ?     USB_DIR_IN : 0)            // EP direction
         | ep->ep_num;                           // EP number
     ecr = usbh_dpram->epx_ctrl;
-    bcr = (in  ? 0 : USB_BUF_CTRL_FULL)      // 0=Empty/Recv, 1=Full/Send
-        |            USB_BUF_CTRL_LAST       // Will fire TRANS_COMPLETE
+    bcr = (in  ? 0 : USB_BUF_CTRL_FULL)      // Ready to 0=Recv, 1=Send
+        |            USB_BUF_CTRL_LAST       // Trigger TRANS_COMPLETE
         |            USB_BUF_CTRL_DATA1_PID  // SETUP/IN/OUT are all DATA1
         |            USB_BUF_CTRL_AVAIL      // Buffer is available now
-        | size;
+        | len;
 
     // Debug output
     bindump(" SSR", ssr);
@@ -561,12 +561,8 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     bindump(" ECR", ecr);
     bindump(" BCR", bcr);
 
-    if (size) {
-        printf("<Setup");
-        hexdump(packet, size, 1);
-    } else {
-        printf("<ZLP\n");
-    }
+    printf("<Setup");
+    hexdump(packet, sizeof(usb_setup_packet_t), 1);
 
     // NOTE: When clk_sys (usually 133Mhz) and clk_usb (usually 48MHz) are not
     // the same, the processor and the USB controller run at different speeds.
