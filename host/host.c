@@ -258,7 +258,7 @@ uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
     ep->bytes_left -= len;
 
     // Short packet (below maxsize) means the transfer is done
-    if (len < ep->maxsize) {
+    if (len < ep->maxsize) { // TODO: Initially, this maxsize is still 0, how should we handle that?
         ep->bytes_left = 0;
     }
 
