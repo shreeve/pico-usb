@@ -511,6 +511,7 @@ void enumerate(bool reset) {
 // Start a control transfer
 void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     uint8_t len =  packet ? packet->wLength : 0;
+    bool    zlp = (packet == NULL);
 
     // TODO: Review assertions and sanity checks
     if (ep->ep_num) panic("Control transfers must use EP0");
@@ -530,7 +531,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 //  ep->user_buf   = 0; // NOTE: This is NULL because it uses the setup packet
 
     // Determine direction
-    bool in = true; // packet->bRequest == USB_REQUEST_SET_ADDRESS; // packet->bmRequestType & USB_DIR_IN;
+    bool in = zlp ? (ep->ep_addr & USB_DIR_IN) : true; // packet->bRequest == USB_REQUEST_SET_ADDRESS; // packet->bmRequestType & USB_DIR_IN;
     ep->sender = !in;
 
     // Copy the setup packet, if supplied
@@ -543,7 +544,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
      // | (fs  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS); // Preamble (LS on FS hub)
         | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive if IN to host
                :     USB_SIE_CTRL_SEND_DATA_BITS)    // Send if OUT from host
-        |            USB_SIE_CTRL_SEND_SETUP_BITS    // Send a SETUP packet
+        | (zlp ? 0 : USB_SIE_CTRL_SEND_SETUP_BITS)   // Send a SETUP packet
         |            USB_SIE_CTRL_START_TRANS_BITS;  // Start the transfer now
     dar = dev_addr <<USB_ADDR_ENDP_ENDPOINT_LSB      // Device address
         | ep->ep_num;                                // EP number
@@ -561,8 +562,12 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     bindump(" ECR", ecr);
     bindump(" BCR", bcr);
 
-    printf("<Setup");
-    hexdump(packet, sizeof(usb_setup_packet_t), 1);
+    if (zlp) {
+        printf("%cZLP\n", in ? '>' : '<');
+    } else {
+        printf("<Setup");
+        hexdump(packet, sizeof(usb_setup_packet_t), 1);
+    }
 
     // NOTE: When clk_sys (usually 133Mhz) and clk_usb (usually 48MHz) are not
     // the same, the processor and the USB controller run at different speeds.
@@ -586,6 +591,13 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 
 // Send a zero length status packet (ZLP)
 SDK_ALWAYS_INLINE static inline void send_zlp(endpoint_t *ep) {
+    printf("Send ZLP: ep_addr=0x%02x\n", ep->ep_addr);
+    start_control_transfer(ep, NULL);
+}
+
+// Receive a zero length status packet (ZLP)
+SDK_ALWAYS_INLINE static inline void receive_zlp(endpoint_t *ep) {
+    printf("Receive ZLP: ep_addr=0x%02x\n", ep->ep_addr);
     start_control_transfer(ep, NULL);
 }
 
@@ -682,6 +694,8 @@ void usb_task() {
 
                 if (task.xfer.len) { // TODO: When do we send ZLP?
                     send_zlp(epx); // TODO: What EP should be used? Should this be queued?
+                } else {
+                    printf("No data to send... should this be something?\n");
                 }
                 break;
 
