@@ -894,3 +894,7 @@ int main() {
         usb_task();
     }
 }
+
+// NOTE: This will output most of the USB registers and memory
+// printf("dprams"); hexdump(usbh_dpram, 512, 1);
+// printf("usb_hw"); hexdump(usb_hw    , 256, 1);
