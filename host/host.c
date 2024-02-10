@@ -133,8 +133,8 @@ typedef struct endpoint {
     uint8_t    data_pid  ; // Toggle DATA0/DATA1 each packet
     uint16_t   interval  ; // Polling interval in ms
 
-    uint8_t    ep_num    ; // Endpoint number         // TODO: Needed? Use a define? Inline?
-    bool       sender    ; // Endpoint is for sending // TODO: Needed? Derived...
+    uint8_t    ep_num    ; // Endpoint number         // TODO: Use a macro?
+    bool       sender    ; // Endpoint is for sending // TODO: Use a macro?
     bool       active    ; // Transfer is active
 
     volatile
