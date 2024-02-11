@@ -439,52 +439,51 @@ void enumerate(bool reset) {
 
     switch (step++) {
         case ENUMERATION_START:
-            // Start enumeration
             printf("Start enumeration\n");
+            // Start enumeration
 
-            // Request maximum packet size
-            printf("Get maximum packet size\n");
+            printf("Starting GET_MAXSIZE\n");
             get_device_descriptor();
             break;
 
         case ENUMERATION_GET_MAXSIZE:
+            printf("Finishing GET_MAXSIZE\n");
             // Set the maximum packet size
-            printf("Processing GET_MAXSIZE\n");
             dev0->maxsize = 64; // TODO: Fix this...
             epx->maxsize  = 64; // TODO: Fix this...
 
-            printf("Set device address\n");
+            printf("Starting SET_ADDRESS\n");
             uint8_t dev_addr = 1; // TODO: Get the next address
             set_device_address(dev_addr);
             break;
 
         case ENUMERATION_SET_ADDRESS:
+            printf("Finishing SET_ADDRESS\n");
             // Set device address
-            printf("Processing SET_ADDRESS\n");
             printf("dev0->maxsize is now %u\n", dev0->maxsize);
-            // dev0->dev_addr = 1;
-            // dev0->state = DEVICE_ADDRESSED;
+            dev0->state = DEVICE_ADDRESSED;
 
+            printf("Starting GET_DEVICE\n");
             get_device_descriptor();
             break;
 
         case ENUMERATION_GET_DEVICE:
+            printf("Finishing GET_DEVICE\n");
             // Load the device info
-            printf("Processing GET_DEVICE\n");
 
-            printf("Get configuration descriptor\n");
+            printf("Starting GET_CONFIG\n");
             break;
 
         case ENUMERATION_GET_CONFIG:
+            printf("Finishing GET_CONFIG\n");
             // Load the vid, pid, manufacturer, product, and serial
-            printf("Processing GET_CONFIG\n");
 
-            printf("Set device configuration\n");
+            printf("Starting SET_CONFIG\n");
             break;
 
         case ENUMERATION_SET_CONFIG:
+            printf("Finishing SET_CONFIG\n");
             // Set device configuration
-            printf("Processing SET_CONFIG\n");
             // NOTE: At this point, the device is ready to use
 
             printf("End enumeration\n");
@@ -864,6 +863,8 @@ void isr_usbctrl() {
         usb_hw_clear->sie_status = USB_SIE_STATUS_RX_TIMEOUT_BITS;
 
         printf("Receive timeout\n");
+
+        panic("Panic here for now");
     }
 
     // Data error (IN packet from device has wrong data PID)
