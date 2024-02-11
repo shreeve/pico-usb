@@ -445,17 +445,18 @@ void enumerate(bool reset) {
     if (reset) step = ENUMERATION_START;
 
     switch (step++) {
+
+        // Start enumeration
         case ENUMERATION_START:
             printf("Start enumeration\n");
-            // Start enumeration
 
             printf("Starting GET_MAXSIZE\n");
             get_device_descriptor();
             break;
 
         case ENUMERATION_GET_MAXSIZE:
+        // Set the maximum packet size for EP0
             printf("Finishing GET_MAXSIZE\n");
-            // Set the maximum packet size
             dev0->maxsize = 64; // TODO: Fix this...
             epx->maxsize  = 64; // TODO: Fix this...
 
@@ -465,9 +466,9 @@ void enumerate(bool reset) {
             set_device_address(dev_addr);
             break;
 
+        // Set device address
         case ENUMERATION_SET_ADDRESS:
             printf("Finishing SET_ADDRESS\n");
-            // Set device address
             printf("dev0->maxsize is now %u\n", dev0->maxsize);
             dev0->state = DEVICE_ADDRESSED;
 
@@ -475,23 +476,23 @@ void enumerate(bool reset) {
             get_device_descriptor();
             break;
 
+        // Load the device info
         case ENUMERATION_GET_DEVICE:
             printf("Finishing GET_DEVICE\n");
-            // Load the device info
 
             printf("Starting GET_CONFIG\n");
             break;
 
+        // Load the vid, pid, manufacturer, product, and serial
         case ENUMERATION_GET_CONFIG:
             printf("Finishing GET_CONFIG\n");
-            // Load the vid, pid, manufacturer, product, and serial
 
             printf("Starting SET_CONFIG\n");
             break;
 
+        // Set device configuration
         case ENUMERATION_SET_CONFIG:
             printf("Finishing SET_CONFIG\n");
-            // Set device configuration
             // NOTE: At this point, the device is ready to use
 
             printf("End enumeration\n");
