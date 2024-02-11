@@ -238,7 +238,7 @@ void setup_endpoints() {
 
 // ==[ Buffers ]===============================================================
 
-// Sync an endpoint buffer and return byte counts
+// Sync a buffer and return byte count
 uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
     uint32_t bcr = usbh_dpram->epx_buf_ctrl; if (buf_id) bcr = bcr >> 16;
     uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK;
@@ -265,7 +265,15 @@ uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
     return len;
 }
 
-// Prepare an endpoint buffer and return its buffer control register value
+void sync_buffers(endpoint_t *ep) {
+    if (sync_buffer(ep, 0) == ep->maxsize) { // Full buf_0
+        if (usbh_dpram->epx_ctrl & EP_CTRL_DOUBLE_BUFFERED_BITS) {
+            sync_buffer(ep, 1); // TODO: What if buf_1 is 0 bytes or short?
+        }
+    }
+}
+
+// Prepare a buffer and return its buffer control register value
 uint32_t prepare_buffer(endpoint_t *ep, uint8_t buf_id) {
     uint16_t len = MIN(ep->bytes_left, ep->maxsize);
     uint32_t bcr = ep->data_pid
@@ -296,7 +304,6 @@ void prepare_buffers(endpoint_t *ep) {
     // const bool host = is_host_mode(); // TODO: Use a static variable here, not a function call
     // const bool in = ep->usb->bEndpointAddress & USB_DIR_IN;
     // const bool allow_double = host ? !in : in; // TODO: host/out and device/in? Doesn't seem right
-
     bool allow_double = false; // TODO: This is a hack for now
 
     uint32_t ecr = usbh_dpram->epx_ctrl;
@@ -315,31 +322,13 @@ void prepare_buffers(endpoint_t *ep) {
     usbh_dpram->epx_buf_ctrl = bcr;
 }
 
-// If transfer is still active, push it along... when complete, return false
-bool still_transferring(endpoint_t *ep) {
-
-    // Update endpoint buffer status
-    if (sync_buffer(ep, 0) == ep->maxsize) { // Full buf_0
-        if (usbh_dpram->epx_ctrl & EP_CTRL_DOUBLE_BUFFERED_BITS) {
-            sync_buffer(ep, 1); // TODO: What if buf_1 is 0 bytes or short?
-        }
-    }
-
-    if (!ep->bytes_left) return false; // Transfer is complete
-
-    // // Errata 15: Buffer status may not be set during last 200µs of a frame
-    // if (e15_is_critical_frame_period(ep)) {
-    //     ep->pending = 1;
-    // } else {
-        prepare_buffers(ep); // Calculate and set ECR/BCR to transfer next buffer
-    // }
-
-    return true; // Transfer should continue
-}
-
 void handle_buffer(endpoint_t *ep) {
     if (!ep->active) panic("EP 0x%02x not active\n", ep->ep_addr);
-    still_transferring(ep); // TODO: When not debugging, return if true
+
+    sync_buffers(ep);
+
+    if (ep->bytes_left) prepare_buffers(ep);
+
     if (ep->bytes_done) {
         printf("│Data");
         hexdump(usbh_dpram->epx_data, ep->bytes_done, 1);
