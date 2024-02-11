@@ -149,8 +149,8 @@ SDK_WEAK void epx_cb(uint8_t *buf, uint16_t len) {
     printf("Inside the EPX callback...\n");
 }
 
-// Setup an endpoint
-void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
+// Reset an endpoint
+void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
 
     // Populate the endpoint
     *ep = (endpoint_t) {
@@ -193,9 +193,9 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
     usbh_dpram->epx_ctrl = ecr;
 }
 
-// Setup the USB struct for EPX
+// Reset the USB struct for EPX
 SDK_ALWAYS_INLINE void reset_epx() {
-    setup_endpoint(epx, &((usb_endpoint_descriptor_t) {
+    reset_endpoint(epx, &((usb_endpoint_descriptor_t) {
         .bLength          = sizeof(usb_endpoint_descriptor_t),
         .bDescriptorType  = USB_DT_ENDPOINT,
         .bEndpointAddress = 0,
@@ -212,8 +212,8 @@ SDK_ALWAYS_INLINE void clear_endpoint(endpoint_t *ep) {
     ep->bytes_done = 0;
 }
 
-// Setup endpoints
-void setup_endpoints() {
+// Reset endpoints
+void reset_endpoints() {
 
     // Clear out all endpoints
     memclr(eps, sizeof(eps));
@@ -392,12 +392,19 @@ SDK_ALWAYS_INLINE device_t *get_device(uint8_t dev_addr) {
     return dev_addr < MAX_DEVICES ? &devices[dev_addr] : NULL;
 }
 
-// Release a device
-void free_device(uint8_t dev_addr) {
+// Reset a device
+void reset_device(uint8_t dev_addr) {
     if (dev_addr < MAX_DEVICES) {
         devices[dev_addr].state = DEVICE_DISCONNECTED;
     }
     // TODO: Surely, there must be more work to do here?
+}
+
+// Reset devices
+void reset_devices() {
+
+    // Clear out all devices
+    memclr(devices, sizeof(devices));
 }
 
 // Forward function declaration
@@ -651,8 +658,8 @@ void usb_host_reset() {
                       | USB_INTE_ERROR_RX_TIMEOUT_BITS   // Receive timeout
                       | (0xffffffff ^ 0x00000004);       // NOTE: Debug all on
 
-    // Setup endpoints
-    setup_endpoints();
+    reset_devices();
+    reset_endpoints();
 
     bindump(" INT", usb_hw->inte);
 
