@@ -543,8 +543,8 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
                :     USB_SIE_CTRL_SEND_DATA_BITS)    // Send if OUT from host
         | (zlp ? 0 : USB_SIE_CTRL_SEND_SETUP_BITS)   // Send a SETUP packet
         |            USB_SIE_CTRL_START_TRANS_BITS;  // Start the transfer now
-    dar = dev_addr <<USB_ADDR_ENDP_ENDPOINT_LSB      // Device address
-        | ep->ep_num;                                // EP number
+    dar = dev_addr | ep->ep_num                      // Device address
+                  << USB_ADDR_ENDP_ENDPOINT_LSB;     // EP number
     ecr = usbh_dpram->epx_ctrl;                      // EPX control register
     bcr = (in  ? 0 : USB_BUF_CTRL_FULL)              // Ready to 0=Recv, 1=Send
         |            USB_BUF_CTRL_LAST               // Trigger TRANS_COMPLETE
