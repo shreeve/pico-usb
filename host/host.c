@@ -89,23 +89,23 @@ enum {
 
 typedef struct {
     uint8_t type;
-    uint8_t dev_addr;
 
     union {
         struct {
             uint8_t speed;
-        } conn;
+        };
 
         struct {
+            uint8_t dev_addr;
             uint8_t ep_addr;
             uint8_t result;
             uint16_t len;
-        } xfer;
+        };
 
         struct {
-            void (*call) (void *);
+            void (*fn) (void *);
             void *arg;
-        } fn;
+        };
     };
 } task_t;
 
@@ -678,7 +678,7 @@ void usb_task() {
 
                 // Initialize device 0
                 memclr(dev0, sizeof(device_t));
-                dev0->speed = task.conn.speed;
+                dev0->speed = task.speed;
                 dev0->state = DEVICE_CONNECTED;
 
                 // Show the device connection and speed
@@ -694,12 +694,12 @@ void usb_task() {
                 break;
 
             case TASK_TRANSFER:
-                printf("(%u)", task.xfer.len);
-                hexdump(usbh_dpram->epx_data, task.xfer.len, 1);
+                printf("(%u)", task.len);
+                hexdump(usbh_dpram->epx_data, task.len, 1);
 
                 printf("Transfer complete\n");
 
-                if (task.xfer.len) { // TODO: When do we send ZLP?
+                if (task.len) { // TODO: When do we send ZLP?
                     send_zlp(epx); // TODO: What EP should be used? Should this be queued?
                 } else {
                     printf("No data to send... should this be something?\n");
@@ -708,7 +708,7 @@ void usb_task() {
 
             case TASK_FUNCTION:
                 printf("Function call\n");
-                task.fn.call(task.fn.arg);
+                task.fn(task.arg);
                 break;
 
             default:
@@ -765,7 +765,7 @@ void isr_usbctrl() {
             queue_add_blocking(queue, &((task_t) {
                 .type       = TASK_CONNECT,
                 .dev_addr   = 0,
-                .conn.speed = speed,
+                .speed = speed,
             }));
         } else {
             reset_ep0(); // TODO: There's a lot more to do here
@@ -847,11 +847,11 @@ void isr_usbctrl() {
 
         if (ep->bytes_done) {
             queue_add_blocking(queue, &((task_t) {
-                .type         = TASK_TRANSFER,
-                .dev_addr     = ep->dev_addr,
-                .xfer.ep_addr = ep->ep_addr,
-                .xfer.result  = TRANSFER_SUCCESS,
-                .xfer.len     = ep->bytes_done,
+                .type     = TASK_TRANSFER,
+                .dev_addr = ep->dev_addr,
+                .ep_addr  = ep->ep_addr,
+                .result   = TRANSFER_SUCCESS,
+                .len      = ep->bytes_done,
             }));
         } else if (dev0->state < DEVICE_ACTIVE) {
             queue_add_blocking(queue, &((task_t) {
