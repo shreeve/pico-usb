@@ -425,9 +425,7 @@ void get_device_descriptor() {
 }
 
 // Set device address
-void set_device_address() {
-    uint8_t dev_addr = 1;
-
+void set_device_address(uint8_t dev_addr) {
     printf("Set device address to %u\n", dev_addr);
 
     start_control_transfer(epx, &((usb_setup_packet_t) {
@@ -462,7 +460,8 @@ void enumerate(bool reset) {
             epx->maxsize  = 64; // TODO: Fix this...
 
             printf("Starting SET_ADDRESS\n");
-            uint8_t dev_addr = 1; // TODO: Get the next address
+            uint8_t dev_addr = next_device();
+            if (!dev_addr) panic("No free devices\n"); // TODO: Handle this properly
             set_device_address(dev_addr);
             break;
 
