@@ -145,7 +145,6 @@ typedef struct endpoint {
     endpoint_c cb        ; // Callback function
 } endpoint_t;
 
-// TODO: For right now, only define EPX. Later, we'll make this dynamic.
 static endpoint_t eps[MAX_ENDPOINTS], *epx = eps;
 
 SDK_WEAK void epx_cb(uint8_t *buf, uint16_t len) {
