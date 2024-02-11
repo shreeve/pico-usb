@@ -203,8 +203,8 @@ SDK_ALWAYS_INLINE void reset_ep0() {
         .bDescriptorType  = USB_DT_ENDPOINT,
         .bEndpointAddress = 0,
         .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
-        .wMaxPacketSize   = 64, // TODO: Should come from dev->maxsize and type
-        .bInterval        = 0
+        .wMaxPacketSize   = 0,
+        .bInterval        = 0,
     }));
 }
 
@@ -369,7 +369,7 @@ enum {
 typedef struct device {
     uint8_t  speed       ; // Device speed (0:disconnected, 1:full, 2:high)
     uint8_t  state       ; // Current device state
-    uint8_t  maxsize     ; // Maximum packet size // TODO: Is this just EP0?
+    uint8_t  ep0size     ; // Maximum packet size for EP0
     uint16_t vid         ; // Vendor Id  (0x0403: FTDI)
     uint16_t pid         ; // Product Id (0xcd18: Abaxis Piccolo Xpress)
     uint8_t  manufacturer; // String index of manufacturer
@@ -407,9 +407,9 @@ void free_device(uint8_t dev_addr) {
 void start_control_transfer(endpoint_t *, usb_setup_packet_t *);
 
 // Get device descriptor
-void get_device_descriptor() {
-    device_t *dev = &devices[epx->dev_addr]; // TODO: Make this a function call, with bounds checking, etc.
-    uint16_t len = dev->maxsize;
+void get_device_descriptor(uint8_t dev_addr) {
+    device_t *dev = get_device(dev_addr); // TODO: Handle missing device
+    uint16_t len = dev->ep0size ? sizeof(usb_device_descriptor_t) : 8;
 
     printf("Get device descriptor\n");
 
@@ -420,7 +420,7 @@ void get_device_descriptor() {
         .bRequest      = USB_REQUEST_GET_DESCRIPTOR,
         .wValue        = MAKE_U16(USB_DT_DEVICE, 0),
         .wIndex        = 0,
-        .wLength       = len ? len : 8, // If maxsize is unknown, ask for it // TODO: Why does this ask for maxsize? Why not the size of the struct returned in the first short GDD/8?
+        .wLength       = len,
     }));
 }
 
@@ -454,17 +454,19 @@ void enumerate(bool reset) {
             get_device_descriptor();
             break;
 
-        case ENUMERATION_GET_MAXSIZE:
         // Set the maximum packet size for EP0
+        case ENUMERATION_GET_MAXSIZE: {
             printf("Finishing GET_MAXSIZE\n");
-            dev0->maxsize = 64; // TODO: Fix this...
-            epx->maxsize  = 64; // TODO: Fix this...
+            uint8_t ep0size = ((usb_device_descriptor_t *) epx->data_buf)
+                ->bMaxPacketSize0;
 
             printf("Starting SET_ADDRESS\n");
             uint8_t dev_addr = next_device();
             if (!dev_addr) panic("No free devices\n"); // TODO: Handle this properly
-            set_device_address(dev_addr);
-            break;
+            device_t *dev = get_device(dev_addr); // TODO: Again, handle missing device (needed?)
+            dev->ep0size = ep0size;
+            set_device_address(dev_addr); // TODO: Properly handle cleanup if this fails
+        }   break;
 
         // Set device address
         case ENUMERATION_SET_ADDRESS:
