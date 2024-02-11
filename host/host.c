@@ -39,7 +39,7 @@
 
 #define MAX_HUBS      0
 #define MAX_DEVICES   2
-#define MAX_ENDPOINTS 1
+#define MAX_ENDPOINTS 4
 
 // ==[ Hardware: rp2040 ]======================================================
 
@@ -226,15 +226,15 @@ void setup_endpoints() {
     // TODO: Add the rest here
 }
 
-// endpoint_t *find_endpoint(uint8_t dev_addr, uint8_t ep_addr) {
-//     if (!(ep_addr & 0x7f)) return epx; // EP0 is special
-//     for (uint8_t i = 0; i < USB_MAX_ENDPOINTS; i++) {
-//         if (eps[i].maxsize && eps[i].dev_addr == dev_addr && eps[i].ep_addr == ep_addr) {
-//             return &eps[i];
-//         }
-//     }
-//     return NULL;
-// }
+endpoint_t *find_endpoint(uint8_t dev_addr, uint8_t ep_addr) {
+    if (!(ep_addr & 0x7f)) return epx; // EP0 is special
+    for (uint8_t i = 1; i < MAX_ENDPOINTS; i++) {
+        if (eps[i].dev_addr == dev_addr && eps[i].ep_addr == ep_addr) {
+            return &eps[i];
+        }
+    }
+    return NULL;
+}
 
 // ==[ Buffers ]===============================================================
 
