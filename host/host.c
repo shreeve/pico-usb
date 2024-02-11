@@ -32,7 +32,7 @@
 #define SWAP_U16(x)    (((x) >> 8) | ((x) << 8))
 
 #define SDK_ALIGNED(bytes) __attribute__ ((aligned(bytes)))
-#define SDK_ALWAYS_INLINE  __attribute__ ((always_inline))
+#define SDK_ALWAYS_INLINE  __attribute__ ((always_inline)) static inline
 #define SDK_NOINLINE       __attribute__ ((noinline))
 #define SDK_PACKED         __attribute__ ((packed))
 #define SDK_WEAK           __attribute__ ((weak))
@@ -48,16 +48,16 @@
 
 #define nop() __asm volatile("nop" ::: "memory")
 
-SDK_ALWAYS_INLINE static inline bool is_host_mode() {
+SDK_ALWAYS_INLINE bool is_host_mode() {
     return (usb_hw->main_ctrl & USB_MAIN_CTRL_HOST_NDEVICE_BITS);
 }
 
-SDK_ALWAYS_INLINE static inline uint8_t get_speed() {
+SDK_ALWAYS_INLINE uint8_t get_speed() {
     return (usb_hw->sie_status & USB_SIE_STATUS_SPEED_BITS) \
                               >> USB_SIE_STATUS_SPEED_LSB;
 }
 
-SDK_ALWAYS_INLINE static inline uint8_t line_state() {
+SDK_ALWAYS_INLINE uint8_t line_state() {
     return (usb_hw->sie_status & USB_SIE_STATUS_LINE_STATE_BITS) \
                               >> USB_SIE_STATUS_LINE_STATE_LSB;
 }
@@ -197,7 +197,7 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
 }
 
 // Setup the USB struct for EP0_OUT/Control
-SDK_ALWAYS_INLINE static inline void reset_ep0() {
+SDK_ALWAYS_INLINE void reset_ep0() {
     setup_endpoint(epx, &((usb_endpoint_descriptor_t) {
         .bLength          = sizeof(usb_endpoint_descriptor_t),
         .bDescriptorType  = USB_DT_ENDPOINT,
@@ -208,7 +208,7 @@ SDK_ALWAYS_INLINE static inline void reset_ep0() {
     }));
 }
 
-SDK_ALWAYS_INLINE static inline void clear_endpoint(endpoint_t *ep) {
+SDK_ALWAYS_INLINE void clear_endpoint(endpoint_t *ep) {
     ep->active     = false;
     ep->user_buf   = NULL; // TODO: Add something like a ring buffer here?
     ep->bytes_left = 0;
@@ -603,13 +603,13 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 // TODO: Should we merge these two into one "transfer_zlp" and read ep_addr for the direction?
 
 // Send a zero length status packet (ZLP)
-SDK_ALWAYS_INLINE static inline void send_zlp(endpoint_t *ep) {
+SDK_ALWAYS_INLINE void send_zlp(endpoint_t *ep) {
     printf("Send ZLP: ep_addr=0x%02x\n", ep->ep_addr);
     start_control_transfer(ep, NULL);
 }
 
 // Receive a zero length status packet (ZLP)
-SDK_ALWAYS_INLINE static inline void receive_zlp(endpoint_t *ep) {
+SDK_ALWAYS_INLINE void receive_zlp(endpoint_t *ep) {
     printf("Receive ZLP: ep_addr=0x%02x\n", ep->ep_addr);
     start_control_transfer(ep, NULL);
 }
