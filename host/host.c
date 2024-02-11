@@ -348,6 +348,7 @@ enum {
 
 enum {
     DEVICE_DISCONNECTED,
+    DEVICE_ALLOCATED,
     DEVICE_CONNECTED,
     DEVICE_ADDRESSED,
     DEVICE_CONFIGURED,
@@ -378,8 +379,28 @@ typedef struct device {
 
 static device_t devices[MAX_DEVICES], *dev0 = devices;
 
-device_t *get_device(uint8_t dev_addr) { // TODO: Make this inline?
-    return dev_addr ? &devices[dev_addr] : dev0; // TODO: Add bounds checking
+// Find the next free device
+uint8_t next_device() {
+    for (uint8_t i = 1; i < MAX_DEVICES; i++) {
+        if (devices[i].state == DEVICE_DISCONNECTED) {
+            devices[i].state = DEVICE_ALLOCATED;
+            return i;
+        }
+    }
+    return 0;
+}
+
+// Release a device
+void free_device(uint8_t dev_addr) {
+    if (dev_addr < MAX_DEVICES) {
+        devices[dev_addr].state = DEVICE_DISCONNECTED;
+    }
+    // TODO: Surely, there must be more work to do here?
+}
+
+// Get a device by its address
+SDK_ALWAYS_INLINE device_t *get_device(uint8_t dev_addr) {
+    return dev_addr < MAX_DEVICES ? &devices[dev_addr] : NULL;
 }
 
 // // Get new device address
