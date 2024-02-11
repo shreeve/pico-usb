@@ -441,6 +441,7 @@ void set_device_address(uint8_t dev_addr) {
 
 void enumerate(bool reset) {
     static uint8_t step;
+    static uint8_t dev_addr;
 
     if (reset) step = ENUMERATION_START;
 
@@ -451,7 +452,7 @@ void enumerate(bool reset) {
             printf("Start enumeration\n");
 
             printf("Starting GET_MAXSIZE\n");
-            get_device_descriptor();
+            get_device_descriptor(0);
             break;
 
         // Set the maximum packet size for EP0
@@ -461,7 +462,7 @@ void enumerate(bool reset) {
                 ->bMaxPacketSize0;
 
             printf("Starting SET_ADDRESS\n");
-            uint8_t dev_addr = next_device();
+            dev_addr = next_device();
             if (!dev_addr) panic("No free devices\n"); // TODO: Handle this properly
             device_t *dev = get_device(dev_addr); // TODO: Again, handle missing device (needed?)
             dev->ep0size = ep0size;
@@ -471,11 +472,11 @@ void enumerate(bool reset) {
         // Set device address
         case ENUMERATION_SET_ADDRESS:
             printf("Finishing SET_ADDRESS\n");
-            printf("dev0->maxsize is now %u\n", dev0->maxsize);
+            dev_addr = 1; // TODO: We need to "pass" this from the prior stage... this isn't right
             dev0->state = DEVICE_ADDRESSED;
 
             printf("Starting GET_DEVICE\n");
-            get_device_descriptor();
+            get_device_descriptor(dev_addr);
             break;
 
         // Load the device info
