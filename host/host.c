@@ -98,8 +98,8 @@ typedef struct {
         struct {
             uint8_t  dev_addr;
             uint8_t  ep_addr;
-            uint8_t  result;
             uint16_t len;
+            uint8_t  result;
         };
 
         struct {
@@ -767,8 +767,7 @@ void isr_usbctrl() {
         // Handle connect and disconnect
         if (speed) {
             queue_add_blocking(queue, &((task_t) {
-                .type       = TASK_CONNECT,
-                .dev_addr   = 0,
+                .type  = TASK_CONNECT,
                 .speed = speed,
             }));
         } else {
@@ -784,12 +783,11 @@ void isr_usbctrl() {
 
         // Queue the stalled transfer
         queue_add_blocking(queue, &((task_t) {
-            .type = TASK_TRANSFER,
-            .xfer = {
-                .ep_addr = 37, // TODO: Will need this and maybe some more info?
-                .result  = TRANSFER_STALLED,
-                .len     = 0, // TODO: Do we need this?
-            },
+            .type     = TASK_TRANSFER,
+            .dev_addr = 42, // TODO: Need to flesh this out
+            .ep_addr  = 37, // TODO: Need to flesh this out
+            .len      = 0,  // TODO: Need to flesh this out
+            .result   = TRANSFER_STALLED,
         }));
     }
 
@@ -854,8 +852,8 @@ void isr_usbctrl() {
                 .type     = TASK_TRANSFER,
                 .dev_addr = ep->dev_addr,
                 .ep_addr  = ep->ep_addr,
-                .result   = TRANSFER_SUCCESS,
                 .len      = ep->bytes_done,
+                .result   = TRANSFER_SUCCESS,
             }));
         } else if (dev0->state < DEVICE_ACTIVE) {
             queue_add_blocking(queue, &((task_t) {
