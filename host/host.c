@@ -96,9 +96,9 @@ typedef struct {
         };
 
         struct {
-            uint8_t dev_addr;
-            uint8_t ep_addr;
-            uint8_t result;
+            uint8_t  dev_addr;
+            uint8_t  ep_addr;
+            uint8_t  result;
             uint16_t len;
         };
 
