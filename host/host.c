@@ -395,7 +395,7 @@ SDK_ALWAYS_INLINE device_t *get_device(uint8_t dev_addr) {
 // Reset a device
 void reset_device(uint8_t dev_addr) {
     if (dev_addr < MAX_DEVICES) {
-        devices[dev_addr].state = DEVICE_DISCONNECTED;
+        memclr(&devices[dev_addr], sizeof(device_t));
     }
     // TODO: Surely, there must be more work to do here?
 }
