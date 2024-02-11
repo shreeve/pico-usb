@@ -390,17 +390,17 @@ uint8_t next_device() {
     return 0;
 }
 
+// Get a device by its address
+SDK_ALWAYS_INLINE device_t *get_device(uint8_t dev_addr) {
+    return dev_addr < MAX_DEVICES ? &devices[dev_addr] : NULL;
+}
+
 // Release a device
 void free_device(uint8_t dev_addr) {
     if (dev_addr < MAX_DEVICES) {
         devices[dev_addr].state = DEVICE_DISCONNECTED;
     }
     // TODO: Surely, there must be more work to do here?
-}
-
-// Get a device by its address
-SDK_ALWAYS_INLINE device_t *get_device(uint8_t dev_addr) {
-    return dev_addr < MAX_DEVICES ? &devices[dev_addr] : NULL;
 }
 
 // Forward function declaration
