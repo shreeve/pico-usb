@@ -75,7 +75,6 @@ enum {
 enum {
     TASK_CONNECT,
     TASK_TRANSFER,
-    TASK_ENUMERATE,
     TASK_FUNCTION,
 };
 
@@ -115,7 +114,6 @@ const char *task_name(uint8_t type) {
     switch (type) {
         case TASK_CONNECT:   return "TASK_CONNECT";
         case TASK_TRANSFER:  return "TASK_TRANSFER";
-        case TASK_ENUMERATE: return "TASK_ENUMERATE";
         case TASK_FUNCTION:  return "TASK_FUNCTION";
         default:             return "UNKNOWN";
     }
@@ -692,15 +690,15 @@ void usb_task() {
                 enumerate(true);
                 break;
 
-            case TASK_ENUMERATE:
-                enumerate(false);
-                break;
-
             case TASK_TRANSFER:
                 printf("(%u)", task.len);
                 hexdump(usbh_dpram->epx_data, task.len, 1);
-
                 printf("Transfer complete\n");
+
+                // if (ep->bytes_done) {
+                // } else if (dev0->state < DEVICE_ACTIVE) {
+                //   enumerate();
+                // }
 
                 if (task.len) { // TODO: When do we send ZLP?
                     send_zlp(epx); // TODO: What EP should be used? Should this be queued?
@@ -842,25 +840,26 @@ void isr_usbctrl() {
         // 3. An IN packet is received with a zero length packet (ZLP)
         // 4. An OUT packet is sent and the LAST_BUFF bit was set in the BCR
 
-        endpoint_t *ep = epx; // TODO: Look this up or pluck from task struct
+        // Use the DAR to determine dev_addr and ep_addr
+        volatile uint32_t dar = usb_hw->dev_addr_ctrl;
+        uint8_t dev_addr =  dar & USB_ADDR_ENDP_ADDRESS_BITS;
+        uint8_t ep_addr  = (dar & USB_ADDR_ENDP_ENDPOINT_BITS) >>
+                                  USB_ADDR_ENDP_ENDPOINT_LSB;
 
+        // Lookup the endpoint
+        endpoint_t *ep = find_endpoint(dev_addr, ep_addr); // TODO: Handle missing endpoints
+
+        // Panic if the endpoint is not active
         if (!ep->active) panic("EP should still be active in TRANS_COMPLETE");
 
-        if (ep->bytes_done) {
-            queue_add_blocking(queue, &((task_t) {
-                .type     = TASK_TRANSFER,
-                .dev_addr = ep->dev_addr,
-                .ep_addr  = ep->ep_addr,
-                .len      = ep->bytes_done,
-                .result   = TRANSFER_SUCCESS,
-            }));
-        } else if (dev0->state < DEVICE_ACTIVE) {
-            queue_add_blocking(queue, &((task_t) {
-                .type = TASK_ENUMERATE,
-            }));
-        } else {
-            printf("ZLP inside of TRANS_COMPLETE, but not enumerating right now\n");
-        }
+        // Queue a task for the transfer
+        queue_add_blocking(queue, &((task_t) {
+            .type     = TASK_TRANSFER,
+            .dev_addr = dev_addr,
+            .ep_addr  = ep_addr,
+            .len      = ep->bytes_done,
+            .result   = TRANSFER_SUCCESS,
+        }));
 
         clear_endpoint(ep);
     }
