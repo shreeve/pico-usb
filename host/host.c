@@ -496,6 +496,7 @@ void enumerate(bool reset) {
         case ENUMERATION_SET_CONFIG:
             // Set device configuration
             printf("Processing SET_CONFIG\n");
+            // NOTE: At this point, the device is ready to use
 
             printf("End enumeration\n");
             dev0->state = DEVICE_CONFIGURED;
@@ -510,8 +511,8 @@ void enumerate(bool reset) {
 
 // Start a control transfer
 void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
-    uint8_t len =  packet ? packet->wLength : 0;
-    bool    zlp = (packet == NULL);
+    uint8_t len =  packet ? packet->wLength : 0; // Length of data phase
+    bool    zlp = (packet == NULL); // TODO: If !packet or !len, always zlp?
 
     // TODO: Review assertions and sanity checks
     if (ep->ep_num) panic("Control transfers must use EP0");
@@ -592,7 +593,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     // set again after 3 cycles. The setting of DAR and two NOP's are inserted
     // to make everything line up correctly.
 
-    // Set registers optimally => SCR, DAR, BCR, NOP, NOP, BCR, SCR
+    // Set registers optimally => scr, dar, bcr, nop, nop, bcr, scr
     usb_hw->sie_ctrl         = scr ^ USB_SIE_CTRL_START_TRANS_BITS;
     usb_hw->dev_addr_ctrl    = dar;
     usbh_dpram->epx_buf_ctrl = bcr ^ USB_BUF_CTRL_AVAIL;
