@@ -691,13 +691,14 @@ void usb_task() {
                 break;
 
             case TASK_TRANSFER:
-                printf("(%u)", task.len);
-                hexdump(usbh_dpram->epx_data, task.len, 1);
-                printf("Transfer complete\n");
-
                 if (task.len) {
+                    printf("(%u)", task.len);
+                    hexdump(usbh_dpram->epx_data, task.len, 1);
+                    printf("Transfer complete\n");
                     send_zlp(epx); // TODO: What EP should be used? Should this be queued?
                 } else if (dev0->state < DEVICE_ACTIVE) {
+                    printf("?ZLP\n");
+                    printf("Transfer complete\n");
                     enumerate(false);
                 } else {
                     printf("No data to send... should this be something?\n");
