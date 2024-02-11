@@ -527,7 +527,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     ep->bytes_done = 0;
 //  ep->user_buf   = 0; // NOTE: This is NULL because it uses the setup packet
 
-    // Determine direction
+    // Determine direction // TODO: This part is VERY tricky, since we are using the rp2040's controller to handle things and it can invert the normal meaning of direction, redo soon
     bool in = zlp ? (ep->ep_addr & USB_DIR_IN) : true; // packet->bRequest == USB_REQUEST_SET_ADDRESS; // packet->bmRequestType & USB_DIR_IN;
     ep->sender = !in;
 
