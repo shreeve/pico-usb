@@ -684,8 +684,8 @@ void usb_task() {
                 //     break;
                 // }
 
-                // Initialize device 0
-                memclr(dev0, sizeof(device_t));
+                // Initialize dev0
+                reset_device(0); // TODO: Is this necessary? Probably...
                 dev0->speed = task.speed;
                 dev0->state = DEVICE_CONNECTED;
 
