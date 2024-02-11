@@ -175,7 +175,7 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
     uint32_t type   = ep->type;
     uint32_t ms     = ep->interval;
     uint32_t lsb    = EP_CTRL_HOST_INTERRUPT_INTERVAL_LSB;
-    uint32_t offset = offsetof(usb_host_dpram_t, epx_data); // TODO: Make this generic, not epx-specific
+    uint32_t offset = offsetof(usb_host_dpram_t, epx_data); // TODO: Make this generic, not EPX specific
 
     // Get the ECR
     uint32_t ecr = EP_CTRL_ENABLE_BITS             // Enable endpoint
@@ -193,8 +193,8 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
     usbh_dpram->epx_ctrl = ecr;
 }
 
-// Setup the USB struct for EP0_OUT/Control
-SDK_ALWAYS_INLINE void reset_ep0() {
+// Setup the USB struct for EPX
+SDK_ALWAYS_INLINE void reset_epx() {
     setup_endpoint(epx, &((usb_endpoint_descriptor_t) {
         .bLength          = sizeof(usb_endpoint_descriptor_t),
         .bDescriptorType  = USB_DT_ENDPOINT,
@@ -219,7 +219,7 @@ void setup_endpoints() {
     memclr(eps, sizeof(eps));
 
     // Allocate the endpoints
-    reset_ep0();
+    reset_epx();
     // TODO: Add the rest here
 }
 
@@ -768,7 +768,7 @@ void isr_usbctrl() {
                 .speed = speed,
             }));
         } else {
-            reset_ep0(); // TODO: There's a lot more to do here
+            reset_epx(); // TODO: There's a lot more to do here
         }
     }
 
