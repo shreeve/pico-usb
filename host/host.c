@@ -130,9 +130,6 @@ typedef struct endpoint {
     uint8_t    type      ; // Transfer type
     uint8_t    data_pid  ; // Toggle DATA0/DATA1 each packet
     uint16_t   interval  ; // Polling interval in ms
-
-    uint8_t    ep_num    ; // Endpoint number         // TODO: Use a macro? It's just ep_addr & 0x0f
-    bool       sender    ; // Endpoint is for sending // TODO: Use a macro? // TODO: Can we nuke this?
     bool       active    ; // Transfer is active
 
     volatile
@@ -172,8 +169,6 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
         .type       = usb->bmAttributes,            // Control, bulk, int, iso
         .interval   = usb->bInterval,               // Polling interval in ms
         .data_pid   = 1,                            // Toggle DATA0/DATA1
-        .ep_num     = usb->bEndpointAddress & 0x0f, // Endpoint number
-        .sender     = false,                        // Endpoint is for sending
         .active     = false,                        // Transfer is active
         .data_buf   = usbh_dpram->epx_data,         // Data buffer
         .user_buf   = NULL,                         // User buffer
