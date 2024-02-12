@@ -622,8 +622,7 @@ void enumerate(bool reset) {
 //   memset(dev->ep2drv , TUSB_INDEX_INVALID_8, sizeof(dev->ep2drv )); // invalid mapping
 // }
 
-// Reset USB host
-void usb_host_reset() {
+void reset_usb_host() {
     printf("USB host reset\n\n");
 
     // Reset controller
@@ -902,7 +901,7 @@ void isr_usbctrl() {
 int main() {
     stdio_init_all();
     printf("\033[2J\033[H\n==[ USB host example]==\n\n");
-    usb_host_reset();
+    reset_usb_host();
 
     queue_init(queue, sizeof(task_t), 64);
 
