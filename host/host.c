@@ -496,6 +496,31 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     usb_hw->sie_ctrl         = scr;
 }
 
+// Transfer a ZLP, but makes several critical assumptions so be careful!
+void transfer_zlp(endpoint_t *ep) {
+    uint32_t scr, bcr;
+    bool in = !ep_in(ep); // Reverse the direction
+    scr =            USB_SIE_CTRL_BASE               // SIE_CTRL defaults
+     // | (fs  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS); // Preamble (LS on FS hub)
+        | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive if IN to host
+               :     USB_SIE_CTRL_SEND_DATA_BITS)    // Send if OUT from host
+        |            USB_SIE_CTRL_START_TRANS_BITS;  // Start the transfer now
+    bcr = (in  ? 0 : USB_BUF_CTRL_FULL)              // Ready to 0=Recv, 1=Send
+        |            USB_BUF_CTRL_DATA1_PID          // SETUP/IN/OUT are DATA1
+        |            USB_BUF_CTRL_AVAIL;             // Buffer is available now
+
+    printf("%cZLP\n", in ? '>' : '<');
+
+    // Set registers optimally => scr, nop, bcr, nop, nop, bcr, scr
+    usb_hw->sie_ctrl         = scr ^ USB_SIE_CTRL_START_TRANS_BITS;
+    nop();
+    usbh_dpram->epx_buf_ctrl = bcr ^ USB_BUF_CTRL_AVAIL;
+    nop();
+    nop();
+    usbh_dpram->epx_buf_ctrl = bcr;
+    usb_hw->sie_ctrl         = scr;
+}
+
 // ==[ Enumeration ]===========================================================
 
 enum {
