@@ -397,6 +397,12 @@ void reset_devices() {
     memclr(devices, sizeof(devices));
 }
 
+// static void clear_device(usbh_device_t* dev) {
+//   tu_memclr(dev, sizeof(usbh_device_t));
+//   memset(dev->itf2drv, TUSB_INDEX_INVALID_8, sizeof(dev->itf2drv)); // invalid mapping
+//   memset(dev->ep2drv , TUSB_INDEX_INVALID_8, sizeof(dev->ep2drv )); // invalid mapping
+// }
+
 // ==[ Transfers ]=============================================================
 
 enum {
@@ -622,12 +628,6 @@ void enumerate(bool reset) {
 }
 
 // ==[ Resets ]================================================================
-
-// static void clear_device(usbh_device_t* dev) {
-//   tu_memclr(dev, sizeof(usbh_device_t));
-//   memset(dev->itf2drv, TUSB_INDEX_INVALID_8, sizeof(dev->itf2drv)); // invalid mapping
-//   memset(dev->ep2drv , TUSB_INDEX_INVALID_8, sizeof(dev->ep2drv )); // invalid mapping
-// }
 
 void reset_usb_host() {
     printf("USB host reset\n\n");
