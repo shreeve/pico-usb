@@ -408,8 +408,7 @@ enum {
 // TODO: Abort a transfer if not yet started and return true on success
 
 void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
-    uint8_t len = packet ? packet->wLength : 0; // Length of data phase
-    bool    zlp = packet == NULL;               // Zero length packet
+    uint8_t len = packet->wLength; // Length of the data phase
 
     // TODO: Add sanity checks
     // assert(ep->configured);
@@ -426,14 +425,13 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 
     // Transfer is now active
     ep->active     = true;
-    ep->ep_addr    = packet ? packet->bmRequestType & USB_DIR_IN
-                            :          (ep->ep_addr ^ USB_DIR_IN);
+    ep->ep_addr    = packet->bmRequestType & USB_DIR_IN;
     ep->bytes_left = len;
     ep->bytes_done = 0;
     ep->user_buf   = 0; // TODO: Add something asap, NULL is... sub-optimal. Maybe use something like a ring buffer here?
 
-    // Copy the setup packet, if supplied
-    if (packet) memcpy((void *) usbh_dpram->setup_packet, packet, sizeof(usb_setup_packet_t));
+    // Copy the setup packet
+    memcpy((void *) usbh_dpram->setup_packet, packet, sizeof(usb_setup_packet_t));
 
     // Calculate register values
     uint32_t ssr, scr, dar, ecr, bcr;
@@ -443,7 +441,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
      // | (fs  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS); // Preamble (LS on FS hub)
         | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive if IN to host
                :     USB_SIE_CTRL_SEND_DATA_BITS)    // Send if OUT from host
-        | (zlp ? 0 : USB_SIE_CTRL_SEND_SETUP_BITS)   // Send a SETUP packet
+        |            USB_SIE_CTRL_SEND_SETUP_BITS    // Send a SETUP packet
         |            USB_SIE_CTRL_START_TRANS_BITS;  // Start the transfer now
     dar = dev_addr | ep_num(ep)                      // Device address
                   << USB_ADDR_ENDP_ENDPOINT_LSB;     // EP number
@@ -462,12 +460,8 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     bindump(" ECR", ecr);
     bindump(" BCR", bcr);
 
-    if (zlp) {
-        printf("%cZLP\n", in ? '>' : '<');
-    } else {
-        printf("<Setup");
-        hexdump(packet, sizeof(usb_setup_packet_t), 1);
-    }
+    printf("<Setup");
+    hexdump(packet, sizeof(usb_setup_packet_t), 1);
 
     // NOTE: When clk_sys (usually 133Mhz) and clk_usb (usually 48MHz) are not
     // the same, the processor and the USB controller run at different speeds.
