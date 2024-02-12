@@ -241,7 +241,7 @@ uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
     // We should only read from a full buffer or write to an empty buffer
     assert(!(in ^ full));
 
-    // For inbound data, copy the data buffer to the user buffer
+    // Copy the inbound data buffer to the user buffer
     if (in) {
         memcpy(ep->user_buf, (void *) (ep->data_buf + buf_id * 64), len);
         ep->user_buf += len;
@@ -279,7 +279,7 @@ uint32_t prepare_buffer(endpoint_t *ep, uint8_t buf_id) {
     ep->bytes_left -= len;
     ep->data_pid   ^= 1u;
 
-    // For outbound data, copy the user buffer to the data buffer
+    // Copy the outbound user buffer to the data buffer
     if (!ep_in(ep)) {
         memcpy((void *) (ep->data_buf + buf_id * 64), ep->user_buf, len);
         ep->user_buf += len;
