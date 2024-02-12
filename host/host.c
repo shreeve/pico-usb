@@ -544,20 +544,17 @@ enum {
     ENUMERATION_END,
 };
 
-void get_device_descriptor(uint8_t dev_addr) {
-    device_t *dev = get_device(dev_addr); // TODO: Handle missing device
-    uint16_t len = dev->ep0size ? sizeof(usb_device_descriptor_t) : 8;
-
+void get_device_descriptor(endpoint_t *ep) {
     printf("Get device descriptor\n");
 
-    start_control_transfer(epx, &((usb_setup_packet_t) {
+    start_control_transfer(ep, &((usb_setup_packet_t) {
         .bmRequestType = USB_DIR_IN
                        | USB_REQ_TYPE_STANDARD
                        | USB_REQ_TYPE_RECIPIENT_DEVICE,
         .bRequest      = USB_REQUEST_GET_DESCRIPTOR,
         .wValue        = MAKE_U16(USB_DT_DEVICE, 0),
         .wIndex        = 0,
-        .wLength       = len,
+        .wLength       = get_device(ep->dev_addr)->ep0size || 8,
     }));
 }
 
@@ -587,7 +584,7 @@ void enumerate(bool reset) {
             printf("Start enumeration\n");
 
             printf("Starting GET_MAXSIZE\n");
-            get_device_descriptor(0);
+            get_device_descriptor(epx);
             break;
 
         case ENUMERATION_GET_MAXSIZE: {
