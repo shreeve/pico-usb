@@ -696,8 +696,8 @@ void usb_task() {
                     printf("(%u)", task.len);
                     hexdump(usbh_dpram->epx_data, task.len, 1);
                     printf("Transfer complete\n");
-                    start_control_transfer(epx, NULL); // TODO: Improve on this...
                 } else if (dev0->state < DEVICE_ACTIVE) {
+                    transfer_zlp(epx);
                     enumerate(false);
                 } else {
                     printf("No data to send... should this be something?\n");
