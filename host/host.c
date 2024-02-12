@@ -162,7 +162,7 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
         .interval   = usb->bInterval,        // Polling interval in ms
         .active     = false,                 // Transfer is active
         .data_buf   = usbh_dpram->epx_data,  // Data buffer
-        .user_buf   = NULL,                  // User buffer
+        .user_buf   = NULL,                  // User buffer // TODO: What should this default to?
         .bytes_left = 0,                     // Bytes remaining
         .bytes_done = 0,                     // Bytes transferred
         .cb         = epx_cb,                // Callback function
@@ -191,7 +191,7 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
 }
 
 // Reset the USB struct for EPX
-SDK_INLINE void reset_epx() {
+SDK_INLINE void reset_epx() { // TODO: Make this generic and accept ep_addr, mps, interval, etc. or maybe another EP to copy from?
     reset_endpoint(epx, &((usb_endpoint_descriptor_t) {
         .bLength          = sizeof(usb_endpoint_descriptor_t),
         .bDescriptorType  = USB_DT_ENDPOINT,
@@ -317,6 +317,7 @@ void prepare_buffers(endpoint_t *ep) {
     usbh_dpram->epx_buf_ctrl = bcr;
 }
 
+// Handle a buffer within the interrupt handler
 void handle_buffer(endpoint_t *ep) {
     if (!ep->active) panic("EP 0x%02x not active\n", ep->ep_addr);
 
@@ -388,7 +389,6 @@ void reset_device(uint8_t dev_addr) {
     // TODO: Surely, there must be more work to do here?
 }
 
-// Reset devices
 void reset_devices() {
 
     // Clear out all devices
@@ -408,7 +408,6 @@ enum {
 // TODO: Clear a stall and toggle data PID back to DATA0
 // TODO: Abort a transfer if not yet started and return true on success
 
-// Start a control transfer
 void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     uint8_t len = packet ? packet->wLength : 0; // Length of data phase
     bool    zlp = packet == NULL;               // Zero length packet
@@ -516,7 +515,6 @@ enum {
     ENUMERATION_END,
 };
 
-// Get device descriptor
 void get_device_descriptor(uint8_t dev_addr) {
     device_t *dev = get_device(dev_addr); // TODO: Handle missing device
     uint16_t len = dev->ep0size ? sizeof(usb_device_descriptor_t) : 8;
@@ -534,7 +532,6 @@ void get_device_descriptor(uint8_t dev_addr) {
     }));
 }
 
-// Set device address
 void set_device_address(uint8_t dev_addr) {
     printf("Set device address to %u\n", dev_addr);
 
