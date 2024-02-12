@@ -238,7 +238,7 @@ uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
     bool    full = bcr & USB_BUF_CTRL_FULL;
     bool      in = ep_in(ep);
 
-    // Buffer should be full after reading in or empty before writing out
+    // We should only read from a full buffer or write to an empty buffer
     assert(!(in ^ full));
 
     // For inbound data, copy the data buffer to the user buffer
