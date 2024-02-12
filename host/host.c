@@ -573,9 +573,6 @@ void enumerate(bool reset) {
         }   break;
 
         case ENUMERATION_SET_ADDRESS:
-
-            // WAHOO: Now, we need to switch over from dev0 and epx to the big leagues! ;-)
-
             dev_addr = 1; // TODO: We need to "pass" this from the prior stage... this isn't right
             dev0->state = DEVICE_ADDRESSED;
 
@@ -594,10 +591,9 @@ void enumerate(bool reset) {
             break;
 
         case ENUMERATION_SET_CONFIG:
-            // NOTE: At this point, the device is ready to use
+            dev0->state = DEVICE_CONFIGURED;
 
             printf("End enumeration\n");
-            dev0->state = DEVICE_CONFIGURED;
             break;
     }
 }
