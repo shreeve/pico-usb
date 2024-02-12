@@ -202,14 +202,6 @@ SDK_INLINE void reset_epx() { // TODO: Make this generic and accept ep_addr, mps
     }));
 }
 
-SDK_INLINE void clear_endpoint(endpoint_t *ep) {
-    ep->active     = false;
-    ep->user_buf   = NULL; // TODO: Add something like a ring buffer here?
-    ep->bytes_left = 0;
-    ep->bytes_done = 0;
-}
-
-// Reset endpoints
 void reset_endpoints() {
 
     // Clear out all endpoints
@@ -218,6 +210,13 @@ void reset_endpoints() {
     // Allocate the endpoints
     reset_epx();
     // TODO: Add the rest here
+}
+
+SDK_INLINE void clear_endpoint(endpoint_t *ep) {
+    ep->active     = false;
+    ep->user_buf   = NULL; // TODO: Add something like a ring buffer here?
+    ep->bytes_left = 0;
+    ep->bytes_done = 0;
 }
 
 endpoint_t *find_endpoint(uint8_t dev_addr, uint8_t ep_addr) {
