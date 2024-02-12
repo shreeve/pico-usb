@@ -32,7 +32,7 @@
 #define SWAP_U16(x)    (((x) >> 8) | ((x) << 8))
 
 #define SDK_ALIGNED(bytes) __attribute__ ((aligned(bytes)))
-#define SDK_ALWAYS_INLINE  __attribute__ ((always_inline)) static inline
+#define SDK_INLINE         __attribute__ ((always_inline)) static inline
 #define SDK_NOINLINE       __attribute__ ((noinline))
 #define SDK_PACKED         __attribute__ ((packed))
 #define SDK_WEAK           __attribute__ ((weak))
@@ -48,16 +48,16 @@
 
 #define nop() __asm volatile("nop" ::: "memory")
 
-SDK_ALWAYS_INLINE bool is_host_mode() {
+SDK_INLINE bool is_host_mode() {
     return (usb_hw->main_ctrl & USB_MAIN_CTRL_HOST_NDEVICE_BITS);
 }
 
-SDK_ALWAYS_INLINE uint8_t get_speed() {
+SDK_INLINE uint8_t get_speed() {
     return (usb_hw->sie_status & USB_SIE_STATUS_SPEED_BITS) \
                               >> USB_SIE_STATUS_SPEED_LSB;
 }
 
-SDK_ALWAYS_INLINE uint8_t line_state() {
+SDK_INLINE uint8_t line_state() {
     return (usb_hw->sie_status & USB_SIE_STATUS_LINE_STATE_BITS) \
                               >> USB_SIE_STATUS_LINE_STATE_LSB;
 }
@@ -194,7 +194,7 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
 }
 
 // Reset the USB struct for EPX
-SDK_ALWAYS_INLINE void reset_epx() {
+SDK_INLINE void reset_epx() {
     reset_endpoint(epx, &((usb_endpoint_descriptor_t) {
         .bLength          = sizeof(usb_endpoint_descriptor_t),
         .bDescriptorType  = USB_DT_ENDPOINT,
@@ -205,7 +205,7 @@ SDK_ALWAYS_INLINE void reset_epx() {
     }));
 }
 
-SDK_ALWAYS_INLINE void clear_endpoint(endpoint_t *ep) {
+SDK_INLINE void clear_endpoint(endpoint_t *ep) {
     ep->active     = false;
     ep->user_buf   = NULL; // TODO: Add something like a ring buffer here?
     ep->bytes_left = 0;
@@ -388,7 +388,7 @@ uint8_t next_device() {
 }
 
 // Get a device by its address
-SDK_ALWAYS_INLINE device_t *get_device(uint8_t dev_addr) {
+SDK_INLINE device_t *get_device(uint8_t dev_addr) {
     return dev_addr < MAX_DEVICES ? &devices[dev_addr] : NULL;
 }
 
