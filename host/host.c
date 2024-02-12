@@ -27,6 +27,7 @@
 #include "helpers.h"              // Helper functions
 
 #define memclr(ptr, len) memset((ptr), 0, (len))
+#define nop() __asm volatile("nop" ::: "memory")
 
 #define MAKE_U16(x, y) (((x) << 8) | ((y)     ))
 #define SWAP_U16(x)    (((x) >> 8) | ((x) << 8))
@@ -43,14 +44,8 @@
 
 // ==[ Hardware: rp2040 ]======================================================
 
-#define usb_hw_set   ((usb_hw_t *) hw_set_alias_untyped  (usb_hw))
 #define usb_hw_clear ((usb_hw_t *) hw_clear_alias_untyped(usb_hw))
-
-#define nop() __asm volatile("nop" ::: "memory")
-
-SDK_INLINE bool is_host_mode() {
-    return (usb_hw->main_ctrl & USB_MAIN_CTRL_HOST_NDEVICE_BITS);
-}
+#define usb_hw_set   ((usb_hw_t *) hw_set_alias_untyped  (usb_hw))
 
 SDK_INLINE uint8_t get_speed() {
     return (usb_hw->sie_status & USB_SIE_STATUS_SPEED_BITS) \
@@ -62,13 +57,9 @@ SDK_INLINE uint8_t line_state() {
                               >> USB_SIE_STATUS_LINE_STATE_LSB;
 }
 
-enum {
-    USB_SIE_CTRL_BASE = USB_SIE_CTRL_VBUS_EN_BITS       // Supply VBUS
-                      | USB_SIE_CTRL_SOF_EN_BITS        // Enable full speed
-                      | USB_SIE_CTRL_KEEP_ALIVE_EN_BITS // Enable low speed
-                      | USB_SIE_CTRL_PULLDOWN_EN_BITS   // Ready for devices
-                      | USB_SIE_CTRL_EP0_INT_1BUF_BITS  // One bit per EP0 buf
-};
+SDK_INLINE bool is_host_mode() {
+    return (usb_hw->main_ctrl & USB_MAIN_CTRL_HOST_NDEVICE_BITS);
+}
 
 // ==[ Tasks ]=================================================================
 
@@ -405,6 +396,14 @@ void reset_devices() {
 }
 
 // ==[ Transfers ]=============================================================
+
+enum {
+    USB_SIE_CTRL_BASE = USB_SIE_CTRL_VBUS_EN_BITS       // Supply VBUS
+                      | USB_SIE_CTRL_SOF_EN_BITS        // Enable full speed
+                      | USB_SIE_CTRL_KEEP_ALIVE_EN_BITS // Enable low speed
+                      | USB_SIE_CTRL_PULLDOWN_EN_BITS   // Ready for devices
+                      | USB_SIE_CTRL_EP0_INT_1BUF_BITS  // One bit per EP0 buf
+};
 
 // TODO: Clear a stall and toggle data PID back to DATA0
 // TODO: Abort a transfer if not yet started and return true on success
