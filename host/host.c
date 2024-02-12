@@ -190,8 +190,8 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
     usbh_dpram->epx_ctrl = ecr;
 }
 
-// Reset the USB struct for EPX
-SDK_INLINE void reset_epx() { // TODO: Make this generic and accept ep_addr, mps, interval, etc. or maybe another EP to copy from?
+// Reset the EPX endpoint // TODO: Make this generic and accept ep_addr, mps, interval, etc. or maybe another EP to copy from?
+SDK_INLINE void reset_epx() {
     reset_endpoint(epx, &((usb_endpoint_descriptor_t) {
         .bLength          = sizeof(usb_endpoint_descriptor_t),
         .bDescriptorType  = USB_DT_ENDPOINT,
