@@ -554,7 +554,6 @@ void enumerate(bool reset) {
     switch (step++) {
 
         case ENUMERATION_START:
-            // Start enumeration
             printf("Start enumeration\n");
 
             printf("Starting GET_MAXSIZE\n");
@@ -562,7 +561,6 @@ void enumerate(bool reset) {
             break;
 
         case ENUMERATION_GET_MAXSIZE: {
-            // Set the maximum packet size for EP0
             printf("Finishing GET_MAXSIZE\n");
             uint8_t ep0size = ((usb_device_descriptor_t *) epx->data_buf)
                 ->bMaxPacketSize0;
@@ -576,7 +574,6 @@ void enumerate(bool reset) {
         }   break;
 
         case ENUMERATION_SET_ADDRESS:
-            // Set device address
             printf("Finishing SET_ADDRESS\n");
 
             // WAHOO: Now, we need to switch over from dev0 and epx to the big leagues! ;-)
@@ -589,21 +586,18 @@ void enumerate(bool reset) {
             break;
 
         case ENUMERATION_GET_DEVICE:
-            // Load the device info
             printf("Finishing GET_DEVICE\n");
 
             printf("Starting GET_CONFIG\n");
             break;
 
         case ENUMERATION_GET_CONFIG:
-            // Load the vid, pid, manufacturer, product, and serial
             printf("Finishing GET_CONFIG\n");
 
             printf("Starting SET_CONFIG\n");
             break;
 
         case ENUMERATION_SET_CONFIG:
-            // Set device configuration
             printf("Finishing SET_CONFIG\n");
             // NOTE: At this point, the device is ready to use
 
