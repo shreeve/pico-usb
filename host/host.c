@@ -145,6 +145,18 @@ typedef struct endpoint {
 
 static endpoint_t eps[MAX_ENDPOINTS], *epx = eps;
 
+SDK_INLINE uint8_t ep_num(endpoint_t *ep) {
+    return ep->ep_addr & ~USB_DIR_IN;
+}
+
+SDK_INLINE bool ep_in(endpoint_t *ep) {
+    return ep->ep_addr & USB_DIR_IN;
+}
+
+SDK_INLINE const char *ep_dir(endpoint_t *ep) {
+    return ep->ep_addr & USB_DIR_IN ? "IN" : "OUT";
+}
+
 SDK_WEAK void epx_cb(uint8_t *buf, uint16_t len) {
     printf("Inside the EPX callback...\n");
 }
