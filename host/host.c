@@ -450,7 +450,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         |            USB_BUF_CTRL_LAST               // Trigger TRANS_COMPLETE
         |            USB_BUF_CTRL_DATA1_PID          // SETUP/IN/OUT are DATA1
         |            USB_BUF_CTRL_AVAIL              // Buffer is available now
-        | len;
+        | MIN(len, ep->maxsize);                     // Enforce max packet size
 
     // Debug output
     printf(" EP%d_%-3s│ 0x%02x │\n", ep_num(ep), ep_dir(ep), ep->ep_addr);
