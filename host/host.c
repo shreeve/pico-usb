@@ -83,19 +83,19 @@ typedef struct {
     union {
         struct {
             uint8_t speed;
-        };
+        } connect;
 
         struct {
             uint8_t  dev_addr;
             uint8_t  ep_addr;
             uint16_t len;
             uint8_t  result;
-        };
+        } transfer;
 
         struct {
             void (*fn) (void *);
             void *arg;
-        };
+        } function;
     };
 } task_t;
 
@@ -680,7 +680,7 @@ void usb_task() {
 
                 // Initialize dev0
                 reset_device(0); // TODO: Is this necessary? Probably...
-                dev0->speed = task.speed;
+                dev0->speed = task.connect.speed;
                 dev0->state = DEVICE_CONNECTED;
 
                 // Show the device connection and speed
@@ -692,9 +692,9 @@ void usb_task() {
                 break;
 
             case TASK_TRANSFER:
-                if (task.len) {
-                    printf("(%u)", task.len);
-                    hexdump(usbh_dpram->epx_data, task.len, 1);
+                if (task.transfer.len) {
+                    printf("(%u)", task.transfer.len);
+                    hexdump(usbh_dpram->epx_data, task.transfer.len, 1);
                     printf("Transfer complete\n");
                 } else if (dev0->state < DEVICE_ACTIVE) {
                     transfer_zlp(epx);
@@ -706,7 +706,7 @@ void usb_task() {
 
             case TASK_FUNCTION:
                 printf("Function call\n");
-                task.fn(task.arg);
+                task.function.fn(task.function.arg);
                 break;
 
             default:
@@ -761,8 +761,8 @@ void isr_usbctrl() {
         // Handle connect and disconnect
         if (speed) {
             queue_add_blocking(queue, &((task_t) {
-                .type  = TASK_CONNECT,
-                .speed = speed,
+                .type          = TASK_CONNECT,
+                .connect.speed = speed,
             }));
         } else {
             reset_epx(); // TODO: There's a lot more to do here
@@ -851,11 +851,11 @@ void isr_usbctrl() {
 
         // Queue a task for the transfer
         queue_add_blocking(queue, &((task_t) {
-            .type     = TASK_TRANSFER,
-            .dev_addr = dev_addr,
-            .ep_addr  = ep_addr,
-            .len      = ep->bytes_done,
-            .result   = TRANSFER_SUCCESS,
+            .type              = TASK_TRANSFER,
+            .transfer.dev_addr = dev_addr,
+            .transfer.ep_addr  = ep_addr,
+            .transfer.len      = ep->bytes_done,
+            .transfer.result   = TRANSFER_SUCCESS,
         }));
 
         clear_endpoint(ep);
