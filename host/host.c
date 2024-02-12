@@ -554,7 +554,7 @@ void get_device_descriptor(endpoint_t *ep) {
         .bRequest      = USB_REQUEST_GET_DESCRIPTOR,
         .wValue        = MAKE_U16(USB_DT_DEVICE, 0),
         .wIndex        = 0,
-        .wLength       = get_device(ep->dev_addr)->ep0size || 8,
+        .wLength       = ep->dev_addr ? get_device(ep->dev_addr)->ep0size : 8,
     }));
 }
 
