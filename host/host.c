@@ -163,18 +163,18 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
 
     // Populate the endpoint
     *ep = (endpoint_t) {
-        .dev_addr   = 0,                            // Device address // HOST
-        .ep_addr    = usb->bEndpointAddress,        // Endpoint address
-        .maxsize    = 0,                            // Maximum packet size
-        .type       = usb->bmAttributes,            // Control, bulk, int, iso
-        .interval   = usb->bInterval,               // Polling interval in ms
-        .data_pid   = 1,                            // Toggle DATA0/DATA1
-        .active     = false,                        // Transfer is active
-        .data_buf   = usbh_dpram->epx_data,         // Data buffer
-        .user_buf   = NULL,                         // User buffer
-        .bytes_left = 0,                            // Bytes remaining
-        .bytes_done = 0,                            // Bytes transferred
-        .cb         = epx_cb,                       // Callback function
+        .dev_addr   = 0,                     // Device address // HOST
+        .ep_addr    = usb->bEndpointAddress, // Endpoint address
+        .maxsize    = 0,                     // Maximum packet size
+        .type       = usb->bmAttributes,     // Control, bulk, int, iso
+        .interval   = usb->bInterval,        // Polling interval in ms
+        .data_pid   = 1,                     // Toggle DATA0/DATA1
+        .active     = false,                 // Transfer is active
+        .data_buf   = usbh_dpram->epx_data,  // Data buffer
+        .user_buf   = NULL,                  // User buffer
+        .bytes_left = 0,                     // Bytes remaining
+        .bytes_done = 0,                     // Bytes transferred
+        .cb         = epx_cb,                // Callback function
     };
 
     // Helper variables
