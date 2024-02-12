@@ -239,7 +239,7 @@ uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
     bool      in = ep_in(ep);
 
     // We should only read from a full buffer or write to an empty buffer
-    assert(!(in ^ full));
+    assert(in == full);
 
     // Copy the inbound data buffer to the user buffer
     if (in) {
