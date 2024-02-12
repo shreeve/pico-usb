@@ -613,20 +613,6 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     usb_hw->sie_ctrl         = scr;
 }
 
-// TODO: Should we merge these two into one "transfer_zlp" and read ep_addr for the direction?
-
-// Send a zero length status packet (ZLP)
-SDK_ALWAYS_INLINE void send_zlp(endpoint_t *ep) {
-    printf("Send ZLP: ep_addr=0x%02x\n", ep->ep_addr);
-    start_control_transfer(ep, NULL);
-}
-
-// Receive a zero length status packet (ZLP)
-SDK_ALWAYS_INLINE void receive_zlp(endpoint_t *ep) {
-    printf("Receive ZLP: ep_addr=0x%02x\n", ep->ep_addr);
-    start_control_transfer(ep, NULL);
-}
-
 // ==[ Resets ]================================================================
 
 // static void clear_device(usbh_device_t* dev) {
@@ -708,10 +694,8 @@ void usb_task() {
                     printf("(%u)", task.len);
                     hexdump(usbh_dpram->epx_data, task.len, 1);
                     printf("Transfer complete\n");
-                    send_zlp(epx); // TODO: What EP should be used? Should this be queued?
+                    start_control_transfer(epx, NULL); // TODO: Improve on this...
                 } else if (dev0->state < DEVICE_ACTIVE) {
-                    printf("?ZLP\n");
-                    printf("Transfer complete\n");
                     enumerate(false);
                 } else {
                     printf("No data to send... should this be something?\n");
