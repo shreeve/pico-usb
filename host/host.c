@@ -483,6 +483,9 @@ void enumerate(bool reset) {
         // Set device address
         case ENUMERATION_SET_ADDRESS:
             printf("Finishing SET_ADDRESS\n");
+
+            // WAHOO: Now, we need to switch over from dev0 and epx to the big leagues! ;-)
+
             dev_addr = 1; // TODO: We need to "pass" this from the prior stage... this isn't right
             dev0->state = DEVICE_ADDRESSED;
 
