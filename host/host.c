@@ -246,12 +246,13 @@ uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
     uint32_t bcr = usbh_dpram->epx_buf_ctrl; if (buf_id) bcr = bcr >> 16;
     uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK;
     bool    full = bcr & USB_BUF_CTRL_FULL;
+    bool      in = ep_in(ep);
 
-    // Buffer must be empty for writes, full for reads
-    assert(ep->sender ^ full);
+    // Buffer should be full after reading in or empty before writing out
+    assert(!(in ^ full));
 
-    // If we're receiving, copy to the user buffer
-    if (!ep->sender) {
+    // For inbound data, copy the data buffer to the user buffer
+    if (in) {
         memcpy(ep->user_buf, (void *) (ep->data_buf + buf_id * 64), len);
         ep->user_buf += len;
     }
@@ -288,8 +289,8 @@ uint32_t prepare_buffer(endpoint_t *ep, uint8_t buf_id) {
     ep->bytes_left -= len;
     ep->data_pid   ^= 1u;
 
-    // If we're sending, copy to the data buffer
-    if (ep->sender) {
+    // For outbound data, copy the user buffer to the data buffer
+    if (!ep_in(ep)) {
         memcpy((void *) (ep->data_buf + buf_id * 64), ep->user_buf, len);
         ep->user_buf += len;
         bcr |= USB_BUF_CTRL_FULL;
@@ -336,7 +337,7 @@ void handle_buffer(endpoint_t *ep) {
         printf("│Data");
         hexdump(usbh_dpram->epx_data, ep->bytes_done, 1);
     } else {
-        char *str = ep->sender ? "│ZLP/O" : "│ZLP/I";
+        char *str = ep_in(ep) ? "│ZLP/I" : "│ZLP/O";
         bindump(str, 0);
     }
 }
@@ -521,43 +522,44 @@ void enumerate(bool reset) {
 
 // Start a control transfer
 void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
-    uint8_t len =  packet ? packet->wLength : 0; // Length of data phase
-    bool    zlp = (packet == NULL); // TODO: If !packet or !len, always zlp?
+    uint8_t len = packet ? packet->wLength : 0; // Length of data phase
+    bool    zlp = packet == NULL;               // Zero length packet
 
-    // TODO: Review assertions and sanity checks
-    if (ep->ep_num) panic("Control transfers must use EP0");
+    // TODO: Add sanity checks
+    // assert(ep->configured);
+    if (ep_num(ep)) panic("Control transfers must use EP0");
     if (ep->active) panic("Only one control transfer at a time");
-    // assert(ep->configured); // TODO: Endpoint must be configured
 
-    // Locate the device and ensure it's in the right state
-    uint8_t     dev_addr =  ep->dev_addr;
-    device_t   *dev      =      dev_addr ? get_device(dev_addr) : dev0;
-    if         (dev_addr) { if (dev->state <  DEVICE_ACTIVE) return; } // TODO: Error condition?
-    else { if (!dev->state   || dev->state >= DEVICE_ACTIVE) return; } // TODO: Error condition?
+    // Validate the device
+    uint8_t dev_addr = ep->dev_addr;
+    device_t *dev = get_device(dev_addr);
+    if (!dev || !dev->state || (dev_addr ? dev->state <  DEVICE_ACTIVE
+                                         : dev->state >= DEVICE_ACTIVE)) {
+        panic("Invalid device"); // TODO: Implement something a little more resilient
+    }
 
     // Transfer is now active
     ep->active     = true;
+    ep->ep_addr    = packet ? packet->bmRequestType & USB_DIR_IN
+                            :          (ep->ep_addr ^ USB_DIR_IN);
     ep->bytes_left = len;
     ep->bytes_done = 0;
-//  ep->user_buf   = 0; // NOTE: This is NULL because it uses the setup packet
-
-    // Determine direction // TODO: This part is VERY tricky, since we are using the rp2040's controller to handle things and it can invert the normal meaning of direction, redo soon
-    bool in = zlp ? (ep->ep_addr & USB_DIR_IN) : true; // packet->bRequest == USB_REQUEST_SET_ADDRESS; // packet->bmRequestType & USB_DIR_IN;
-    ep->sender = !in;
+    ep->user_buf   = 0; // TODO: Add something asap, NULL is... sub-optimal. Maybe use something like a ring buffer here?
 
     // Copy the setup packet, if supplied
     if (packet) memcpy((void *) usbh_dpram->setup_packet, packet, sizeof(usb_setup_packet_t));
 
     // Calculate register values
     uint32_t ssr, scr, dar, ecr, bcr;
-    ssr = usb_hw->sie_status;
+    bool in = ep_in(ep);
+    ssr = usb_hw->sie_status;                        // SIE_STATUS register
     scr =            USB_SIE_CTRL_BASE               // SIE_CTRL defaults
      // | (fs  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS); // Preamble (LS on FS hub)
         | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive if IN to host
                :     USB_SIE_CTRL_SEND_DATA_BITS)    // Send if OUT from host
         | (zlp ? 0 : USB_SIE_CTRL_SEND_SETUP_BITS)   // Send a SETUP packet
         |            USB_SIE_CTRL_START_TRANS_BITS;  // Start the transfer now
-    dar = dev_addr | ep->ep_num                      // Device address
+    dar = dev_addr | ep_num(ep)                      // Device address
                   << USB_ADDR_ENDP_ENDPOINT_LSB;     // EP number
     ecr = usbh_dpram->epx_ctrl;                      // EPX control register
     bcr = (in  ? 0 : USB_BUF_CTRL_FULL)              // Ready to 0=Recv, 1=Send
