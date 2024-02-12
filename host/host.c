@@ -438,7 +438,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     bool in = ep_in(ep);
     ssr = usb_hw->sie_status;                        // SIE_STATUS register
     scr =            USB_SIE_CTRL_BASE               // SIE_CTRL defaults
-     // | (fs  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS); // Preamble (LS on FS hub)
+     // | (ls  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS); // Preamble (LS on FS hub)
         | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive if IN to host
                :     USB_SIE_CTRL_SEND_DATA_BITS)    // Send if OUT from host
         |            USB_SIE_CTRL_SEND_SETUP_BITS    // Send a SETUP packet
@@ -501,7 +501,7 @@ void transfer_zlp(endpoint_t *ep) {
     uint32_t scr, bcr;
     bool in = !ep_in(ep); // Reverse the direction
     scr =            USB_SIE_CTRL_BASE               // SIE_CTRL defaults
-     // | (fs  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS); // Preamble (LS on FS hub)
+     // | (ls  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS); // Preamble (LS on FS hub)
         | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive if IN to host
                :     USB_SIE_CTRL_SEND_DATA_BITS)    // Send if OUT from host
         |            USB_SIE_CTRL_START_TRANS_BITS;  // Start the transfer now
