@@ -183,7 +183,6 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
     };
 
     // Helper variables
-    bool     in     = ep->ep_addr & USB_DIR_IN;
     uint32_t type   = ep->type;
     uint32_t ms     = ep->interval;
     uint32_t lsb    = EP_CTRL_HOST_INTERRUPT_INTERVAL_LSB;
@@ -198,7 +197,7 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
 
     // Debug output
     printf(" EP%d_%s│ 0x%02x │ Buffer 0x%04x\n",
-           ep->ep_num, in ? "IN " : "OUT", ep->ep_addr, offset);
+             ep_num(ep), ep_dir(ep), ep->ep_addr, offset);
     bindump(" ECR", ecr);
 
     // Set the ECR
