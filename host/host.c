@@ -234,7 +234,7 @@ endpoint_t *find_endpoint(uint8_t dev_addr, uint8_t ep_addr) {
 // Sync a buffer and return byte count
 uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
     uint32_t bcr = usbh_dpram->epx_buf_ctrl; if (buf_id) bcr = bcr >> 16;
-    uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK;
+    uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK; if (!len) return 0; // TODO: Do we need to set ep->bytes_left = 0
     bool    full = bcr & USB_BUF_CTRL_FULL;
     bool      in = ep_in(ep);
 
