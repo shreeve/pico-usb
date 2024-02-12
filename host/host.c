@@ -779,11 +779,11 @@ void isr_usbctrl() {
 
         // Queue the stalled transfer
         queue_add_blocking(queue, &((task_t) {
-            .type     = TASK_TRANSFER,
-            .dev_addr = 42, // TODO: Need to flesh this out
-            .ep_addr  = 37, // TODO: Need to flesh this out
-            .len      = 0,  // TODO: Need to flesh this out
-            .result   = TRANSFER_STALLED,
+            .type              = TASK_TRANSFER,
+            .transfer.dev_addr = 42, // TODO: Need to flesh this out
+            .transfer.ep_addr  = 37, // TODO: Need to flesh this out
+            .transfer.len      = 0,  // TODO: Need to flesh this out
+            .transfer.result   = TRANSFER_STALLED,
         }));
     }
 
