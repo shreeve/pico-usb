@@ -496,7 +496,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     usb_hw->sie_ctrl         = scr;
 }
 
-// Transfer a ZLP, but makes several critical assumptions so be careful!
+// Transfer a ZLP, but it makes several critical assumptions so be careful!
 void transfer_zlp(endpoint_t *ep) {
     uint32_t scr, dar, bcr;
     bool in = !ep_in(ep); // Reverse the direction
