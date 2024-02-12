@@ -41,6 +41,7 @@
 #define MAX_HUBS      0
 #define MAX_DEVICES   2
 #define MAX_ENDPOINTS 4
+#define TEMP_BUF_SIZE 256
 
 // ==[ Hardware: rp2040 ]======================================================
 
@@ -133,6 +134,8 @@ typedef struct endpoint {
 
 static endpoint_t eps[MAX_ENDPOINTS], *epx = eps;
 
+static uint8_t temp_buf[TEMP_BUF_SIZE] = { 0 }; // TODO: Does this need to be cleared or will it be for free since it's static?
+
 SDK_INLINE uint8_t ep_num(endpoint_t *ep) {
     return ep->ep_addr & ~USB_DIR_IN;
 }
@@ -162,7 +165,7 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
         .interval   = usb->bInterval,        // Polling interval in ms
         .active     = false,                 // Transfer is active
         .data_buf   = usbh_dpram->epx_data,  // Data buffer
-        .user_buf   = NULL,                  // User buffer // TODO: What should this default to?
+        .user_buf   = temp_buf,              // User buffer // TODO: What should this default to?
         .bytes_left = 0,                     // Bytes remaining
         .bytes_done = 0,                     // Bytes transferred
         .cb         = epx_cb,                // Callback function
@@ -214,7 +217,7 @@ void reset_endpoints() {
 
 SDK_INLINE void clear_endpoint(endpoint_t *ep) {
     ep->active     = false;
-    ep->user_buf   = NULL; // TODO: Add something like a ring buffer here?
+    ep->user_buf   = temp_buf; // TODO: Add something like a ring buffer here?
     ep->bytes_left = 0;
     ep->bytes_done = 0;
 }
@@ -428,7 +431,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     ep->ep_addr    = packet->bmRequestType & USB_DIR_IN;
     ep->bytes_left = len;
     ep->bytes_done = 0;
-    ep->user_buf   = 0; // TODO: Add something asap, NULL is... sub-optimal. Maybe use something like a ring buffer here?
+    ep->user_buf   = temp_buf; // TODO: Add something asap, NULL is... sub-optimal. Maybe use something like a ring buffer here?
 
     // Copy the setup packet
     memcpy((void *) usbh_dpram->setup_packet, packet, sizeof(usb_setup_packet_t));
