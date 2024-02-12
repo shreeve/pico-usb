@@ -191,7 +191,7 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
                  | offset;                         // Data buffer offset
 
     // Debug output
-    printf(" EP%d_%s│ 0x%02x │ Buffer 0x%04x\n",
+    printf(" EP%d_%-3s│ 0x%02x │ Buffer 0x%04x\n",
              ep_num(ep), ep_dir(ep), ep->ep_addr, offset);
     bindump(" ECR", ecr);
 
