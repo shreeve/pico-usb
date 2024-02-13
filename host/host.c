@@ -90,7 +90,7 @@ typedef struct {
             uint8_t  dev_addr;
             uint8_t  ep_addr;
             uint16_t len;
-            uint8_t  result;
+            uint8_t  status;
         } transfer;
 
         struct {
@@ -843,7 +843,7 @@ void isr_usbctrl() {
             .transfer.dev_addr = 42, // TODO: Need to flesh this out
             .transfer.ep_addr  = 37, // TODO: Need to flesh this out
             .transfer.len      = 0,  // TODO: Need to flesh this out
-            .transfer.result   = TRANSFER_STALLED,
+            .transfer.status   = TRANSFER_STALLED,
         }));
     }
 
@@ -918,7 +918,7 @@ void isr_usbctrl() {
             .transfer.dev_addr = dev_addr,
             .transfer.ep_addr  = ep_addr,
             .transfer.len      = bytes_done,
-            .transfer.result   = TRANSFER_SUCCESS, // TODO: Maybe we can flag the need for a ZLP here
+            .transfer.status   = TRANSFER_SUCCESS, // TODO: Maybe we can flag the need for a ZLP here
         }));
     }
 
