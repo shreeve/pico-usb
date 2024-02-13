@@ -53,13 +53,13 @@ SDK_INLINE uint8_t get_speed() {
                               >> USB_SIE_STATUS_SPEED_LSB;
 }
 
+SDK_INLINE bool is_host_mode() {
+    return (usb_hw->main_ctrl & USB_MAIN_CTRL_HOST_NDEVICE_BITS);
+}
+
 SDK_INLINE uint8_t line_state() {
     return (usb_hw->sie_status & USB_SIE_STATUS_LINE_STATE_BITS) \
                               >> USB_SIE_STATUS_LINE_STATE_LSB;
-}
-
-SDK_INLINE bool is_host_mode() {
-    return (usb_hw->main_ctrl & USB_MAIN_CTRL_HOST_NDEVICE_BITS);
 }
 
 // ==[ Tasks ]=================================================================
@@ -136,16 +136,16 @@ static endpoint_t eps[MAX_ENDPOINTS], *epx = eps;
 
 static uint8_t temp_buf[TEMP_BUF_SIZE];
 
-SDK_INLINE uint8_t ep_num(endpoint_t *ep) {
-    return ep->ep_addr & ~USB_DIR_IN;
+SDK_INLINE const char *ep_dir(endpoint_t *ep) {
+    return ep->ep_addr & USB_DIR_IN ? "IN" : "OUT";
 }
 
 SDK_INLINE bool ep_in(endpoint_t *ep) {
     return ep->ep_addr & USB_DIR_IN;
 }
 
-SDK_INLINE const char *ep_dir(endpoint_t *ep) {
-    return ep->ep_addr & USB_DIR_IN ? "IN" : "OUT";
+SDK_INLINE uint8_t ep_num(endpoint_t *ep) {
+    return ep->ep_addr & ~USB_DIR_IN;
 }
 
 SDK_INLINE void clear_endpoint(endpoint_t *ep) {
