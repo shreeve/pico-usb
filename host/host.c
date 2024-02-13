@@ -118,12 +118,11 @@ typedef void (*endpoint_c)(uint8_t *buf, uint16_t len);
 typedef struct endpoint {
     uint8_t    dev_addr  ; // Device address // HOST ONLY
     uint8_t    ep_addr   ; // Endpoint address
-    uint16_t   maxsize   ; // Maximum packet size
     uint8_t    type      ; // Transfer type
-    uint8_t    data_pid  ; // Toggle DATA0/DATA1 each packet
+    uint16_t   maxsize   ; // Maximum packet size
     uint16_t   interval  ; // Polling interval in ms
+    uint8_t    data_pid  ; // Toggle DATA0/DATA1 each packet
     bool       active    ; // Transfer is active
-
     volatile
     uint8_t   *data_buf  ; // Data buffer
     uint8_t   *user_buf  ; // User buffer
@@ -155,10 +154,10 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
     *ep = (endpoint_t) {
         .dev_addr   = 0,                     // Device address // HOST
         .ep_addr    = usb->bEndpointAddress, // Endpoint address
-        .maxsize    = 0,                     // Maximum packet size
         .type       = usb->bmAttributes,     // Control, bulk, int, iso
-        .data_pid   = 1,                     // Toggle DATA0/DATA1
+        .maxsize    = 0,                     // Maximum packet size
         .interval   = usb->bInterval,        // Polling interval in ms
+        .data_pid   = 1,                     // Toggle DATA0/DATA1
         .active     = false,                 // Transfer is active
         .data_buf   = usbh_dpram->epx_data,  // Data buffer
         .user_buf   = temp_buf,              // User buffer // TODO: What should this default to?
@@ -247,8 +246,8 @@ uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
     }
 
     // Update byte counts
-    ep->bytes_done += len;
     ep->bytes_left -= len;
+    ep->bytes_done += len;
 
     // Short packet (below maxsize) means the transfer is done
     if (len < ep->maxsize) { // TODO: Initially, this maxsize is still 0, how should we handle that?
