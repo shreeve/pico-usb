@@ -538,8 +538,11 @@ void transfer_zlp(endpoint_t *ep) {
     if (ep->active) panic("ZLP failed because another transfer is active");
     ep->active = true;
 
+    // Reverse the endpoint direction
+    ep->ep_addr ^= USB_DIR_IN;
+    bool in = ep_in(ep);
+
     uint32_t scr, dar, bcr;
-    bool in = !ep_in(ep); // Reverse the direction
     scr =            USB_SIE_CTRL_BASE               // SIE_CTRL defaults
      // | (ls  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS); // Preamble (LS on FS hub)
         | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive if IN to host
@@ -739,21 +742,22 @@ void usb_task() {
             case TASK_TRANSFER: {
                 endpoint_t *ep = find_endpoint(task.transfer.dev_addr,
                                                task.transfer.ep_addr);
-                if (ep->dev_addr) {
+
+                // Debug output, unless this is a ZLP on dev0
+                if (ep->dev_addr || task.transfer.len) {
                     printf(" EP%d_%-3s│ 0x%02x │ Device %u, Length %u\n",
-                             ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr,
-                             task.transfer.len);
+                                ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr,
+                                task.transfer.len);
                     printf(" Data");
                     hexdump(usbh_dpram->epx_data, task.transfer.len, 1);
+                }
+
+                if (ep->dev_addr) {
+                    // TODO: Is there a callback or something we should add here?
+                } else if (task.transfer.len) {
+                    transfer_zlp(ep);
                 } else {
-                    if (task.transfer.len) {
-                        printf("(%u)", task.transfer.len);
-                        hexdump(usbh_dpram->epx_data, task.transfer.len, 1);
-                        transfer_zlp(epx);
-                    } else {
-                        printf("A friendly ZLP, so now enumerate?\n");
-                        enumerate(false);
-                    }
+                    enumerate(false);
                 }
             }   break;
 
