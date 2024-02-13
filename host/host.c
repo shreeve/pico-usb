@@ -532,6 +532,11 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 
 // Transfer a ZLP, but it makes several critical assumptions so be careful!
 void transfer_zlp(endpoint_t *ep) {
+
+    // Ensure this is the only active transfer
+    if (ep->active) panic("ZLP failed because another transfer is active");
+    ep->active = true;
+
     uint32_t scr, dar, bcr;
     bool in = !ep_in(ep); // Reverse the direction
     scr =            USB_SIE_CTRL_BASE               // SIE_CTRL defaults
