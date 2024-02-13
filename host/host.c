@@ -649,7 +649,6 @@ void enumerate(bool reset) {
         }   break;
 
         case ENUMERATION_SET_ADDRESS:
-            dev0->state = DEVICE_ADDRESSED;
 
             printf("Starting GET_DEVICE\n");
             // get_device_descriptor(...); // TODO: Get this from data_buf
