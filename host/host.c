@@ -898,16 +898,14 @@ void isr_usbctrl() {
         uint16_t bytes_done = ep->bytes_done;
         clear_endpoint(ep);
 
-        // Queue a task for the transfer, unless it's a ZLP during enumeration
-        if (dev_addr || bytes_done) {
-            queue_add_blocking(queue, &((task_t) {
-                .type              = TASK_TRANSFER,
-                .transfer.dev_addr = dev_addr,
-                .transfer.ep_addr  = ep_addr,
-                .transfer.len      = bytes_done,
-                .transfer.result   = TRANSFER_SUCCESS,
-            }));
-        }
+        // Queue a task for the transfer
+        queue_add_blocking(queue, &((task_t) {
+            .type              = TASK_TRANSFER,
+            .transfer.dev_addr = dev_addr,
+            .transfer.ep_addr  = ep_addr,
+            .transfer.len      = bytes_done,
+            .transfer.result   = TRANSFER_SUCCESS,
+        }));
     }
 
     // Receive timeout (waited too long without seeing an ACK)
