@@ -444,10 +444,10 @@ enum {
 void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     uint8_t len = packet->wLength; // Length of the data phase
 
-    // TODO: Add sanity checks
-    // assert(ep->configured);
-    if (ep_num(ep)) panic("Control transfers must use EP0");
-    if (ep->active) panic("Only one control transfer at a time");
+    // Sanity checks
+    if (!ep->configured) panic("Endpoint not configured");
+    if ( ep_num(ep))     panic("Control transfers must use EP0");
+    if ( ep->active)     panic("Only one control transfer at a time");
 
     // Validate the device
     uint8_t dev_addr = ep->dev_addr;
