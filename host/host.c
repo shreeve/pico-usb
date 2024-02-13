@@ -208,7 +208,7 @@ endpoint_t *next_ep(uint8_t dev_addr, usb_endpoint_descriptor_t *usb) {
             return ep;
         }
     }
-    panic("No free endpoints remaining\n"); // TODO: Handle this properly
+    panic("No free endpoints remaining"); // TODO: Handle this properly
     return NULL;
 }
 
@@ -340,7 +340,7 @@ void prepare_buffers(endpoint_t *ep) {
 
 // Handle a buffer within the interrupt handler
 void handle_buffer(endpoint_t *ep) {
-    if (!ep->active) panic("EP 0x%02x not active\n", ep->ep_addr);
+    if (!ep->active) panic("EP 0x%02x not active", ep->ep_addr);
 
     sync_buffers(ep);
 
@@ -397,14 +397,14 @@ uint8_t next_dev_addr() {
             return i;
         }
     }
-    panic("No free devices remaining\n"); // TODO: Handle this properly
+    panic("No free devices remaining"); // TODO: Handle this properly
     return 0;
 }
 
 // Get a device by its address
 SDK_INLINE device_t *get_device(uint8_t dev_addr) {
     if (dev_addr < MAX_DEVICES) return &devices[dev_addr];
-    panic("Invalid device address %u requested\n", dev_addr); // TODO: Handle this properly
+    panic("Invalid device address %u requested", dev_addr); // TODO: Handle this properly
     return NULL;
 }
 
@@ -856,7 +856,7 @@ void isr_usbctrl() {
         }
 
         // Panic if we missed any buffers
-        if (bits) panic("Unhandled buffer mask: %032b\n", bits);
+        if (bits) panic("Unhandled buffer mask: %032b", bits);
     }
 
     // Transfer complete (last packet)
@@ -916,7 +916,7 @@ void isr_usbctrl() {
 
         usb_hw_clear->sie_status = USB_SIE_STATUS_DATA_SEQ_ERROR_BITS;
 
-        panic("Data sequence error\n");
+        panic("Data sequence error");
     }
 
     // Device resumed (device initiated)
@@ -930,7 +930,7 @@ void isr_usbctrl() {
 
     // Any missed?
     if (ints) {
-        panic("Unhandled IRQ 0x%04x\n", ints);
+        panic("Unhandled IRQ 0x%04x", ints);
     }
 
     printf("└───────┴──────┴─────────────────────────────────────┴────────────┘\n");
