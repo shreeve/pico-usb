@@ -713,72 +713,6 @@ void reset_usb_host() {
     irq_set_enabled(USBCTRL_IRQ, true);
 }
 
-// ==[ Queue ]=================================================================
-
-void usb_task() {
-    static task_t task; // TODO: Is there any advantage to making this static?
-
-    while (queue_try_remove(queue, &task)) { // TODO: Can this starve out other work? Should it be "if (...) {" instead?
-        uint8_t type = task.type;
-        printf("\n=> Start task: %s\n", task_name(type));
-        switch (task.type) {
-            case TASK_CONNECT:
-
-                // TODO: See if we can get this to work
-                // // Prevent nested connections
-                // if (dev0->state == DEVICE_ENUMERATING) {
-                //     printf("Only one device can be enumerated at a time\n");
-                //     break;
-                // }
-
-                // Initialize dev0
-                reset_device(0); // TODO: Is this necessary? Probably...
-                dev0->speed = task.connect.speed;
-                dev0->state = DEVICE_CONNECTED;
-
-                // Show the device connection and speed
-                char *str = dev0->speed == LOW_SPEED ? "low" : "full";
-                printf("Device connected (%s speed)\n", str);
-
-                // Start the enumeration process
-                enumerate(true);
-                break;
-
-            case TASK_TRANSFER: {
-                endpoint_t *ep = find_endpoint(task.transfer.dev_addr,
-                                               task.transfer.ep_addr);
-
-                // Debug output, unless this is a ZLP on dev0
-                if (ep->dev_addr || task.transfer.len) {
-                    printf(" EP%d_%-3s│ 0x%02x │ Device %u, Length %u\n",
-                                ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr,
-                                task.transfer.len);
-                    printf(" Data");
-                    hexdump(usbh_dpram->epx_data, task.transfer.len, 1);
-                }
-
-                if (ep->dev_addr) {
-                    // TODO: Is there a callback or something we should add here?
-                    printf("HOLY CRAP!!! We are device %u\n", ep->dev_addr);
-                } else {
-                    bool need_zlp = *((uint16_t *) usbh_dpram->setup_packet); // TODO: How can we add this to the task structure?
-                    need_zlp ? transfer_zlp(ep) : enumerate(false);
-                }
-            }   break;
-
-            case TASK_FUNCTION:
-                printf("Function call\n");
-                task.function.fn(task.function.arg);
-                break;
-
-            default:
-                printf("Unknown task type\n");
-                break;
-        }
-        printf("=> Finish task: %s\n", task_name(type));
-    }
-}
-
 // ==[ Interrupts ]============================================================
 
 void printf_interrupts(uint32_t ints) {
@@ -957,6 +891,72 @@ void isr_usbctrl() {
     }
 
     printf("└───────┴──────┴─────────────────────────────────────┴────────────┘\n");
+}
+
+// ==[ Tasks ]=================================================================
+
+void usb_task() {
+    static task_t task; // TODO: Is there any advantage to making this static?
+
+    while (queue_try_remove(queue, &task)) { // TODO: Can this starve out other work? Should it be "if (...) {" instead?
+        uint8_t type = task.type;
+        printf("\n=> Start task: %s\n", task_name(type));
+        switch (task.type) {
+            case TASK_CONNECT:
+
+                // TODO: See if we can get this to work
+                // // Prevent nested connections
+                // if (dev0->state == DEVICE_ENUMERATING) {
+                //     printf("Only one device can be enumerated at a time\n");
+                //     break;
+                // }
+
+                // Initialize dev0
+                reset_device(0); // TODO: Is this necessary? Probably...
+                dev0->speed = task.connect.speed;
+                dev0->state = DEVICE_CONNECTED;
+
+                // Show the device connection and speed
+                char *str = dev0->speed == LOW_SPEED ? "low" : "full";
+                printf("Device connected (%s speed)\n", str);
+
+                // Start the enumeration process
+                enumerate(true);
+                break;
+
+            case TASK_TRANSFER: {
+                endpoint_t *ep = find_endpoint(task.transfer.dev_addr,
+                                               task.transfer.ep_addr);
+
+                // Debug output, unless this is a ZLP on dev0
+                if (ep->dev_addr || task.transfer.len) {
+                    printf(" EP%d_%-3s│ 0x%02x │ Device %u, Length %u\n",
+                                ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr,
+                                task.transfer.len);
+                    printf(" Data");
+                    hexdump(usbh_dpram->epx_data, task.transfer.len, 1);
+                }
+
+                if (ep->dev_addr) {
+                    // TODO: Is there a callback or something we should add here?
+                    printf("HOLY CRAP!!! We are device %u\n", ep->dev_addr);
+                } else {
+                    bool need_zlp = *((uint16_t *) usbh_dpram->setup_packet); // TODO: How can we add this to the task structure?
+                    need_zlp ? transfer_zlp(ep) : enumerate(false);
+                }
+            }   break;
+
+            case TASK_FUNCTION:
+                printf("Function call\n");
+                task.function.fn(task.function.arg);
+                break;
+
+            default:
+                printf("Unknown task type\n");
+                break;
+        }
+        printf("=> Finish task: %s\n", task_name(type));
+    }
 }
 
 // ==[ Main ]==================================================================
