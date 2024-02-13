@@ -134,7 +134,7 @@ typedef struct endpoint {
 
 static endpoint_t eps[MAX_ENDPOINTS], *epx = eps;
 
-static uint8_t temp_buf[TEMP_BUF_SIZE] = { 0 }; // TODO: Does this need to be cleared or will it be for free since it's static?
+static uint8_t temp_buf[TEMP_BUF_SIZE];
 
 SDK_INLINE uint8_t ep_num(endpoint_t *ep) {
     return ep->ep_addr & ~USB_DIR_IN;
