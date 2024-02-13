@@ -542,6 +542,7 @@ void transfer_zlp(endpoint_t *ep) {
     // Transfer is now active
     ep->active = true;
 
+    // TODO: This method should probably be replaced!
     // Nuke the setup packet so we don't accidentally refer to it
     memclr((void *) usbh_dpram->setup_packet, sizeof(usb_setup_packet_t));
 
