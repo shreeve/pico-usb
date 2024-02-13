@@ -457,8 +457,8 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     // Validate the device
     uint8_t dev_addr = ep->dev_addr;
     device_t *dev = get_device(dev_addr);
-    if (!dev->state || (dev_addr ? dev->state <  DEVICE_ACTIVE
-                                 : dev->state >= DEVICE_ACTIVE)) {
+    if (!dev->state || (dev_addr ? dev->state <  DEVICE_ADDRESSED
+                                 : dev->state >= DEVICE_ADDRESSED)) {
         panic("Invalid device %u", dev_addr); // TODO: Handle this properly
     }
 
