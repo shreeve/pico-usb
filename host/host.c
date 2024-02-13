@@ -541,6 +541,9 @@ void transfer_zlp(endpoint_t *ep) {
     if (ep->active) panic("ZLP failed because another transfer is active");
     ep->active = true;
 
+    // Nuke the setup packet so we don't accidentally refer to it
+    memclr((void *) usbh_dpram->setup_packet, sizeof(usb_setup_packet_t));
+
     // Reverse the endpoint direction
     ep->ep_addr ^= USB_DIR_IN;
     bool in = ep_in(ep);
@@ -756,10 +759,10 @@ void usb_task() {
 
                 if (ep->dev_addr) {
                     // TODO: Is there a callback or something we should add here?
-                } else if (task.transfer.len) {
-                    transfer_zlp(ep);
+                    printf("HOLY CRAP!!! We are device %u\n", ep->dev_addr);
                 } else {
-                    enumerate(false);
+                    bool need_zlp = *((uint16_t *) usbh_dpram->setup_packet); // TODO: How can we add this to the task structure?
+                    need_zlp ? transfer_zlp(ep) : enumerate(false);
                 }
             }   break;
 
@@ -918,7 +921,7 @@ void isr_usbctrl() {
             .transfer.dev_addr = dev_addr,
             .transfer.ep_addr  = ep_addr,
             .transfer.len      = bytes_done,
-            .transfer.result   = TRANSFER_SUCCESS,
+            .transfer.result   = TRANSFER_SUCCESS, // TODO: Maybe we can flag the need for a ZLP here
         }));
     }
 
