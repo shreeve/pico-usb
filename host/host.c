@@ -366,20 +366,23 @@ typedef struct device {
 
 static device_t devices[MAX_DEVICES], *dev0 = devices;
 
-// Find the next free device
-uint8_t next_device() {
+// Find the next device address
+uint8_t next_dev_addr() {
     for (uint8_t i = 1; i < MAX_DEVICES; i++) {
         if (devices[i].state == DEVICE_DISCONNECTED) {
             devices[i].state = DEVICE_ALLOCATED;
             return i;
         }
     }
+    panic("No free devices remaining\n"); // TODO: Handle this properly
     return 0;
 }
 
 // Get a device by its address
 SDK_INLINE device_t *get_device(uint8_t dev_addr) {
-    return dev_addr < MAX_DEVICES ? &devices[dev_addr] : NULL;
+    if (dev_addr < MAX_DEVICES) return &devices[dev_addr];
+    panic("Invalid device address %u requested\n", dev_addr); // TODO: Handle this properly
+    return NULL;
 }
 
 // Reset a device
@@ -426,9 +429,9 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     // Validate the device
     uint8_t dev_addr = ep->dev_addr;
     device_t *dev = get_device(dev_addr);
-    if (!dev || !dev->state || (dev_addr ? dev->state <  DEVICE_ACTIVE
-                                         : dev->state >= DEVICE_ACTIVE)) {
-        panic("Invalid device"); // TODO: Implement something a little more resilient
+    if (!dev->state || (dev_addr ? dev->state <  DEVICE_ACTIVE
+                                 : dev->state >= DEVICE_ACTIVE)) {
+        panic("Invalid device"); // TODO: Handle this properly
     }
 
     // Transfer is now active
@@ -553,7 +556,7 @@ void get_device_descriptor(endpoint_t *ep) {
         .bRequest      = USB_REQUEST_GET_DESCRIPTOR,
         .wValue        = MAKE_U16(USB_DT_DEVICE, 0),
         .wIndex        = 0,
-        .wLength       = ep->dev_addr ? get_device(ep->dev_addr)->ep0size : 8,
+        .wLength       = ep->maxsize,
     }));
 }
 
@@ -587,14 +590,14 @@ void enumerate(bool reset) {
             break;
 
         case ENUMERATION_GET_MAXSIZE: {
-            uint8_t ep0size = ((usb_device_descriptor_t *) epx->data_buf)
+            uint8_t maxsize0 = ((usb_device_descriptor_t *) epx->data_buf)
                 ->bMaxPacketSize0;
 
             printf("Starting SET_ADDRESS\n");
-            new_addr = next_device();
-            if (!new_addr) panic("No free devices\n"); // TODO: Handle this properly
+
+            // Allocate a new device
+            new_addr = next_dev_addr();
             device_t *dev = get_device(new_addr); // TODO: Again, handle missing device (needed?)
-            dev->ep0size = ep0size;
             set_device_address(new_addr); // TODO: Properly handle cleanup if this fails
         }   break;
 
@@ -602,7 +605,7 @@ void enumerate(bool reset) {
             dev0->state = DEVICE_ADDRESSED;
 
             printf("Starting GET_DEVICE\n");
-            get_device_descriptor(new_addr);
+            // get_device_descriptor(...); // TODO: Get this from data_buf
             break;
 
         case ENUMERATION_GET_DEVICE:
