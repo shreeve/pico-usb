@@ -355,7 +355,7 @@ typedef struct device {
  // uint8_t  class       ; // Device class
  // uint8_t  subclass    ; // Device subclass
  // uint8_t  protocol    ; // Device protocol
-    uint8_t  maxsize     ; // Maximum packet size for EP0
+    uint8_t  maxsize0    ; // Maximum packet size for EP0
  // uint16_t vid         ; // Vendor Id  (0x0403: FTDI)
  // uint16_t pid         ; // Product Id (0xcd18: Abaxis Piccolo Xpress)
  // uint16_t revision    ; // Revision number
