@@ -547,6 +547,7 @@ void transfer_zlp(endpoint_t *ep) {
     dar = ep->dev_addr | ep_num(ep)                  // Device address
                   << USB_ADDR_ENDP_ENDPOINT_LSB;     // EP number
     bcr = (in  ? 0 : USB_BUF_CTRL_FULL)              // Ready to 0=Recv, 1=Send
+        |            USB_BUF_CTRL_LAST               // Trigger TRANS_COMPLETE
         |            USB_BUF_CTRL_DATA1_PID          // SETUP/IN/OUT are DATA1
         |            USB_BUF_CTRL_AVAIL;             // Buffer is available now
 
