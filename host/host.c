@@ -535,8 +535,11 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 // Transfer a ZLP, but it makes several critical assumptions so be careful!
 void transfer_zlp(endpoint_t *ep) {
 
-    // Ensure this is the only active transfer
-    if (ep->active) panic("ZLP failed because another transfer is active");
+    // Sanity checks
+    if (!ep->configured) panic("Endpoint not configured");
+    if ( ep->active)     panic("ZLP failed because another transfer is active");
+
+    // Transfer is now active
     ep->active = true;
 
     // Nuke the setup packet so we don't accidentally refer to it
