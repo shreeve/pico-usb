@@ -6,8 +6,8 @@
 //   Note: This is a work in progress. It is not yet functional.
 //  Legal: Same license as the Raspberry Pi Pico SDK
 //
-// Thanks to the TinyUSB project for inspiration and code snippets! Also, thank
-// you Miroslav Nemecek for the https://github.com/Panda381/PicoLibSDK project.
+// Thanks to the TinyUSB project for inspiration. Also, Miroslav Nemecek's work
+// on https://github.com/Panda381/PicoLibSDK was very helpful.
 // ============================================================================
 
 #include <stdio.h>                // For printf
