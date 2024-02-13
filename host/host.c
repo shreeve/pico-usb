@@ -493,7 +493,8 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         | MIN(len, ep->maxsize);                     // Enforce max packet size
 
     // Debug output
-    printf(" EP%d_%-3s│ 0x%02x │\n", ep_num(ep), ep_dir(ep), ep->ep_addr);
+    printf(" EP%d_%-3s│ 0x%02x │ Device %u, Length %u\n",
+             ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr, len);
     bindump(" SSR", ssr);
     bindump(" SCR", scr);
     bindump(" DAR", dar);
