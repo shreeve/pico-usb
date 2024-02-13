@@ -889,9 +889,7 @@ void isr_usbctrl() {
     }
 
     // Any missed?
-    if (ints) {
-        panic("Unhandled IRQ 0x%04x", ints);
-    }
+    if (ints) panic("Unhandled IRQ 0x%04x", ints);
 
     printf("└───────┴──────┴─────────────────────────────────────┴────────────┘\n");
 }
