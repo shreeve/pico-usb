@@ -394,6 +394,13 @@ typedef struct device {
 
 static device_t devices[MAX_DEVICES], *dev0 = devices;
 
+// Get a device by its address
+SDK_INLINE device_t *get_device(uint8_t dev_addr) {
+    if (dev_addr < MAX_DEVICES) return &devices[dev_addr];
+    panic("Invalid device address %u requested", dev_addr); // TODO: Handle this properly
+    return NULL;
+}
+
 // Find the next device address
 uint8_t next_dev_addr() {
     for (uint8_t i = 1; i < MAX_DEVICES; i++) {
@@ -404,13 +411,6 @@ uint8_t next_dev_addr() {
     }
     panic("No free devices remaining"); // TODO: Handle this properly
     return 0;
-}
-
-// Get a device by its address
-SDK_INLINE device_t *get_device(uint8_t dev_addr) {
-    if (dev_addr < MAX_DEVICES) return &devices[dev_addr];
-    panic("Invalid device address %u requested", dev_addr); // TODO: Handle this properly
-    return NULL;
 }
 
 // Reset a device
