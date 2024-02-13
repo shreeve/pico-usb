@@ -70,14 +70,6 @@ enum {
     TASK_FUNCTION,
 };
 
-enum {
-    TRANSFER_SUCCESS, // used
-    TRANSFER_FAILED,  //
-    TRANSFER_STALLED, // used
-    TRANSFER_TIMEOUT, //
-    TRANSFER_INVALID, //
-};
-
 typedef struct {
     uint8_t type;
 
@@ -430,6 +422,14 @@ void reset_devices() {
 }
 
 // ==[ Transfers ]=============================================================
+
+enum {
+    TRANSFER_SUCCESS, // used
+    TRANSFER_FAILED,  //
+    TRANSFER_STALLED, // used
+    TRANSFER_TIMEOUT, //
+    TRANSFER_INVALID, //
+};
 
 enum {
     USB_SIE_CTRL_BASE = USB_SIE_CTRL_VBUS_EN_BITS       // Supply VBUS
