@@ -454,7 +454,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     device_t *dev = get_device(dev_addr);
     if (!dev->state || (dev_addr ? dev->state <  DEVICE_ACTIVE
                                  : dev->state >= DEVICE_ACTIVE)) {
-        panic("Invalid device"); // TODO: Handle this properly
+        panic("Invalid device %u", dev_addr); // TODO: Handle this properly
     }
 
     // Transfer is now active
