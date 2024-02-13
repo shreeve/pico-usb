@@ -896,6 +896,8 @@ void isr_usbctrl() {
             .transfer.result   = TRANSFER_SUCCESS,
         }));
 
+        // Clear the endpoint before queueing the transfer, so copy bytes_done
+        uint16_t bytes_done = ep->bytes_done;
         clear_endpoint(ep);
     }
 
