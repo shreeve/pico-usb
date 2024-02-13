@@ -148,10 +148,6 @@ SDK_INLINE const char *ep_dir(endpoint_t *ep) {
     return ep->ep_addr & USB_DIR_IN ? "IN" : "OUT";
 }
 
-SDK_WEAK void epx_cb(uint8_t *buf, uint16_t len) {
-    printf("Inside the EPX callback...\n");
-}
-
 // Reset an endpoint
 void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
 
@@ -168,7 +164,7 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
         .user_buf   = temp_buf,              // User buffer // TODO: What should this default to?
         .bytes_left = 0,                     // Bytes remaining
         .bytes_done = 0,                     // Bytes transferred
-        .cb         = epx_cb,                // Callback function
+        .cb         = NULL,                  // Callback function
     };
 
     // Helper variables
