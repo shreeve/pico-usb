@@ -155,7 +155,7 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
         .dev_addr   = 0,                     // Device address // HOST
         .ep_addr    = usb->bEndpointAddress, // Endpoint address
         .type       = usb->bmAttributes,     // Control, bulk, int, iso
-        .maxsize    = 0,                     // Maximum packet size
+        .maxsize    = usb->wMaxPacketSize,   // Maximum packet size
         .interval   = usb->bInterval,        // Polling interval in ms
         .data_pid   = 1,                     // Toggle DATA0/DATA1
         .active     = false,                 // Transfer is active
@@ -195,7 +195,7 @@ SDK_INLINE void reset_epx() {
         .bDescriptorType  = USB_DT_ENDPOINT,
         .bEndpointAddress = 0,
         .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
-        .wMaxPacketSize   = 0,
+        .wMaxPacketSize   = 8, // Default per USB 2.0 spec
         .bInterval        = 0,
     }));
 }
@@ -355,7 +355,6 @@ typedef struct device {
  // uint8_t  class       ; // Device class
  // uint8_t  subclass    ; // Device subclass
  // uint8_t  protocol    ; // Device protocol
-    uint8_t  maxsize0    ; // Maximum packet size for EP0
  // uint16_t vid         ; // Vendor Id  (0x0403: FTDI)
  // uint16_t pid         ; // Product Id (0xcd18: Abaxis Piccolo Xpress)
  // uint16_t revision    ; // Revision number
