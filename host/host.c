@@ -122,6 +122,7 @@ typedef struct endpoint {
     uint16_t   maxsize   ; // Maximum packet size
     uint16_t   interval  ; // Polling interval in ms
     uint8_t    data_pid  ; // Toggle DATA0/DATA1 each packet
+    bool       configured; // Endpoint is configured
     bool       active    ; // Transfer is active
     volatile
     uint8_t   *data_buf  ; // Data buffer
@@ -152,7 +153,6 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
 
     // Populate the endpoint
     *ep = (endpoint_t) {
-        .dev_addr   = 0,                     // Device address // HOST
         .ep_addr    = usb->bEndpointAddress, // Endpoint address
         .type       = usb->bmAttributes,     // Control, bulk, int, iso
         .maxsize    = usb->wMaxPacketSize,   // Maximum packet size
@@ -165,6 +165,13 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
         .bytes_done = 0,                     // Bytes transferred
         .cb         = NULL,                  // Callback function
     };
+
+    // We're done unless this is EPX or an interrupt endpoint
+    if (ep != epx && ep->type != USB_TRANSFER_TYPE_INTERRUPT) {
+        printf(" EP%d_%-3s│ 0x%02x │ Device %u\n",
+                 ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr);
+        return;
+    }
 
     // Helper variables
     uint32_t type   = ep->type;
@@ -180,12 +187,29 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
                  | offset;                         // Data buffer offset
 
     // Debug output
-    printf(" EP%d_%-3s│ 0x%02x │ Buffer 0x%04x\n",
-             ep_num(ep), ep_dir(ep), ep->ep_addr, offset);
+    printf(" EP%d_%-3s│ 0x%02x │ Device %u, Buffer 0x%04x\n",
+             ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr, offset);
     bindump(" ECR", ecr);
 
     // Set the ECR
     usbh_dpram->epx_ctrl = ecr;
+}
+
+// Allocate the next endpoint
+endpoint_t *next_ep(uint8_t dev_addr, usb_endpoint_descriptor_t *usb) {
+    endpoint_t *ep = NULL;
+
+    for (uint8_t i = 1; i < MAX_ENDPOINTS; i++) {
+        ep = &eps[i];
+        if (!ep->configured) {
+            ep->dev_addr = dev_addr;
+            reset_endpoint(ep, usb);
+            ep->configured = true;
+            return ep;
+        }
+    }
+    panic("No free endpoints remaining\n"); // TODO: Handle this properly
+    return NULL;
 }
 
 // Reset the EPX endpoint // TODO: Make this generic and accept ep_addr, mps, interval, etc. or maybe another EP to copy from?
@@ -596,7 +620,18 @@ void enumerate(bool reset) {
 
             // Allocate a new device
             new_addr = next_dev_addr();
-            device_t *dev = get_device(new_addr); // TODO: Again, handle missing device (needed?)
+            device_t *dev = get_device(new_addr);
+
+            // Allocate EP0 for the new device
+            endpoint_t *ep = next_ep(new_addr, &((usb_endpoint_descriptor_t) {
+                .bLength          = sizeof(usb_endpoint_descriptor_t),
+                .bDescriptorType  = USB_DT_ENDPOINT,
+                .bEndpointAddress = 0,
+                .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
+                .wMaxPacketSize   = maxsize0,
+                .bInterval        = 0,
+            }));
+
             set_device_address(new_addr); // TODO: Properly handle cleanup if this fails
         }   break;
 
