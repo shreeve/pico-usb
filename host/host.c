@@ -547,9 +547,10 @@ void transfer_zlp(endpoint_t *ep) {
 
     // Reverse the endpoint direction
     ep->ep_addr ^= USB_DIR_IN;
-    bool in = ep_in(ep);
 
+    // Calculate register values
     uint32_t scr, dar, bcr;
+    bool in = ep_in(ep);
     scr =            USB_SIE_CTRL_BASE               // SIE_CTRL defaults
      // | (ls  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS); // Preamble (LS on FS hub)
         | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive if IN to host
