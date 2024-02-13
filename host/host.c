@@ -204,23 +204,6 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
     usbh_dpram->epx_ctrl = ecr;
 }
 
-// Allocate the next endpoint
-endpoint_t *next_ep(uint8_t dev_addr, usb_endpoint_descriptor_t *usb) {
-    endpoint_t *ep = NULL;
-
-    for (uint8_t i = 1; i < MAX_ENDPOINTS; i++) {
-        ep = &eps[i];
-        if (!ep->configured) {
-            ep->dev_addr = dev_addr;
-            reset_endpoint(ep, usb);
-            ep->configured = true;
-            return ep;
-        }
-    }
-    panic("No free endpoints remaining"); // TODO: Handle this properly
-    return NULL;
-}
-
 // Reset the EPX endpoint // TODO: Make this generic and accept ep_addr, mps, interval, etc. or maybe another EP to copy from?
 SDK_INLINE void reset_epx() {
     reset_endpoint(epx, &((usb_endpoint_descriptor_t) {
@@ -251,6 +234,23 @@ endpoint_t *find_endpoint(uint8_t dev_addr, uint8_t ep_addr) {
         }
     }
     panic("Invalid endpoint 0x%02x for device %u", ep_addr, dev_addr);
+    return NULL;
+}
+
+// Allocate the next endpoint
+endpoint_t *next_ep(uint8_t dev_addr, usb_endpoint_descriptor_t *usb) {
+    endpoint_t *ep = NULL;
+
+    for (uint8_t i = 1; i < MAX_ENDPOINTS; i++) {
+        ep = &eps[i];
+        if (!ep->configured) {
+            ep->dev_addr = dev_addr;
+            reset_endpoint(ep, usb);
+            ep->configured = true;
+            return ep;
+        }
+    }
+    panic("No free endpoints remaining"); // TODO: Handle this properly
     return NULL;
 }
 
