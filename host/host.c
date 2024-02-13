@@ -736,18 +736,26 @@ void usb_task() {
                 enumerate(true);
                 break;
 
-            case TASK_TRANSFER:
-                if (task.transfer.len) {
-                    printf("(%u)", task.transfer.len);
+            case TASK_TRANSFER: {
+                endpoint_t *ep = find_endpoint(task.transfer.dev_addr,
+                                               task.transfer.ep_addr);
+                if (ep->dev_addr) {
+                    printf(" EP%d_%-3s│ 0x%02x │ Device %u, Length %u\n",
+                             ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr,
+                             task.transfer.len);
+                    printf(" Data");
                     hexdump(usbh_dpram->epx_data, task.transfer.len, 1);
-                    printf("Transfer complete\n");
-                } else if (dev0->state < DEVICE_ACTIVE) {
-                    transfer_zlp(epx);
-                    enumerate(false);
                 } else {
-                    printf("No data to send... should this be something?\n");
+                    if (task.transfer.len) {
+                        printf("(%u)", task.transfer.len);
+                        hexdump(usbh_dpram->epx_data, task.transfer.len, 1);
+                        transfer_zlp(epx);
+                    } else {
+                        printf("A friendly ZLP, so now enumerate?\n");
+                        enumerate(false);
+                    }
                 }
-                break;
+            }   break;
 
             case TASK_FUNCTION:
                 printf("Function call\n");
