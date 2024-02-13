@@ -543,10 +543,6 @@ void transfer_zlp(endpoint_t *ep) {
     // Transfer is now active
     ep->active = true;
 
-    // TODO: This method should probably be replaced!
-    // Nuke the setup packet so we don't accidentally refer to it
-    memclr((void *) usbh_dpram->setup_packet, sizeof(usb_setup_packet_t));
-
     // Reverse the endpoint direction
     ep->ep_addr ^= USB_DIR_IN;
 
@@ -859,7 +855,7 @@ void isr_usbctrl() {
             .transfer.dev_addr = dev_addr,
             .transfer.ep_addr  = ep_addr,
             .transfer.len      = bytes_done,
-            .transfer.status   = TRANSFER_SUCCESS, // TODO: Maybe we can flag the need for a ZLP here
+            .transfer.status   = TRANSFER_SUCCESS,
         }));
     }
 
@@ -938,18 +934,17 @@ void usb_task() {
                 // Debug output, unless this is a ZLP on dev0
                 if (ep->dev_addr || task.transfer.len) {
                     printf(" EP%d_%-3s│ 0x%02x │ Device %u, Length %u\n",
-                                ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr,
-                                task.transfer.len);
+                             ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr,
+                             task.transfer.len);
                     printf(" Data");
                     hexdump(usbh_dpram->epx_data, task.transfer.len, 1);
                 }
 
-                if (ep->dev_addr) {
-                    // TODO: Is there a callback or something we should add here?
-                    printf("HOLY CRAP!!! We are device %u\n", ep->dev_addr);
+                // For control transfers, send a ZLP or advance the enumeration
+                if (ep->type == USB_TRANSFER_TYPE_CONTROL) {
+                    task.transfer.len ? transfer_zlp(ep) : enumerate(false);
                 } else {
-                    bool need_zlp = *((uint16_t *) usbh_dpram->setup_packet); // TODO: How can we add this to the task structure?
-                    need_zlp ? transfer_zlp(ep) : enumerate(false);
+                    printf("We are in here as device %u!\n", ep->dev_addr);
                 }
             }   break;
 
