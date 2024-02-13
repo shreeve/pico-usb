@@ -415,10 +415,11 @@ uint8_t next_dev_addr() {
 
 // Reset a device
 void reset_device(uint8_t dev_addr) {
-    if (dev_addr < MAX_DEVICES) {
-        memclr(&devices[dev_addr], sizeof(device_t));
-    }
+    device_t *dev = get_device(dev_addr);
+    memclr(dev, sizeof(device_t));
     // TODO: Surely, there must be more work to do here?
+    // memset(dev->itf2drv, TUSB_INDEX_INVALID_8, sizeof(dev->itf2drv)); // invalid mapping
+    // memset(dev->ep2drv , TUSB_INDEX_INVALID_8, sizeof(dev->ep2drv )); // invalid mapping
 }
 
 void reset_devices() {
@@ -426,12 +427,6 @@ void reset_devices() {
     // Clear out all devices
     memclr(devices, sizeof(devices));
 }
-
-// static void clear_device(usbh_device_t* dev) {
-//   tu_memclr(dev, sizeof(usbh_device_t));
-//   memset(dev->itf2drv, TUSB_INDEX_INVALID_8, sizeof(dev->itf2drv)); // invalid mapping
-//   memset(dev->ep2drv , TUSB_INDEX_INVALID_8, sizeof(dev->ep2drv )); // invalid mapping
-// }
 
 // ==[ Transfers ]=============================================================
 
