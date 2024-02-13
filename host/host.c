@@ -148,6 +148,13 @@ SDK_INLINE const char *ep_dir(endpoint_t *ep) {
     return ep->ep_addr & USB_DIR_IN ? "IN" : "OUT";
 }
 
+SDK_INLINE void clear_endpoint(endpoint_t *ep) {
+    ep->active     = false;
+    ep->user_buf   = temp_buf; // TODO: Add something like a ring buffer here?
+    ep->bytes_left = 0;
+    ep->bytes_done = 0;
+}
+
 // Reset an endpoint
 void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
 
@@ -234,13 +241,6 @@ void reset_endpoints() {
     // Allocate the endpoints
     reset_epx();
     // TODO: Add the rest here
-}
-
-SDK_INLINE void clear_endpoint(endpoint_t *ep) {
-    ep->active     = false;
-    ep->user_buf   = temp_buf; // TODO: Add something like a ring buffer here?
-    ep->bytes_left = 0;
-    ep->bytes_done = 0;
 }
 
 endpoint_t *find_endpoint(uint8_t dev_addr, uint8_t ep_addr) {
