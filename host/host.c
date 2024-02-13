@@ -214,6 +214,7 @@ SDK_INLINE void reset_epx() {
         .wMaxPacketSize   = 8, // Default per USB 2.0 spec
         .bInterval        = 0,
     }));
+    epx->configured = true;
 }
 
 void reset_endpoints() {
