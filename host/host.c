@@ -343,7 +343,9 @@ void prepare_buffers(endpoint_t *ep) {
 
 // Handle a buffer within the interrupt handler
 void handle_buffer(endpoint_t *ep) {
-    if (!ep->active) panic("EP 0x%02x not active", ep->ep_addr);
+    if (!ep->active) {
+        panic("Inactive EP 0x%02x for device %u", ep->ep_addr, ep->dev_addr);
+    }
 
     sync_buffers(ep);
 
