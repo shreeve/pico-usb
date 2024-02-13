@@ -248,6 +248,7 @@ endpoint_t *find_endpoint(uint8_t dev_addr, uint8_t ep_addr) {
             return &eps[i];
         }
     }
+    panic("Invalid endpoint 0x%02x for device %u", ep_addr, dev_addr);
     return NULL;
 }
 
