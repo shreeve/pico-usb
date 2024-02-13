@@ -654,11 +654,14 @@ void enumerate(bool reset) {
             set_device_address(new_addr); // TODO: Properly handle cleanup if this fails
         }   break;
 
-        case ENUMERATION_SET_ADDRESS:
+        case ENUMERATION_SET_ADDRESS: {
+            endpoint_t *ep = &eps[1]; // TODO: Totally cheating here...
+            device_t *dev = get_device(new_addr);
+            dev->state = DEVICE_ADDRESSED;
 
             printf("Starting GET_DEVICE\n");
-            // get_device_descriptor(...); // TODO: Get this from data_buf
-            break;
+            get_device_descriptor(ep);
+        }   break;
 
         case ENUMERATION_GET_DEVICE:
 
