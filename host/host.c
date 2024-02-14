@@ -803,16 +803,20 @@ void isr_usbctrl() {
         // endpoints, since they "come in pairs". So, we would deal with
         // EP3IN/EP3OUT at the same time and mask with 0b11, etc.
 
-        // Check the interrupt/asynchronous endpoints (IN and OUT)
-        for (uint8_t i = 0; i <= MAX_ENDPOINTS && bits; i++) {
-            for (uint8_t j = 0; j < 2; j++) {
-                mask = 1 << (i * 2 + j);
-                if (bits &  mask) {
-                    bits ^= mask;
-                    handle_buffer(&eps[i]);
-                }
-            }
-        }
+        // **MASSIVE NOTE** Right now, we aren't using any of the
+        // interrupt endpoints, so EVERYTHING is going through EPX.
+        handle_buffer(epx); bits ^= 0x01; // TODO: Remove this block
+
+//         // Check the interrupt/asynchronous endpoints (IN and OUT)
+//         for (uint8_t i = 0; i <= MAX_ENDPOINTS && bits; i++) {
+//             for (uint8_t j = 0; j < 2; j++) {
+//                 mask = 1 << (i * 2 + j);
+//                 if (bits &  mask) {
+//                     bits ^= mask;
+//                     handle_buffer(&eps[i]);
+//                 }
+//             }
+//         }
 
         // Panic if we missed any buffers
         if (bits) panic("Unhandled buffer mask: %032b", bits);
