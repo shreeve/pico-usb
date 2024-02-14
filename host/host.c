@@ -596,7 +596,7 @@ void get_device_descriptor(endpoint_t *ep) {
         .bRequest      = USB_REQUEST_GET_DESCRIPTOR,
         .wValue        = MAKE_U16(USB_DT_DEVICE, 0),
         .wIndex        = 0,
-        .wLength       = sizeof(usb_device_descriptor_t),
+        .wLength       = MIN(ep->maxsize, sizeof(usb_device_descriptor_t)),
     }));
 }
 
