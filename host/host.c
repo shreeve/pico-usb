@@ -473,8 +473,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     scr =            USB_SIE_CTRL_BASE               // SIE_CTRL defaults
      // | (ls  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS)  // Preamble (LS on FS hub)
         |            USB_SIE_CTRL_SEND_SETUP_BITS    // Send SETUP transaction
-        |(!len ? 0 : in                              // Then, if DATA follows:
-                   ? USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive bit means IN
+        | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive bit means IN
                    : USB_SIE_CTRL_SEND_DATA_BITS)    // Send bit means OUT
         |            USB_SIE_CTRL_START_TRANS_BITS;  // Start the transfer now
     dar = dev_addr | ep_num(ep)                      // Device address
@@ -484,7 +483,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         |            USB_BUF_CTRL_LAST               // Trigger TRANS_COMPLETE
         |            USB_BUF_CTRL_DATA1_PID          // Start IN/OUT at DATA1
         |            USB_BUF_CTRL_AVAIL              // Buffer is available now
-        | size;                                      // Setup packet size
+        | MIN(ep->maxsize, len);                     // IN or OUT buffer length
 
     // Debug output
     printf(" EP%d_%-3s│ 0x%02x │ Device %u, Length %u\n",
