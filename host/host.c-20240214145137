@@ -75,6 +75,7 @@ typedef struct endpoint {
     uint8_t    data_pid  ; // Toggle DATA0/DATA1 each packet
     bool       configured; // Endpoint is configured
     bool       active    ; // Transfer is active
+    bool       needs_zlp ; // Set if a ZLP is needed
     volatile
     uint8_t   *data_buf  ; // Data buffer
     uint8_t   *user_buf  ; // User buffer
@@ -118,6 +119,7 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
         .interval   = usb->bInterval,        // Polling interval in ms
         .data_pid   = 1,                     // Toggle DATA0/DATA1
         .configured = false,                 // Not configured yet
+        .needs_zlp  = false,                 // No ZLP needed
         .active     = false,                 // Transfer is active
         .data_buf   = usbh_dpram->epx_data,  // Data buffer
         .user_buf   = temp_buf,              // User buffer // TODO: What should this default to?
@@ -132,6 +134,8 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
                  ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr);
         return;
     }
+
+    printf("\n\nARE YOU SURE YOU WANT TO CONFIGURE THIS ENDPOINT LIKE THIS?\n\n");
 
     // Helper variables
     uint32_t type   = ep->type;
@@ -248,7 +252,7 @@ const char *task_name(uint8_t type) {
 
 // Sync a buffer and return byte count
 uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
-    uint32_t bcr = usbh_dpram->epx_buf_ctrl; if (buf_id) bcr = bcr >> 16;
+    uint32_t bcr = usbh_dpram->epx_buf_ctrl; if (buf_id) bcr = bcr >> 16; // TODO: Move this to sync_buffers and calculate it only once
     uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK; if (!len) return 0; // TODO: Do we need to set ep->bytes_left = 0
     bool    full = bcr & USB_BUF_CTRL_FULL;
     bool      in = ep_in(ep);
@@ -462,6 +466,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     ep->bytes_left = len;
     ep->bytes_done = 0;
     ep->user_buf   = temp_buf; // TODO: Add something asap, NULL is... sub-optimal. Maybe use something like a ring buffer here?
+    ep->needs_zlp  = true;
 
     // Copy the setup packet
     memcpy((void *) usbh_dpram->setup_packet, packet, size);
@@ -766,21 +771,21 @@ void isr_usbctrl() {
         }
     }
 
-    // Stall detected (higher priority than BUFF_STATUS and TRANS_COMPLETE)
-    if (ints &  USB_INTS_STALL_BITS) {
-        ints ^= USB_INTS_STALL_BITS;
-
-        usb_hw_clear->sie_status = USB_SIE_STATUS_STALL_REC_BITS;
-
-        // Queue the stalled transfer
-        queue_add_blocking(queue, &((task_t) {
-            .type              = TASK_TRANSFER,
-            .transfer.dev_addr = 42, // TODO: Need to flesh this out
-            .transfer.ep_addr  = 37, // TODO: Need to flesh this out
-            .transfer.len      = 0,  // TODO: Need to flesh this out
-            .transfer.status   = TRANSFER_STALLED,
-        }));
-    }
+//     // Stall detected (higher priority than BUFF_STATUS and TRANS_COMPLETE)
+//     if (ints &  USB_INTS_STALL_BITS) {
+//         ints ^= USB_INTS_STALL_BITS;
+//
+//         usb_hw_clear->sie_status = USB_SIE_STATUS_STALL_REC_BITS;
+//
+//         // Queue the stalled transfer
+//         queue_add_blocking(queue, &((task_t) {
+//             .type              = TASK_TRANSFER,
+//             .transfer.dev_addr = 42, // TODO: Need to flesh this out
+//             .transfer.ep_addr  = 37, // TODO: Need to flesh this out
+//             .transfer.len      = 0,  // TODO: Need to flesh this out
+//             .transfer.status   = TRANSFER_STALLED,
+//         }));
+//     }
 
     // Buffer processing is needed
     if (ints &  USB_INTS_BUFF_STATUS_BITS) {
@@ -843,17 +848,17 @@ void isr_usbctrl() {
         // Panic if the endpoint is not active
         if (!ep->active) panic("EP should still be active in TRANS_COMPLETE");
 
+
+printf("TRANSFER:\nbytes_done: %u\nbytes_left: %u\n", ep->bytes_done, ep->bytes_left);
+
         // Clear the endpoint before queueing the transfer, so copy bytes_done
         uint16_t bytes_done = ep->bytes_done;
         clear_endpoint(ep);
 
         // Queue a task for the transfer
         queue_add_blocking(queue, &((task_t) {
-            .type              = TASK_TRANSFER,
-            .transfer.dev_addr = dev_addr,
-            .transfer.ep_addr  = ep_addr,
-            .transfer.len      = bytes_done,
-            .transfer.status   = TRANSFER_SUCCESS,
+            .type        = TASK_TRANSFER,
+            .transfer.ep = ep, // transfer.status   = TRANSFER_SUCCESS,
         }));
     }
 
@@ -924,21 +929,21 @@ void usb_task() {
                 break;
 
             case TASK_TRANSFER: {
-                endpoint_t *ep = find_endpoint(task.transfer.dev_addr,
-                                               task.transfer.ep_addr);
+                endpoint_t *ep = task.transfer.ep;
+                uint16_t len = ep->bytes_done;
 
                 // Debug output, unless this is a ZLP on dev0
-                if (ep->dev_addr || task.transfer.len) {
+                if (ep->dev_addr || len) {
                     printf(" EP%d_%-3s│ 0x%02x │ Device %u, Length %u\n",
                              ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr,
-                             task.transfer.len);
+                             len);
                     printf(" Data");
-                    hexdump(usbh_dpram->epx_data, task.transfer.len, 1);
+                    hexdump(usbh_dpram->epx_data, len, 1);
                 }
 
                 // For control transfers, send a ZLP or advance the enumeration
                 if (ep->type == USB_TRANSFER_TYPE_CONTROL) {
-                    task.transfer.len ? transfer_zlp(ep) : enumerate(false);
+                    // len ? transfer_zlp(ep) : enumerate(false); // FIXME: This is the key spot!
                 } else {
                     printf("We are in here as device %u!\n", ep->dev_addr);
                 }
@@ -970,3 +975,12 @@ int main() {
         usb_task();
     }
 }
+
+/* Problems with the datasheet:
+
+* Datasheet § 4.1.2.5.4 (p. 387, table 395) for bit 15, the information is
+  specific to DEVICE MODE. For HOST MODE, swap all IN/OUT references.
+
+* "An IN transfer" -> Should be "An IN transaction" (p. 390)
+
+*/
