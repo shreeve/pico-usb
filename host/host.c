@@ -766,21 +766,21 @@ void isr_usbctrl() {
         }
     }
 
-    // Stall detected (higher priority than BUFF_STATUS and TRANS_COMPLETE)
-    if (ints &  USB_INTS_STALL_BITS) {
-        ints ^= USB_INTS_STALL_BITS;
-
-        usb_hw_clear->sie_status = USB_SIE_STATUS_STALL_REC_BITS;
-
-        // Queue the stalled transfer
-        queue_add_blocking(queue, &((task_t) {
-            .type              = TASK_TRANSFER,
-            .transfer.dev_addr = 42, // TODO: Need to flesh this out
-            .transfer.ep_addr  = 37, // TODO: Need to flesh this out
-            .transfer.len      = 0,  // TODO: Need to flesh this out
-            .transfer.status   = TRANSFER_STALLED,
-        }));
-    }
+//     // Stall detected (higher priority than BUFF_STATUS and TRANS_COMPLETE)
+//     if (ints &  USB_INTS_STALL_BITS) {
+//         ints ^= USB_INTS_STALL_BITS;
+//
+//         usb_hw_clear->sie_status = USB_SIE_STATUS_STALL_REC_BITS;
+//
+//         // Queue the stalled transfer
+//         queue_add_blocking(queue, &((task_t) {
+//             .type              = TASK_TRANSFER,
+//             .transfer.dev_addr = 42, // TODO: Need to flesh this out
+//             .transfer.ep_addr  = 37, // TODO: Need to flesh this out
+//             .transfer.len      = 0,  // TODO: Need to flesh this out
+//             .transfer.status   = TRANSFER_STALLED,
+//         }));
+//     }
 
     // Buffer processing is needed
     if (ints &  USB_INTS_BUFF_STATUS_BITS) {
