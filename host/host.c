@@ -474,7 +474,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     bool in = ep_in(ep);
     ssr = usb_hw->sie_status;                        // SIE_STATUS register
     scr =            USB_SIE_CTRL_BASE               // SIE_CTRL defaults
-     // | (ls  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS); // Preamble (LS on FS hub)
+     // | (ls  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS)  // Preamble (LS on FS hub)
         |            USB_SIE_CTRL_SEND_SETUP_BITS    // Always set SETUP bit
         |(!len ? 0 : in                              // If DATA phase present:
                    ? USB_SIE_CTRL_RECEIVE_DATA_BITS  // - IN sets receive bit
