@@ -443,7 +443,8 @@ enum {
 // TODO: Abort a transfer if not yet started and return true on success
 
 void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
-    uint8_t len = packet->wLength; // Length of the data phase
+    uint8_t len  = packet->wLength;            // Length of the data phase
+    uint8_t size = sizeof(usb_setup_packet_t); // Size of the setup packet
 
     // Sanity checks
     if (!ep->configured) panic("Endpoint not configured");
@@ -466,7 +467,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     ep->user_buf   = temp_buf; // TODO: Add something asap, NULL is... sub-optimal. Maybe use something like a ring buffer here?
 
     // Copy the setup packet
-    memcpy((void *) usbh_dpram->setup_packet, packet, sizeof(usb_setup_packet_t));
+    memcpy((void *) usbh_dpram->setup_packet, packet, size);
 
     // Calculate register values
     uint32_t ssr, scr, dar, ecr, bcr;
@@ -486,7 +487,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         |            USB_BUF_CTRL_LAST               // Trigger TRANS_COMPLETE
         |            USB_BUF_CTRL_DATA1_PID          // SETUP/IN/OUT are DATA1
         |            USB_BUF_CTRL_AVAIL              // Buffer is available now
-        | MIN(len, ep->maxsize);                     // Enforce max packet size
+        | size;                                      // Setup packet size
 
     // Debug output
     printf(" EP%d_%-3s│ 0x%02x │ Device %u, Length %u\n",
@@ -498,7 +499,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     bindump(" BCR", bcr);
 
     printf("<Setup");
-    hexdump(packet, sizeof(usb_setup_packet_t), 1);
+    hexdump(packet, size, 1);
 
     // NOTE: When clk_sys (usually 133Mhz) and clk_usb (usually 48MHz) are not
     // the same, the processor and the USB controller run at different speeds.
