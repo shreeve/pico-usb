@@ -248,7 +248,7 @@ const char *task_name(uint8_t type) {
 
 // Sync a buffer and return byte count
 uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
-    uint32_t bcr = usbh_dpram->epx_buf_ctrl; if (buf_id) bcr = bcr >> 16;
+    uint32_t bcr = usbh_dpram->epx_buf_ctrl; if (buf_id) bcr = bcr >> 16; // TODO: Move this to sync_buffers and calculate it only once
     uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK; if (!len) return 0; // TODO: Do we need to set ep->bytes_left = 0
     bool    full = bcr & USB_BUF_CTRL_FULL;
     bool      in = ep_in(ep);
