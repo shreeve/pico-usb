@@ -852,11 +852,8 @@ void isr_usbctrl() {
 
         // Queue a task for the transfer
         queue_add_blocking(queue, &((task_t) {
-            .type              = TASK_TRANSFER,
-            .transfer.dev_addr = dev_addr,
-            .transfer.ep_addr  = ep_addr,
-            .transfer.len      = bytes_done,
-            .transfer.status   = TRANSFER_SUCCESS,
+            .type = TASK_TRANSFER,
+            .transfer.ep = ep,
         }));
     }
 
@@ -927,21 +924,21 @@ void usb_task() {
                 break;
 
             case TASK_TRANSFER: {
-                endpoint_t *ep = find_endpoint(task.transfer.dev_addr,
-                                               task.transfer.ep_addr);
+                endpoint_t *ep = task.transfer.ep;
+                uint16_t len = ep->bytes_done;
 
                 // Debug output, unless this is a ZLP on dev0
-                if (ep->dev_addr || task.transfer.len) {
+                if (ep->dev_addr || len) {
                     printf(" EP%d_%-3s│ 0x%02x │ Device %u, Length %u\n",
                              ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr,
-                             task.transfer.len);
+                             len);
                     printf(" Data");
-                    hexdump(usbh_dpram->epx_data, task.transfer.len, 1);
+                    hexdump(usbh_dpram->epx_data, len, 1);
                 }
 
                 // For control transfers, send a ZLP or advance the enumeration
                 if (ep->type == USB_TRANSFER_TYPE_CONTROL) {
-                    task.transfer.len ? transfer_zlp(ep) : enumerate(false);
+                    len ? transfer_zlp(ep) : enumerate(false);
                 } else {
                     printf("We are in here as device %u!\n", ep->dev_addr);
                 }
