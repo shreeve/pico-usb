@@ -475,10 +475,10 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     ssr = usb_hw->sie_status;                        // SIE_STATUS register
     scr =            USB_SIE_CTRL_BASE               // SIE_CTRL defaults
      // | (ls  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS); // Preamble (LS on FS hub)
-        |(!len ? 0 : in                              // No DATA phase if no len
-                   ? USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive if IN to host
-                   : USB_SIE_CTRL_SEND_DATA_BITS)    // Send if OUT from host
-        |            USB_SIE_CTRL_SEND_SETUP_BITS    // Send a SETUP packet
+        |            USB_SIE_CTRL_SEND_SETUP_BITS    // Always set SETUP bit
+        |(!len ? 0 : in                              // If DATA phase present:
+                   ? USB_SIE_CTRL_RECEIVE_DATA_BITS  // - IN sets receive bit
+                   : USB_SIE_CTRL_SEND_DATA_BITS)    // - OUT sets send bit
         |            USB_SIE_CTRL_START_TRANS_BITS;  // Start the transfer now
     dar = dev_addr | ep_num(ep)                      // Device address
                   << USB_ADDR_ENDP_ENDPOINT_LSB;     // EP number
