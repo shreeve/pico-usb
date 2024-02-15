@@ -461,7 +461,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     if ( ep->active)          panic("Only one control transfer at a time");
     if ( ep->type)            panic("Control transfers require a control EP");
 
-    // Validate the device
+    // Validate device address and state
     uint8_t dev_addr = ep->dev_addr;
     device_t *dev = get_device(dev_addr);
     if (!dev->state || (dev_addr ? dev->state <  DEVICE_ADDRESSED
