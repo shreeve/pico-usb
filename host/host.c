@@ -547,21 +547,12 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 }
 
 // Transfer a ZLP, but it makes several critical assumptions so be careful!
-void transfer_zlp(endpoint_t *ep) {
-
-    // Sanity checks
-    if (!ep->configured) panic("Endpoint not configured");
-    if ( ep->active)     panic("ZLP failed because another transfer is active");
-
-    // Transfer is now active
-    ep->active = true;
-
-    // Reverse the endpoint direction
-    ep->ep_addr ^= USB_DIR_IN;
+// TODO: Merge with start_control_transfer (ep has info, packet would be NULL)
+void transfer_zlp(uint8_t dev_addr, uint8_t ep_addr) {
+    bool in = ep_in(ep_addr);
 
     // Calculate register values
     uint32_t scr, dar, bcr;
-    bool in = ep_in(ep);
     scr =            USB_SIE_CTRL_BASE               // SIE_CTRL defaults
      // | (ls  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS)  // Preamble (LS on FS hub)
         | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive bit means IN
