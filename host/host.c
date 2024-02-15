@@ -812,7 +812,16 @@ void isr_usbctrl() {
 
         // **MASSIVE NOTE** Right now, we aren't using any of the
         // interrupt endpoints, so EVERYTHING is going through EPX.
-        handle_buffer(epx); bits ^= 0x01; // TODO: Remove this block
+
+        // Use the DAR to determine dev_addr and ep_addr
+        volatile uint32_t dar = usb_hw->dev_addr_ctrl;
+        uint8_t dev_addr =  dar & USB_ADDR_ENDP_ADDRESS_BITS;
+        uint8_t ep_addr  = (dar & USB_ADDR_ENDP_ENDPOINT_BITS) >>
+                                  USB_ADDR_ENDP_ENDPOINT_LSB;
+
+        // Lookup the endpoint
+        endpoint_t *ep = find_endpoint(dev_addr, ep_addr); // TODO: Handle missing endpoints
+        handle_buffer(ep); bits ^= 0x01; // TODO: Remove this block
 
 //         // Check the interrupt/asynchronous endpoints (IN and OUT)
 //         for (uint8_t i = 0; i <= MAX_ENDPOINTS && bits; i++) {
