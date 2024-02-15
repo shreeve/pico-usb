@@ -120,7 +120,7 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
         .data_pid   = 1,                     // Toggle DATA0/DATA1
         .configured = false,                 // Not configured yet
         .active     = false,                 // Transfer is active
-        .data_buf   = usbh_dpram->epx_data,  // Data buffer
+        .data_buf   = usbh_dpram->epx_data,  // Data buffer // TODO: What should this default to?
         .user_buf   = temp_buf,              // User buffer // TODO: What should this default to?
         .bytes_left = 0,                     // Bytes remaining
         .bytes_done = 0,                     // Bytes transferred
