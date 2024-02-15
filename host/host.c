@@ -87,16 +87,16 @@ static endpoint_t eps[MAX_ENDPOINTS], *epx = eps;
 
 static uint8_t temp_buf[TEMP_BUF_SIZE];
 
-SDK_INLINE const char *ep_dir(endpoint_t *ep) {
-    return ep->ep_addr & USB_DIR_IN ? "IN" : "OUT";
+SDK_INLINE const char *ep_dir(uint8_t ep_addr) {
+    return ep_addr & USB_DIR_IN ? "IN" : "OUT";
 }
 
-SDK_INLINE bool ep_in(endpoint_t *ep) {
-    return ep->ep_addr & USB_DIR_IN;
+SDK_INLINE bool ep_in(uint8_t ep_addr) {
+    return ep_addr & USB_DIR_IN;
 }
 
-SDK_INLINE uint8_t ep_num(endpoint_t *ep) {
-    return ep->ep_addr & ~USB_DIR_IN;
+SDK_INLINE uint8_t ep_num(uint8_t ep_addr) {
+    return ep_addr & ~USB_DIR_IN;
 }
 
 SDK_INLINE void clear_endpoint(endpoint_t *ep) {
@@ -108,11 +108,12 @@ SDK_INLINE void clear_endpoint(endpoint_t *ep) {
 
 // Reset an endpoint
 void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
+    uint8_t ep_addr = usb->bEndpointAddress;
 
     // Populate the endpoint
     *ep = (endpoint_t) {
         .dev_addr   = ep->dev_addr,          // Device address
-        .ep_addr    = usb->bEndpointAddress, // Endpoint address
+        .ep_addr    = ep_addr,               // Endpoint address
         .type       = usb->bmAttributes,     // Control, bulk, int, iso
         .maxsize    = usb->wMaxPacketSize,   // Maximum packet size
         .interval   = usb->bInterval,        // Polling interval in ms
@@ -128,8 +129,8 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
 
     // We're done unless this is EPX or an interrupt endpoint
     if (ep != epx && ep->type != USB_TRANSFER_TYPE_INTERRUPT) {
-        printf(" EP%d_%-3s│ 0x%02x │ Device %u\n",
-                 ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr);
+        printf(" EP%d_%-3s│ 0x%02x │ Reset on Device %u\n",
+                 ep_num(ep_addr), ep_dir(ep_addr), ep_addr, ep->dev_addr);
         return;
     }
 
@@ -147,8 +148,8 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
                  | offset;                         // Data buffer offset
 
     // Debug output
-    printf(" EP%d_%-3s│ 0x%02x │ Device %u, Buffer 0x%04x\n",
-             ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr, offset);
+    printf(" EP%d_%-3s│ 0x%02x │ Reset on Device %u, Buffer 0x%04x\n",
+             ep_num(ep_addr), ep_dir(ep_addr), ep_addr, ep->dev_addr, offset);
     bindump(" ECR", ecr);
 
     // Set the ECR
@@ -251,7 +252,7 @@ uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
     uint32_t bcr = usbh_dpram->epx_buf_ctrl; if (buf_id) bcr = bcr >> 16; // TODO: Move this to sync_buffers and calculate it only once
     uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK; if (!len) return 0; // TODO: Do we need to set ep->bytes_left = 0
     bool    full = bcr & USB_BUF_CTRL_FULL;
-    bool      in = ep_in(ep);
+    bool      in = ep_in(ep->ep_addr);
 
     // We should only read from a full buffer or write to an empty buffer
     assert(in == full);
@@ -295,7 +296,7 @@ uint32_t prepare_buffer(endpoint_t *ep, uint8_t buf_id) {
     ep->data_pid   ^= 1u;
 
     // Copy the outbound user buffer to the data buffer
-    if (!ep_in(ep)) {
+    if (!ep_in(ep->ep_addr)) {
         memcpy((void *) (ep->data_buf + buf_id * 64), ep->user_buf, len);
         ep->user_buf += len;
         bcr |= USB_BUF_CTRL_FULL;
@@ -444,9 +445,10 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     uint8_t size = sizeof(usb_setup_packet_t); // Size of the setup packet
 
     // Sanity checks
-    if (!ep->configured) panic("Endpoint not configured");
-    if ( ep_num(ep))     panic("Control transfers must use EP0");
-    if ( ep->active)     panic("Only one control transfer at a time");
+    if ( ep_num(ep->ep_addr)) panic("Control transfers must use EP0");
+    if (!ep->configured)      panic("Endpoint not configured");
+    if ( ep->active)          panic("Only one control transfer at a time");
+    if ( ep->type)            panic("Control transfers require a control EP");
 
     // Validate the device
     uint8_t dev_addr = ep->dev_addr;
@@ -458,7 +460,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 
     // Transfer is now active
     ep->active     = true;
-    ep->ep_addr    = packet->bmRequestType & USB_DIR_IN;
+    ep->ep_addr    = ep_addr;
     ep->bytes_left = len;
     ep->bytes_done = 0;
     ep->user_buf   = temp_buf; // TODO: Add something asap, NULL is... sub-optimal. Maybe use something like a ring buffer here?
@@ -468,7 +470,6 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 
     // Calculate register values
     uint32_t ssr, scr, dar, ecr, bcr;
-    bool in = ep_in(ep);
     ssr = usb_hw->sie_status;                        // SIE_STATUS register
     scr =            USB_SIE_CTRL_BASE               // SIE_CTRL defaults
      // | (ls  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS)  // Preamble (LS on FS hub)
@@ -476,7 +477,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive bit means IN
                    : USB_SIE_CTRL_SEND_DATA_BITS)    // Send bit means OUT
         |            USB_SIE_CTRL_START_TRANS_BITS;  // Start the transfer now
-    dar = dev_addr | ep_num(ep)                      // Device address
+    dar = dev_addr | ep_num(ep_addr)                 // Device address
                   << USB_ADDR_ENDP_ENDPOINT_LSB;     // EP number
     ecr = usbh_dpram->epx_ctrl;                      // EPX control register
     bcr = (in  ? 0 : USB_BUF_CTRL_FULL)              // IN/Recv=0, OUT/Send=1
@@ -487,7 +488,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 
     // Debug output
     printf(" EP%d_%-3s│ 0x%02x │ Device %u, Length %u\n",
-             ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr, len);
+             ep_num(ep_addr), ep_dir(ep_addr), ep_addr, ep->dev_addr, len);
     bindump(" SSR", ssr);
     bindump(" SCR", scr);
     bindump(" DAR", dar);
@@ -551,7 +552,7 @@ void transfer_zlp(endpoint_t *ep) {
         | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive bit means IN
                    : USB_SIE_CTRL_SEND_DATA_BITS)    // Send bit means OUT
         |            USB_SIE_CTRL_START_TRANS_BITS;  // Start the transfer now
-    dar = ep->dev_addr | ep_num(ep)                  // Device address
+    dar = dev_addr | ep_num(ep_addr)                 // Device address
                   << USB_ADDR_ENDP_ENDPOINT_LSB;     // EP number
     bcr = (in  ? 0 : USB_BUF_CTRL_FULL)              // IN/Recv=0, OUT/Send=1
         |            USB_BUF_CTRL_LAST               // Trigger TRANS_COMPLETE
@@ -927,14 +928,14 @@ void usb_task() {
                 break;
 
             case TASK_TRANSFER: {
-                endpoint_t *ep = find_endpoint(task.transfer.dev_addr,
-                                               task.transfer.ep_addr);
+                uint8_t dev_addr = task.transfer.dev_addr;
+                uint8_t ep_addr  = task.transfer.ep_addr;
 
                 // Debug output, unless this is a ZLP on dev0
-                if (ep->dev_addr || task.transfer.len) {
+                if (dev_addr || task.transfer.len) {
                     printf(" EP%d_%-3s│ 0x%02x │ Device %u, Length %u\n",
-                             ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr,
-                             task.transfer.len);
+                             ep_num(ep_addr), ep_dir(ep_addr),
+                             ep_addr, dev_addr, task.transfer.len);
                     printf(" Data");
                     hexdump(usbh_dpram->epx_data, task.transfer.len, 1);
                 }
