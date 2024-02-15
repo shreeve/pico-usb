@@ -657,7 +657,7 @@ void enumerate(bool reset) {
 
         case ENUMERATION_SET_ADDRESS: {
             endpoint_t *ep = &eps[1]; // TODO: Totally cheating here...
-            device_t *dev = get_device(new_addr);
+            device_t *dev = get_device(new_addr); // TODO: WTF? How do we just pass new_addr in like this?! What's the best way to "hand off" the device address from the prior step?
             dev->state = DEVICE_ADDRESSED;
 
             printf("Starting GET_DEVICE\n");
