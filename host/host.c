@@ -915,7 +915,7 @@ void usb_task() {
                 // }
 
                 // Initialize dev0
-                reset_device(0); // TODO: Is this necessary? Probably...
+                reset_device(0); // TODO: Is this really necessary?
                 dev0->speed = task.connect.speed;
                 dev0->state = DEVICE_CONNECTED;
 
