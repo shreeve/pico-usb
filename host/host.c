@@ -232,7 +232,10 @@ typedef struct {
         } connect;
 
         struct {
-            endpoint_t *ep;
+            uint8_t  dev_addr;
+            uint8_t  ep_addr;
+            uint16_t len;
+            uint8_t  status;
         } transfer;
 
         struct {
