@@ -452,8 +452,8 @@ enum {
 // TODO: Abort a transfer if not yet started and return true on success
 
 void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
-    uint8_t len  = packet->wLength;            // Length of the data phase
     uint8_t size = sizeof(usb_setup_packet_t); // Size of the setup packet
+    uint8_t len  = packet->wLength;            // Length of the data phase
 
     // Sanity checks
     if ( ep_num(ep->ep_addr)) panic("Control transfers must use EP0");
