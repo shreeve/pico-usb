@@ -712,12 +712,13 @@ void reset_usb_host() {
                       | USB_INTE_ERROR_RX_TIMEOUT_BITS   // Receive timeout
                       | (0xffffffff ^ 0x00000004);       // NOTE: Debug all on
 
-    reset_devices();
-    reset_endpoints();
+    irq_set_enabled(USBCTRL_IRQ, true);
 
     bindump(" INT", usb_hw->inte);
+    printf("\n");
 
-    irq_set_enabled(USBCTRL_IRQ, true);
+    reset_devices();
+    reset_endpoints();
 }
 
 // ==[ Interrupts ]============================================================
