@@ -893,6 +893,9 @@ void isr_usbctrl() {
     // Any missed?
     if (ints) panic("Unhandled IRQ 0x%04x", ints);
 
+    // TODO: I see a lot of NAK's being set in SSR... this will clear it, but can we prevent it or deal with it better?
+    // usb_hw_clear->sie_status = 1 << 28u; // Clear the NAK??? // ALERT: Get rid of this!!!
+
     printf("└───────┴──────┴─────────────────────────────────────┴────────────┘\n");
 }
 
