@@ -469,6 +469,10 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         panic("Invalid device %u", dev_addr); // TODO: Handle this properly
     }
 
+    // Determine direction for this transfer (flip if no DATA phase)
+    uint8_t ep_addr = packet->bmRequestType & USB_DIR_IN;
+    bool in = ep_in(ep_addr); if (!len) in = !in;
+
     // Transfer is now active
     ep->active     = true;
     ep->ep_addr    = ep_addr;
