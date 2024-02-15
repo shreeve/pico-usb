@@ -961,12 +961,9 @@ void usb_task() {
                     hexdump(usbh_dpram->epx_data, task.transfer.len, 1);
                 }
 
-                // For control transfers, send a ZLP or advance the enumeration
-                if (ep->type == USB_TRANSFER_TYPE_CONTROL) {
-                    task.transfer.len ? transfer_zlp(ep) : enumerate(false);
-                } else {
-                    printf("We are in here as device %u!\n", ep->dev_addr);
-                }
+                // Transfer a ZLP or advance the enumeration
+                task.transfer.len ? transfer_zlp(dev_addr, ep_addr)
+                                  : enumerate(false);
             }   break;
 
             case TASK_FUNCTION:
