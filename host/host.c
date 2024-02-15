@@ -653,7 +653,7 @@ void enumerate(bool reset) {
                 .bInterval        = 0,
             }));
 
-            set_device_address(new_addr); // TODO: Properly handle cleanup if this fails
+            set_device_address(new_addr); // TODO: Properly clean up if this fails
         }   break;
 
         case ENUMERATION_SET_ADDRESS: {
@@ -736,16 +736,15 @@ void printf_interrupts(uint32_t ints) {
 
 // Interrupt handler
 void isr_usbctrl() {
-    volatile uint32_t intr = usb_hw->intr;
-    volatile uint32_t ints = usb_hw->ints;
-    task_t task; // TODO: Is there any advantage to making this static?
+    uint32_t ints = usb_hw->ints;
+    task_t task;
 
     printf("\n=> New ISR");
     printf_interrupts(ints);
     printf("\n");
     printf( "┌───────┬──────┬─────────────────────────────────────┬────────────┐\n");
     printf( "│Frame\t│ %4u │%37s│%12s│\n", usb_hw->sof_rd, "", "");
-    bindump("│INTR", intr);
+    bindump("│INTR", usb_hw->intr);
     bindump("│INTS", ints);
     bindump("│SSR", usb_hw->sie_status);
     bindump("│SCR", usb_hw->sie_ctrl);
@@ -774,21 +773,22 @@ void isr_usbctrl() {
         }
     }
 
-//     // Stall detected (higher priority than BUFF_STATUS and TRANS_COMPLETE)
-//     if (ints &  USB_INTS_STALL_BITS) {
-//         ints ^= USB_INTS_STALL_BITS;
-//
-//         usb_hw_clear->sie_status = USB_SIE_STATUS_STALL_REC_BITS;
-//
-//         // Queue the stalled transfer
-//         queue_add_blocking(queue, &((task_t) {
-//             .type              = TASK_TRANSFER,
-//             .transfer.dev_addr = 42, // TODO: Need to flesh this out
-//             .transfer.ep_addr  = 37, // TODO: Need to flesh this out
-//             .transfer.len      = 0,  // TODO: Need to flesh this out
-//             .transfer.status   = TRANSFER_STALLED,
-//         }));
-//     }
+    // Stall detected (higher priority than BUFF_STATUS and TRANS_COMPLETE)
+    if (ints &  USB_INTS_STALL_BITS) {
+        ints ^= USB_INTS_STALL_BITS;
+
+        usb_hw_clear->sie_status = USB_SIE_STATUS_STALL_REC_BITS;
+
+        // TODO: Add this back in once we have a proper way to handle STALL
+        // // Queue the stalled transfer
+        // queue_add_blocking(queue, &((task_t) {
+        //     .type              = TASK_TRANSFER,
+        //     .transfer.dev_addr = 42, // TODO: Need to flesh this out
+        //     .transfer.ep_addr  = 37, // TODO: Need to flesh this out
+        //     .transfer.len      = 0,  // TODO: Need to flesh this out
+        //     .transfer.status   = TRANSFER_STALLED,
+        // }));
+    }
 
     // Buffer processing is needed
     if (ints &  USB_INTS_BUFF_STATUS_BITS) {
@@ -908,7 +908,7 @@ void isr_usbctrl() {
         printf("Device initiated resume\n");
     }
 
-    // Any missed?
+    // Were any interrupts missed?
     if (ints) panic("Unhandled IRQ 0x%04x", ints);
 
     // TODO: I see a lot of NAK's being set in SSR... this will clear it, but can we prevent it or deal with it better?
