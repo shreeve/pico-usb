@@ -163,7 +163,7 @@ SDK_INLINE void reset_epx() {
         .bDescriptorType  = USB_DT_ENDPOINT,
         .bEndpointAddress = 0,
         .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
-        .wMaxPacketSize   = 8, // Default per USB 2.0 spec
+        .wMaxPacketSize   = 0, // 8, // Default per USB 2.0 spec
         .bInterval        = 0,
     }));
     epx->configured = true;
@@ -497,10 +497,10 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
                   << USB_ADDR_ENDP_ENDPOINT_LSB;     // EP number
     ecr = usbh_dpram->epx_ctrl;                      // EPX control register
     bcr = (in  ? 0 : USB_BUF_CTRL_FULL)              // IN/Recv=0, OUT/Send=1
-        |            USB_BUF_CTRL_LAST               // Trigger TRANS_COMPLETE
+     // |            USB_BUF_CTRL_LAST               // Trigger TRANS_COMPLETE
         |            USB_BUF_CTRL_DATA1_PID          // Start IN/OUT at DATA1
         |            USB_BUF_CTRL_AVAIL              // Buffer is available now
-        | MIN(ep->maxsize, len);                     // IN or OUT buffer length
+        | len; // MIN(ep->maxsize, len);                     // IN or OUT buffer length
 
     // Debug output
     printf(" EP%d_%-3s│ 0x%02x │ Device %u, Length %u\n",
@@ -600,7 +600,7 @@ void get_device_descriptor(endpoint_t *ep) {
         .bRequest      = USB_REQUEST_GET_DESCRIPTOR,
         .wValue        = MAKE_U16(USB_DT_DEVICE, 0),
         .wIndex        = 0,
-        .wLength       = MIN(ep->maxsize, sizeof(usb_device_descriptor_t)),
+        .wLength       = ep->maxsize ? sizeof(usb_device_descriptor_t) : 8, // ALERT: MIN(ep->maxsize, sizeof(usb_device_descriptor_t)),
     }));
 }
 
@@ -665,10 +665,22 @@ void enumerate(bool reset) {
             get_device_descriptor(ep);
         }   break;
 
-        case ENUMERATION_GET_DEVICE:
+        case ENUMERATION_GET_DEVICE: {
+            usb_device_descriptor_t *desc = (usb_device_descriptor_t *) epx->data_buf;
+
+            printf("\nConnected device:\n");
+            printf("  USB version: %x.%02x\n", desc->bcdUSB >> 8, desc->bcdUSB & 0xff);
+            printf("  Packet size: %u\n", desc->bMaxPacketSize0);
+            printf("  Vendor ID: 0x%04x\n", desc->idVendor);
+            printf("  Product ID: 0x%04x\n", desc->idProduct);
+            printf("  Revision: %x.%02x\n", desc->bcdDevice >> 8, desc->bcdDevice & 0xff);
+            printf("  Manufacturer: %u\n", desc->iManufacturer);
+            printf("  Product: %u\n", desc->iProduct);
+            printf("  Serial: %u\n", desc->iSerialNumber);
+            printf("\n");
 
             printf("Starting GET_CONFIG\n");
-            break;
+        }   break;
 
         case ENUMERATION_GET_CONFIG:
 
