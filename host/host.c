@@ -939,7 +939,7 @@ void usb_task() {
     while (queue_try_remove(queue, &task)) { // TODO: Can this starve out other work? Should it be "if (...) {" instead?
         uint8_t type = task.type;
         printf("\n=> Start task: %s\n", task_name(type));
-        switch (task.type) {
+        switch (type) {
             case TASK_CONNECT:
 
                 // TODO: See if we can get this to work
