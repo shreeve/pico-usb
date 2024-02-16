@@ -672,13 +672,13 @@ void enumerate(bool reset) {
 
             printf("\nConnected device:\n");
             printf("  USB version: %x.%02x\n", desc->bcdUSB >> 8, desc->bcdUSB & 0xff);
-            printf("  Packet size: %u\n", desc->bMaxPacketSize0);
-            printf("  Vendor ID: 0x%04x\n", desc->idVendor);
-            printf("  Product ID: 0x%04x\n", desc->idProduct);
-            printf("  Revision: %x.%02x\n", desc->bcdDevice >> 8, desc->bcdDevice & 0xff);
-            printf("  Manufacturer: %u\n", desc->iManufacturer);
-            printf("  Product: %u\n", desc->iProduct);
-            printf("  Serial: %u\n", desc->iSerialNumber);
+            printf("  Packet size: %u\n"     , desc->bMaxPacketSize0);
+            printf("  Vendor ID: 0x%04x\n"   , desc->idVendor);
+            printf("  Product ID: 0x%04x\n"  , desc->idProduct);
+            printf("  Revision: %x.%02x\n"   , desc->bcdDevice >> 8, desc->bcdDevice & 0xff);
+            printf("  Manufacturer: %u\n"    , desc->iManufacturer);
+            printf("  Product: %u\n"         , desc->iProduct);
+            printf("  Serial: %u\n"          , desc->iSerialNumber);
             printf("\n");
 
             printf("Starting GET_CONFIG\n");
