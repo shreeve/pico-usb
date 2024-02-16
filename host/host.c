@@ -604,15 +604,16 @@ void get_device_descriptor(endpoint_t *ep) {
     }));
 }
 
-void set_device_address(uint8_t dev_addr) {
-    printf("Set device address to %u\n", dev_addr);
+void set_device_address(endpoint_t *ep) {
+    printf("Set device address to %u\n", ep->dev_addr);
 
+    // EPX is used to set a new device address
     start_control_transfer(epx, &((usb_setup_packet_t) {
         .bmRequestType = USB_DIR_OUT
                        | USB_REQ_TYPE_STANDARD
                        | USB_REQ_TYPE_RECIPIENT_DEVICE,
         .bRequest      = USB_REQUEST_SET_ADDRESS,
-        .wValue        = dev_addr,
+        .wValue        = ep->dev_addr,
         .wIndex        = 0,
         .wLength       = 0,
     }));
@@ -630,7 +631,7 @@ void enumerate(bool reset) {
             printf("Start enumeration\n");
 
             printf("Starting GET_MAXSIZE\n");
-            get_device_descriptor(epx);
+            get_device_descriptor(epx); // NOTE: Is this the ONLY access to D0/EP0?
             break;
 
         case ENUMERATION_GET_MAXSIZE: {
@@ -652,8 +653,9 @@ void enumerate(bool reset) {
                 .wMaxPacketSize   = maxsize0,
                 .bInterval        = 0,
             }));
+            ep->dev_addr = new_addr;
 
-            set_device_address(new_addr); // TODO: Properly clean up if this fails
+            set_device_address(ep); // TODO: Properly clean up if this fails
         }   break;
 
         case ENUMERATION_SET_ADDRESS: {
