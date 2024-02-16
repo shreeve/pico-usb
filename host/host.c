@@ -753,9 +753,9 @@ void isr_usbctrl() {
     uint32_t ints = usb_hw->ints;
     task_t task;
 
-    printf("\n=> New ISR");
+    printf( "\n=> New ISR");
     printf_interrupts(ints);
-    printf("\n");
+    printf( "\n");
     printf( "┌───────┬──────┬─────────────────────────────────────┬────────────┐\n");
     printf( "│Frame\t│ %4u │%37s│%12s│\n", usb_hw->sof_rd, "", "");
     bindump("│INTR", usb_hw->intr);
