@@ -106,7 +106,6 @@ SDK_INLINE void clear_endpoint(endpoint_t *ep) {
     ep->bytes_done = 0;
 }
 
-// Reset an endpoint
 void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
     uint8_t ep_addr = usb->bEndpointAddress;
 
