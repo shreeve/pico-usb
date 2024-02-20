@@ -940,7 +940,7 @@ void isr_usbctrl() {
 void usb_task() {
     task_t task;
 
-    while (queue_try_remove(queue, &task)) { // TODO: Can this starve out other work? Should it be "if (...) {" instead?
+    while (queue_try_remove(queue, &task)) {
         uint8_t type = task.type;
         printf("\n=> Start task: %s\n", task_name(type));
         switch (type) {
