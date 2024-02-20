@@ -512,8 +512,6 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         | len; // MIN(ep->maxsize, len);                     // IN or OUT buffer length
 
     // Debug output
-    printf(" EP%d_%-3s│ 0x%02x │ Device %u, Length %u\n",
-             ep_num(ep_addr), ep_dir(ep_addr), ep_addr, ep->dev_addr, len);
     bindump(" SSR", ssr);
     bindump(" SCR", scr);
     bindump(" DAR", dar);
