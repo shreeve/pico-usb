@@ -735,11 +735,10 @@ void reset_usb_host() {
 
     irq_set_enabled(USBCTRL_IRQ, true);
 
-    bindump(" INT", usb_hw->inte);
-    printf("\n");
-
     reset_devices();
     reset_endpoints();
+
+    bindump(" INT", usb_hw->inte);
 }
 
 // ==[ Interrupts ]============================================================
