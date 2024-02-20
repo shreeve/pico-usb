@@ -4,7 +4,7 @@ void hexdump(const void* data, size_t size, uint mode) {
     size_t i, j;
 
     for (i = 0; i <= size; i += 16) {
-        printf("\t│ %04x │ ", i); // Print the offset
+        printf("%s\t│ %04x │ ", i ? "│" : "", i); // Print the offset
 
         // Print hex values
         for (j = 0; j < 16; j++) {
