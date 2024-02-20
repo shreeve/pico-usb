@@ -973,7 +973,7 @@ void usb_task() {
                 uint16_t len     = task.transfer.len;
 
                 // Lookup endpoint
-                endpoint_t *ep = find_endpoint(dev_addr, ep_addr)
+                endpoint_t *ep = find_endpoint(dev_addr, ep_addr);
 
                 // Debug output, unless this is a ZLP on dev0
                 if (dev_addr || len) {
