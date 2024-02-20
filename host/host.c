@@ -976,14 +976,15 @@ void usb_task() {
             case TASK_TRANSFER: {
                 uint8_t dev_addr = task.transfer.dev_addr;
                 uint8_t ep_addr  = task.transfer.ep_addr;
+                uint16_t len     = task.transfer.len;
 
                 // Debug output, unless this is a ZLP on dev0
-                if (dev_addr || task.transfer.len) {
+                if (dev_addr || len) {
                     printf(" EP%d_%-3s│ 0x%02x │ Device %u, Length %u\n",
                              ep_num(ep_addr), ep_dir(ep_addr),
-                             ep_addr, dev_addr, task.transfer.len);
+                             ep_addr, dev_addr, len);
                     printf(" Data");
-                    hexdump(usbh_dpram->epx_data, task.transfer.len, 1);
+                    hexdump(usbh_dpram->epx_data, len, 1);
                 }
 
                 // Transfer a ZLP or advance the enumeration
