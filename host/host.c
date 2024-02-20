@@ -87,16 +87,16 @@ static endpoint_t eps[MAX_ENDPOINTS], *epx = eps;
 
 static uint8_t temp_buf[TEMP_BUF_SIZE];
 
-SDK_INLINE const char *ep_dir(uint8_t ep_addr) {
-    return ep_addr & USB_DIR_IN ? "IN" : "OUT";
+SDK_INLINE const char *ep_dir(endpoint_t *ep) {
+    return ep->ep_addr & USB_DIR_IN ? "IN" : "OUT";
 }
 
-SDK_INLINE bool ep_in(uint8_t ep_addr) {
-    return ep_addr & USB_DIR_IN;
+SDK_INLINE bool ep_in(endpoint_t *ep) {
+    return ep->ep_addr & USB_DIR_IN;
 }
 
-SDK_INLINE uint8_t ep_num(uint8_t ep_addr) {
-    return ep_addr & ~USB_DIR_IN;
+SDK_INLINE uint8_t ep_num(endpoint_t *ep) {
+    return ep->ep_addr & ~USB_DIR_IN;
 }
 
 SDK_INLINE void clear_endpoint(endpoint_t *ep) {
