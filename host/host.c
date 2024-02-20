@@ -886,8 +886,7 @@ void isr_usbctrl() {
         endpoint_t *ep = find_endpoint(dev_addr, ep_addr); // TODO: Handle missing endpoints
 
         // Panic if the endpoint is not active
-        // ALERT: This *should* be checked... It's just that transfer_zlp() hasn't looked up by ep yet, so we had to comment this out... let's do an ep lookup and that'll be it
-        // if (!ep->active) panic("EP should still be active in TRANS_COMPLETE");
+        if (!ep->active) panic("EP should still be active in TRANS_COMPLETE");
 
         // Clear the endpoint before queueing the transfer, so copy bytes_done
         uint16_t bytes_done = ep->bytes_done;
