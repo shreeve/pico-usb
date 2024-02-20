@@ -354,8 +354,7 @@ void handle_buffer(endpoint_t *ep) {
     if (ep->bytes_left) prepare_buffers(ep);
 
     if (ep->bytes_done) {
-        printf("│Data");
-        hexdump(usbh_dpram->epx_data, ep->bytes_done, 1);
+        hexdump("│Data", usbh_dpram->epx_data, ep->bytes_done, 1);
     } else {
         char *str = ep_in(ep) ? "│ZLP/I" : "│ZLP/O";
         bindump(str, 0);
@@ -512,8 +511,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     bindump(" ECR", usbh_dpram->epx_ctrl); // EPX control register
     bindump(" BCR", bcr);                  // EPX buffer control register
 
-    printf("<Setup");
-    hexdump(packet, size, 1);
+    hexdump("<Setup", packet, size, 1);
 
     // NOTE: When clk_sys (usually 133Mhz) and clk_usb (usually 48MHz) are not
     // the same, the processor and the USB controller run at different speeds.
@@ -979,8 +977,7 @@ void usb_task() {
                 // Debug output, unless this is a ZLP on dev0
                 if (dev_addr || len) {
                     show_endpoint(ep, "Transfer");
-                    printf(" Data");
-                    hexdump(usbh_dpram->epx_data, len, 1);
+                    hexdump(" Data", usbh_dpram->epx_data, len, 1);
                 }
 
                 // Transfer a ZLP or advance the enumeration

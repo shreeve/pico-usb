@@ -1,10 +1,10 @@
 // Hex dump (mode: 0 = hex; 1 = hex + ascii; 2 = hex + ascii + no newline)
-void hexdump(const void* data, size_t size, uint mode) {
-    const unsigned char* byte = (const unsigned char *) data;
+void hexdump(const unsigned char *str, const void *data, size_t size, uint mode) {
+    const unsigned char *byte = (const unsigned char *) data;
     size_t i, j;
 
     for (i = 0; i <= size; i += 16) {
-        printf("%s\t│ %04x │ ", i ? "│" : "", i); // Print the offset
+        printf("%s\t│ %04x │ ", str, i); // Print the offset
 
         // Print hex values
         for (j = 0; j < 16; j++) {
