@@ -838,9 +838,6 @@ void isr_usbctrl() {
         // endpoints, since they "come in pairs". So, we would deal with
         // EP3IN/EP3OUT at the same time and mask with 0b11, etc.
 
-        // **MASSIVE NOTE** Right now, we aren't using any of the
-        // interrupt endpoints, so EVERYTHING is going through EPX.
-
         // Use the DAR to determine dev_addr and ep_addr
         volatile uint32_t dar = usb_hw->dev_addr_ctrl;
         uint8_t dev_addr =  dar & USB_ADDR_ENDP_ADDRESS_BITS;
