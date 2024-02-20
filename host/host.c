@@ -490,8 +490,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     }
 
     // Calculate register values
-    uint32_t ssr, scr, dar, ecr, bcr;
-    ssr = usb_hw->sie_status;                        // SIE_STATUS register
+    uint32_t scr, dar, bcr;
     scr =            USB_SIE_CTRL_BASE               // SIE_CTRL defaults
      // | (ls  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS)  // Preamble (LS on FS hub)
         |            USB_SIE_CTRL_SEND_SETUP_BITS    // Send SETUP transaction
@@ -500,7 +499,6 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         |            USB_SIE_CTRL_START_TRANS_BITS;  // Start the transfer now
     dar = dev_addr | ep_num(ep)                      // Device address
                   << USB_ADDR_ENDP_ENDPOINT_LSB;     // EP number
-    ecr = usbh_dpram->epx_ctrl;                      // EPX control register
     bcr = (in  ? 0 : USB_BUF_CTRL_FULL)              // IN/Recv=0, OUT/Send=1
         |            USB_BUF_CTRL_LAST               // Trigger TRANS_COMPLETE
         |            USB_BUF_CTRL_DATA1_PID          // Start IN/OUT at DATA1
@@ -508,11 +506,11 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         | MIN(ep->maxsize, len);                     // IN or OUT buffer length
 
     // Debug output
-    bindump(" SSR", ssr);
-    bindump(" SCR", scr);
-    bindump(" DAR", dar);
-    bindump(" ECR", ecr);
-    bindump(" BCR", bcr);
+    bindump(" SSR", usb_hw->sie_status);   // SIE status register
+    bindump(" SCR", scr);                  // SIE control register
+    bindump(" DAR", dar);                  // Device address register
+    bindump(" ECR", usbh_dpram->epx_ctrl); // EPX control register
+    bindump(" BCR", bcr);                  // EPX buffer control register
 
     printf("<Setup");
     hexdump(packet, size, 1);
