@@ -988,8 +988,7 @@ void usb_task() {
                 }
 
                 // Transfer a ZLP or advance the enumeration
-                task.transfer.len ? transfer_zlp(dev_addr, ep_addr)
-                                  : enumerate(false);
+                len ? transfer_zlp(find_endpoint(dev_addr, ep_addr)) : enumerate(false);
             }   break;
 
             case TASK_FUNCTION:
