@@ -491,19 +491,19 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 
     // Calculate register values
     uint32_t scr, dar, bcr;
-    scr =            USB_SIE_CTRL_BASE               // SIE_CTRL defaults
-     // | (ls  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS)  // Preamble (LS on FS hub)
-        |            USB_SIE_CTRL_SEND_SETUP_BITS    // Send SETUP transaction
-        | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive bit means IN
-                   : USB_SIE_CTRL_SEND_DATA_BITS)    // Send bit means OUT
-        |            USB_SIE_CTRL_START_TRANS_BITS;  // Start the transfer now
-    dar = dev_addr | ep_num(ep)                      // Device address
-                  << USB_ADDR_ENDP_ENDPOINT_LSB;     // EP number
-    bcr = (in  ? 0 : USB_BUF_CTRL_FULL)              // IN/Recv=0, OUT/Send=1
-        |            USB_BUF_CTRL_LAST               // Trigger TRANS_COMPLETE
-        |            USB_BUF_CTRL_DATA1_PID          // Start IN/OUT at DATA1
-        |            USB_BUF_CTRL_AVAIL              // Buffer is available now
-        | MIN(ep->maxsize, len);                     // IN or OUT buffer length
+    scr =            USB_SIE_CTRL_BASE              // SIE_CTRL defaults
+     // | (ls  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS) // Preamble (LS on FS hub)
+        |            USB_SIE_CTRL_SEND_SETUP_BITS   // Send SETUP transaction
+        | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS // Receive bit means IN
+                   : USB_SIE_CTRL_SEND_DATA_BITS)   // Send bit means OUT
+        |            USB_SIE_CTRL_START_TRANS_BITS; // Start the transfer now
+    dar = dev_addr | ep_num(ep)                     // Device address
+                  << USB_ADDR_ENDP_ENDPOINT_LSB;    // EP number
+    bcr = (in  ? 0 : USB_BUF_CTRL_FULL)             // IN/Recv=0, OUT/Send=1
+        |            USB_BUF_CTRL_LAST              // Trigger TRANS_COMPLETE
+        |            USB_BUF_CTRL_DATA1_PID         // Start IN/OUT at DATA1
+        |            USB_BUF_CTRL_AVAIL             // Buffer is available now
+        | MIN(ep->maxsize, len);                    // IN or OUT buffer length
 
     // Debug output
     bindump(" SSR", usb_hw->sie_status);   // SIE status register
