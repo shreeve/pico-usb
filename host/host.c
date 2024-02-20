@@ -660,7 +660,7 @@ void enumerate(bool reset) {
             }));
             ep->dev_addr = new_addr;
 
-            set_device_address(ep); // TODO: Properly clean up if this fails
+            set_device_address(ep);
         }   break;
 
         case ENUMERATION_SET_ADDRESS: {
