@@ -345,10 +345,9 @@ void prepare_buffers(endpoint_t *ep) {
 
 // Handle a buffer within the interrupt handler
 void handle_buffer(endpoint_t *ep) {
-    // ALERT: This *should* be checked... It's just that transfer_zlp() hasn't looked up by ep yet, so we had to comment this out... let's do an ep lookup and that'll be it
-    // if (!ep->active) {
-    //     panic("Inactive EP 0x%02x for device %u", ep->ep_addr, ep->dev_addr);
-    // }
+    if (!ep->active) {
+        panic("Inactive EP 0x%02x for device %u", ep->ep_addr, ep->dev_addr);
+    }
 
     sync_buffers(ep);
 
