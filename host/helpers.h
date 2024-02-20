@@ -48,3 +48,12 @@ void bindump(uint8_t *str, uint32_t val) {
 
     printf("│ 0x%08x │\n", val);
 }
+
+// Print a BCD value
+void printb(const char *str, uint16_t val) {
+    uint8_t x = (val & 0x0f00) >> 8;
+    uint8_t y = (val & 0x00f0) >> 4;
+    uint8_t z = (val & 0x000f);
+
+    z ? printf("%s%x.%x.%x\n", str, x, y, z) : printf("%s%x.%x\n", str, x, y);
+}
