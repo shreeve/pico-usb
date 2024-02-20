@@ -888,6 +888,9 @@ void isr_usbctrl() {
         // Panic if the endpoint is not active
         if (!ep->active) panic("EP should still be active in TRANS_COMPLETE");
 
+        // Debug output
+        printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
+        printf( "│Trans\t│ %4u │ %35s │ %10s │\n", ep->bytes_done, "", "");
 
         // Queue a task for the transfer
         queue_add_blocking(queue, &((task_t) {
