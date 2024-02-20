@@ -297,9 +297,7 @@ void sync_buffers(endpoint_t *ep) {
 // Prepare a buffer and return its buffer control register value
 uint32_t prepare_buffer(endpoint_t *ep, uint8_t buf_id) {
     uint16_t len = MIN(ep->bytes_left, ep->maxsize);
-    uint32_t bcr = ep->data_pid
-                 ? USB_BUF_CTRL_DATA1_PID
-                 : USB_BUF_CTRL_DATA0_PID
+    uint32_t bcr = (ep->data_pid ? USB_BUF_CTRL_DATA1_PID : USB_BUF_CTRL_DATA0_PID)
                  | USB_BUF_CTRL_AVAIL
                  | len;
 
