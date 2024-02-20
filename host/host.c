@@ -106,6 +106,11 @@ SDK_INLINE void clear_endpoint(endpoint_t *ep) {
     ep->bytes_done = 0;
 }
 
+void show_endpoint(endpoint_t *ep, const char *str) {
+    printf(" EP%d_%-3s│ 0x%02x │ Device %u (%s)\n",
+             ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr, str);
+}
+
 void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
 
     // Populate the endpoint
@@ -127,8 +132,7 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
 
     // We're done unless this is EPX or an interrupt endpoint
     if (ep != epx && ep->type != USB_TRANSFER_TYPE_INTERRUPT) {
-        printf(" EP%d_%-3s│ 0x%02x │ Reset on Device %u\n",
-                 ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr);
+        show_endpoint(ep, "Reset");
         return;
     }
 
@@ -146,8 +150,7 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
                  | offset;                         // Data buffer offset
 
     // Debug output
-    printf(" EP%d_%-3s│ 0x%02x │ Reset on Device %u, Buffer 0x%04x\n",
-             ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr, offset);
+    show_endpoint(ep, "Reset");
     bindump(" ECR", ecr);
 
     // Set the ECR
@@ -474,8 +477,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     ep->user_buf   = temp_buf; // TODO: Add something asap, NULL is... sub-optimal. Maybe use something like a ring buffer here?
 
     // Debug output
-    printf(" EP%d_%-3s│ 0x%02x │ Device %u, Length %u\n",
-             ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr, len);
+    show_endpoint(ep, "Start");
 
     // Copy the setup packet
     memcpy((void *) usbh_dpram->setup_packet, packet, size);
@@ -976,8 +978,7 @@ void usb_task() {
 
                 // Debug output, unless this is a ZLP on dev0
                 if (dev_addr || len) {
-                    printf(" EP%d_%-3s│ 0x%02x │ Device %u, Length %u\n",
-                             ep_num(ep), ep_dir(ep), ep_addr, dev_addr, len);
+                    show_endpoint(ep, "Transfer");
                     printf(" Data");
                     hexdump(usbh_dpram->epx_data, len, 1);
                 }
