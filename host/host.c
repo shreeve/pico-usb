@@ -130,7 +130,7 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
     // We're done unless this is EPX or an interrupt endpoint
     if (ep != epx && ep->type != USB_TRANSFER_TYPE_INTERRUPT) {
         printf(" EP%d_%-3s│ 0x%02x │ Reset on Device %u\n",
-                 ep_num(ep_addr), ep_dir(ep_addr), ep_addr, ep->dev_addr);
+                 ep_num(ep), ep_dir(ep), ep_addr, ep->dev_addr);
         return;
     }
 
@@ -149,7 +149,7 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
 
     // Debug output
     printf(" EP%d_%-3s│ 0x%02x │ Reset on Device %u, Buffer 0x%04x\n",
-             ep_num(ep_addr), ep_dir(ep_addr), ep_addr, ep->dev_addr, offset);
+             ep_num(ep), ep_dir(ep), ep_addr, ep->dev_addr, offset);
     bindump(" ECR", ecr);
 
     // Set the ECR
@@ -263,7 +263,7 @@ uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
     uint32_t bcr = usbh_dpram->epx_buf_ctrl; if (buf_id) bcr = bcr >> 16; // TODO: Move this to sync_buffers and calculate it only once
     uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK; if (!len) return 0; // TODO: Do we need to set ep->bytes_left = 0
     bool    full = bcr & USB_BUF_CTRL_FULL;
-    bool      in = ep_in(ep->ep_addr);
+    bool      in = ep_in(ep);
 
     // We should only read from a full buffer or write to an empty buffer
     assert(in == full);
@@ -307,7 +307,7 @@ uint32_t prepare_buffer(endpoint_t *ep, uint8_t buf_id) {
     ep->data_pid   ^= 1u;
 
     // Copy the outbound user buffer to the data buffer
-    if (!ep_in(ep->ep_addr)) {
+    if (!ep_in(ep)) {
         memcpy((void *) (ep->data_buf + buf_id * 64), ep->user_buf, len);
         ep->user_buf += len;
         bcr |= USB_BUF_CTRL_FULL;
@@ -357,7 +357,7 @@ void handle_buffer(endpoint_t *ep) {
         printf("│Data");
         hexdump(usbh_dpram->epx_data, ep->bytes_done, 1);
     } else {
-        char *str = ep_in(ep->ep_addr) ? "│ZLP/I" : "│ZLP/O";
+        char *str = ep_in(ep) ? "│ZLP/I" : "│ZLP/O";
         bindump(str, 0);
     }
 }
@@ -456,10 +456,10 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     uint8_t len  = packet->wLength;            // Length of the data phase
 
     // Sanity checks
-    if ( ep_num(ep->ep_addr)) panic("Control transfers must use EP0");
-    if (!ep->configured)      panic("Endpoint not configured");
-    if ( ep->active)          panic("Only one control transfer at a time");
-    if ( ep->type)            panic("Control transfers require a control EP");
+    if ( ep_num(ep))     panic("Control transfers must use EP0");
+    if (!ep->configured) panic("Endpoint not configured");
+    if ( ep->active)     panic("Only one control transfer at a time");
+    if ( ep->type)       panic("Control transfers require a control EP");
 
     // Validate device address and state
     uint8_t dev_addr = ep->dev_addr;
@@ -469,25 +469,22 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         panic("Invalid device %u", dev_addr); // TODO: Handle this properly
     }
 
-    // Determine direction for this transfer
-    uint8_t ep_addr = packet->bmRequestType & USB_DIR_IN;
-
     // Transfer is now active
     ep->active     = true;
-    ep->ep_addr    = ep_addr;
+    ep->ep_addr    = packet->bmRequestType & USB_DIR_IN;
     ep->bytes_left = len;
     ep->bytes_done = 0;
     ep->user_buf   = temp_buf; // TODO: Add something asap, NULL is... sub-optimal. Maybe use something like a ring buffer here?
 
     // Debug output
     printf(" EP%d_%-3s│ 0x%02x │ Device %u, Length %u\n",
-             ep_num(ep_addr), ep_dir(ep_addr), ep_addr, ep->dev_addr, len);
+             ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr, len);
 
     // Copy the setup packet
     memcpy((void *) usbh_dpram->setup_packet, packet, size);
 
     // If there's no data phase, flip the direction for the USB controller
-    bool in = ep_in(ep_addr);
+    bool in = ep_in(ep);
     if (!len) {
         in = !in;
         ep->ep_addr ^= USB_DIR_IN;
@@ -502,7 +499,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive bit means IN
                    : USB_SIE_CTRL_SEND_DATA_BITS)    // Send bit means OUT
         |            USB_SIE_CTRL_START_TRANS_BITS;  // Start the transfer now
-    dar = dev_addr | ep_num(ep_addr)                 // Device address
+    dar = dev_addr | ep_num(ep)                      // Device address
                   << USB_ADDR_ENDP_ENDPOINT_LSB;     // EP number
     ecr = usbh_dpram->epx_ctrl;                      // EPX control register
     bcr = (in  ? 0 : USB_BUF_CTRL_FULL)              // IN/Recv=0, OUT/Send=1
@@ -558,21 +555,19 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 // TODO: Merge with start_control_transfer (ep has info, packet would be NULL)
 void transfer_zlp(endpoint_t *ep) {
 
+    // Update the endpoint
     ep->active = true;         // Transfer is now active
     ep->ep_addr ^= USB_DIR_IN; // Flip the direction
 
-    uint8_t dev_addr = ep->dev_addr;
-    uint8_t ep_addr  = ep->ep_addr;
-    bool in = ep_in(ep_addr);
-
     // Calculate register values
     uint32_t scr, dar, bcr;
+    bool in = ep_in(ep);
     scr =            USB_SIE_CTRL_BASE               // SIE_CTRL defaults
      // | (ls  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS)  // Preamble (LS on FS hub)
         | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive bit means IN
                    : USB_SIE_CTRL_SEND_DATA_BITS)    // Send bit means OUT
         |            USB_SIE_CTRL_START_TRANS_BITS;  // Start the transfer now
-    dar = dev_addr | ep_num(ep_addr)                 // Device address
+    dar = ep->dev_addr | ep_num(ep)                  // Device address
                   << USB_ADDR_ENDP_ENDPOINT_LSB;     // EP number
     bcr = (in  ? 0 : USB_BUF_CTRL_FULL)              // IN/Recv=0, OUT/Send=1
         |            USB_BUF_CTRL_LAST               // Trigger TRANS_COMPLETE
@@ -978,17 +973,19 @@ void usb_task() {
                 uint8_t ep_addr  = task.transfer.ep_addr;
                 uint16_t len     = task.transfer.len;
 
+                // Lookup endpoint
+                endpoint_t *ep = find_endpoint(dev_addr, ep_addr)
+
                 // Debug output, unless this is a ZLP on dev0
                 if (dev_addr || len) {
                     printf(" EP%d_%-3s│ 0x%02x │ Device %u, Length %u\n",
-                             ep_num(ep_addr), ep_dir(ep_addr),
-                             ep_addr, dev_addr, len);
+                             ep_num(ep), ep_dir(ep), ep_addr, dev_addr, len);
                     printf(" Data");
                     hexdump(usbh_dpram->epx_data, len, 1);
                 }
 
                 // Transfer a ZLP or advance the enumeration
-                len ? transfer_zlp(find_endpoint(dev_addr, ep_addr)) : enumerate(false);
+                len ? transfer_zlp(ep) : enumerate(false);
             }   break;
 
             case TASK_FUNCTION:
