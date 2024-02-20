@@ -469,9 +469,8 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         panic("Invalid device %u", dev_addr); // TODO: Handle this properly
     }
 
-    // Determine direction for this transfer (flip if no DATA phase)
+    // Determine direction for this transfer
     uint8_t ep_addr = packet->bmRequestType & USB_DIR_IN;
-    bool in = ep_in(ep_addr); if (!len) in = !in;
 
     // Transfer is now active
     ep->active     = true;
@@ -480,8 +479,19 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     ep->bytes_done = 0;
     ep->user_buf   = temp_buf; // TODO: Add something asap, NULL is... sub-optimal. Maybe use something like a ring buffer here?
 
+    // Debug output
+    printf(" EP%d_%-3s│ 0x%02x │ Device %u, Length %u\n",
+             ep_num(ep_addr), ep_dir(ep_addr), ep_addr, ep->dev_addr, len);
+
     // Copy the setup packet
     memcpy((void *) usbh_dpram->setup_packet, packet, size);
+
+    // If there's no data phase, flip the direction for the USB controller
+    bool in = ep_in(ep_addr);
+    if (!len) {
+        in = !in;
+        ep->ep_addr ^= USB_DIR_IN;
+    }
 
     // Calculate register values
     uint32_t ssr, scr, dar, ecr, bcr;
