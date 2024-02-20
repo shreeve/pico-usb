@@ -163,7 +163,7 @@ SDK_INLINE void reset_epx() {
         .bDescriptorType  = USB_DT_ENDPOINT,
         .bEndpointAddress = 0,
         .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
-        .wMaxPacketSize   = 0, // 8, // Default per USB 2.0 spec
+        .wMaxPacketSize   = 8, // Default per USB 2.0 spec
         .bInterval        = 0,
     }));
     epx->configured = true;
