@@ -678,6 +678,9 @@ void enumerate(bool reset) {
 
             printf("\nConnected device:\n");
             printb("  USB version:\t"       , desc->bcdUSB);
+            printf("  Device class:\t%u\n"  , desc->bDeviceClass);
+            printf("    Subclass:\t%u\n"    , desc->bDeviceSubClass);
+            printf("    Protocol:\t%u\n"    , desc->bDeviceProtocol);
             printf("  Packet size:\t%u\n"   , desc->bMaxPacketSize0);
             printf("  Vendor ID:\t0x%04x\n" , desc->idVendor);
             printf("  Product ID:\t0x%04x\n", desc->idProduct);
