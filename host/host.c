@@ -594,6 +594,7 @@ enum {
 void get_device_descriptor(endpoint_t *ep) {
     printf("Get device descriptor\n");
 
+    // If we're using device 0, only ask for 8 bytes
     start_control_transfer(ep, &((usb_setup_packet_t) {
         .bmRequestType = USB_DIR_IN
                        | USB_REQ_TYPE_STANDARD
@@ -601,7 +602,7 @@ void get_device_descriptor(endpoint_t *ep) {
         .bRequest      = USB_REQUEST_GET_DESCRIPTOR,
         .wValue        = MAKE_U16(USB_DT_DEVICE, 0),
         .wIndex        = 0,
-        .wLength       = MIN(ep->maxsize, sizeof(usb_device_descriptor_t)),
+        .wLength       = ep->dev_addr ? sizeof(usb_device_descriptor_t) : 8,
     }));
 }
 
