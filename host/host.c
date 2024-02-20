@@ -636,7 +636,7 @@ void enumerate(bool reset) {
             printf("Start enumeration\n");
 
             printf("Starting GET_MAXSIZE\n");
-            get_device_descriptor(epx); // NOTE: Is this the ONLY access to D0/EP0?
+            get_device_descriptor(epx);
             break;
 
         case ENUMERATION_GET_MAXSIZE: {
