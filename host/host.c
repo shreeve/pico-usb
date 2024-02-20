@@ -673,7 +673,8 @@ void enumerate(bool reset) {
         }   break;
 
         case ENUMERATION_GET_DEVICE: {
-            usb_device_descriptor_t *desc = (usb_device_descriptor_t *) epx->data_buf;
+            usb_device_descriptor_t *desc;
+            desc = (usb_device_descriptor_t *) epx->data_buf;
 
             printf("\nConnected device:\n");
             printb("  USB version: "       , desc->bcdUSB);
