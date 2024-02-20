@@ -420,8 +420,8 @@ void reset_device(uint8_t dev_addr) {
     device_t *dev = get_device(dev_addr);
     memclr(dev, sizeof(device_t));
     // TODO: Surely, there must be more work to do here?
-    // memset(dev->itf2drv, TUSB_INDEX_INVALID_8, sizeof(dev->itf2drv)); // invalid mapping
-    // memset(dev->ep2drv , TUSB_INDEX_INVALID_8, sizeof(dev->ep2drv )); // invalid mapping
+    // memset(dev->itf2drv, TUSB_INDEX_INVALID_8, sizeof(dev->itf2drv));
+    // memset(dev->ep2drv , TUSB_INDEX_INVALID_8, sizeof(dev->ep2drv ));
 }
 
 void reset_devices() {
