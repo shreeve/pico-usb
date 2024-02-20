@@ -838,7 +838,7 @@ void isr_usbctrl() {
                                   USB_ADDR_ENDP_ENDPOINT_LSB;
 
         // Lookup the endpoint
-        endpoint_t *ep = find_endpoint(dev_addr, ep_addr); // TODO: Handle missing endpoints
+        endpoint_t *ep = find_endpoint(dev_addr, ep_addr);
         handle_buffer(ep); bits ^= 0x01; // TODO: Remove this block
 
 //         // Check the interrupt/asynchronous endpoints (IN and OUT)
@@ -876,7 +876,7 @@ void isr_usbctrl() {
                                   USB_ADDR_ENDP_ENDPOINT_LSB;
 
         // Lookup the endpoint
-        endpoint_t *ep = find_endpoint(dev_addr, ep_addr); // TODO: Handle missing endpoints
+        endpoint_t *ep = find_endpoint(dev_addr, ep_addr);
 
         // Panic if the endpoint is not active
         if (!ep->active) panic("EP should still be active in TRANS_COMPLETE");
