@@ -107,12 +107,11 @@ SDK_INLINE void clear_endpoint(endpoint_t *ep) {
 }
 
 void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
-    uint8_t ep_addr = usb->bEndpointAddress;
 
     // Populate the endpoint
     *ep = (endpoint_t) {
         .dev_addr   = ep->dev_addr,          // Device address
-        .ep_addr    = ep_addr,               // Endpoint address
+        .ep_addr    = usb->bEndpointAddress, // Endpoint address
         .type       = usb->bmAttributes,     // Control, bulk, int, iso
         .maxsize    = usb->wMaxPacketSize,   // Maximum packet size
         .interval   = usb->bInterval,        // Polling interval in ms
@@ -129,7 +128,7 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
     // We're done unless this is EPX or an interrupt endpoint
     if (ep != epx && ep->type != USB_TRANSFER_TYPE_INTERRUPT) {
         printf(" EP%d_%-3s│ 0x%02x │ Reset on Device %u\n",
-                 ep_num(ep), ep_dir(ep), ep_addr, ep->dev_addr);
+                 ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr);
         return;
     }
 
@@ -148,7 +147,7 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
 
     // Debug output
     printf(" EP%d_%-3s│ 0x%02x │ Reset on Device %u, Buffer 0x%04x\n",
-             ep_num(ep), ep_dir(ep), ep_addr, ep->dev_addr, offset);
+             ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr, offset);
     bindump(" ECR", ecr);
 
     // Set the ECR
