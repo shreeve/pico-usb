@@ -938,7 +938,7 @@ void isr_usbctrl() {
 // ==[ Tasks ]=================================================================
 
 void usb_task() {
-    static task_t task; // TODO: Is there any advantage to making this static?
+    task_t task;
 
     while (queue_try_remove(queue, &task)) { // TODO: Can this starve out other work? Should it be "if (...) {" instead?
         uint8_t type = task.type;
