@@ -399,7 +399,7 @@ static device_t devices[MAX_DEVICES], *dev0 = devices;
 // Get a device by its address
 SDK_INLINE device_t *get_device(uint8_t dev_addr) {
     if (dev_addr < MAX_DEVICES) return &devices[dev_addr];
-    panic("Invalid device address %u requested", dev_addr); // TODO: Handle this properly
+    panic("Device %u does not exist", dev_addr); // TODO: Handle this properly
     return NULL;
 }
 
