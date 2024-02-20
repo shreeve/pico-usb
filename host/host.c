@@ -915,10 +915,10 @@ void isr_usbctrl() {
 
         // NOTE: TRANS_COMPLETE triggers when (see datasheet, p. 401):
         //
-        // 1. A SETUP packet without {RECEIVE,SEND}_DATA_BITS is sent
-        // 2. An IN packet is received and the LAST_BUFF bit is set in the BCR
+        // 1. A SETUP packet is sent without {RECEIVE,SEND}_DATA_BITS in SCR
+        // 2. An IN packet is received and the LAST_BUFF bit is set in BCR
         // 3. An IN packet is received with a zero length status packet (ZLP)
-        // 4. An OUT packet is sent and the LAST_BUFF bit is set in the BCR
+        // 4. An OUT packet is sent and the LAST_BUFF bit is set in BCR
 
         // Use the DAR to determine dev_addr and ep_addr
         volatile uint32_t dar = usb_hw->dev_addr_ctrl;
