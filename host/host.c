@@ -677,14 +677,14 @@ void enumerate(bool reset) {
             desc = (usb_device_descriptor_t *) epx->data_buf;
 
             printf("\nConnected device:\n");
-            printb("  USB version: "       , desc->bcdUSB);
-            printf("  Packet size: %u\n"   , desc->bMaxPacketSize0);
-            printf("  Vendor ID: 0x%04x\n" , desc->idVendor);
-            printf("  Product ID: 0x%04x\n", desc->idProduct);
-            printb("  Revision: "          , desc->bcdDevice);
-            printf("  Manufacturer: %u\n"  , desc->iManufacturer);
-            printf("  Product: %u\n"       , desc->iProduct);
-            printf("  Serial: %u\n"        , desc->iSerialNumber);
+            printb("  USB version:\t"       , desc->bcdUSB);
+            printf("  Packet size:\t%u\n"   , desc->bMaxPacketSize0);
+            printf("  Vendor ID:\t0x%04x\n" , desc->idVendor);
+            printf("  Product ID:\t0x%04x\n", desc->idProduct);
+            printb("  Revision:\t"          , desc->bcdDevice);
+            printf("  Manufacturer:\t%u\n"  , desc->iManufacturer);
+            printf("  Product:\t%u\n"       , desc->iProduct);
+            printf("  Serial:\t%u\n"        , desc->iSerialNumber);
             printf("\n");
 
             printf("Starting GET_CONFIG\n");
