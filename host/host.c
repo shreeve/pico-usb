@@ -506,7 +506,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
                   << USB_ADDR_ENDP_ENDPOINT_LSB;     // EP number
     ecr = usbh_dpram->epx_ctrl;                      // EPX control register
     bcr = (in  ? 0 : USB_BUF_CTRL_FULL)              // IN/Recv=0, OUT/Send=1
-     // |            USB_BUF_CTRL_LAST               // Trigger TRANS_COMPLETE
+        |            USB_BUF_CTRL_LAST               // Trigger TRANS_COMPLETE
         |            USB_BUF_CTRL_DATA1_PID          // Start IN/OUT at DATA1
         |            USB_BUF_CTRL_AVAIL              // Buffer is available now
         | MIN(ep->maxsize, len);                     // IN or OUT buffer length
@@ -556,7 +556,13 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 
 // Transfer a ZLP, but it makes several critical assumptions so be careful!
 // TODO: Merge with start_control_transfer (ep has info, packet would be NULL)
-void transfer_zlp(uint8_t dev_addr, uint8_t ep_addr) {
+void transfer_zlp(endpoint_t *ep) {
+
+    ep->active = true;         // Transfer is now active
+    ep->ep_addr ^= USB_DIR_IN; // Flip the direction
+
+    uint8_t dev_addr = ep->dev_addr;
+    uint8_t ep_addr  = ep->ep_addr;
     bool in = ep_in(ep_addr);
 
     // Calculate register values
