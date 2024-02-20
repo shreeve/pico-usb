@@ -357,7 +357,7 @@ void handle_buffer(endpoint_t *ep) {
         printf("│Data");
         hexdump(usbh_dpram->epx_data, ep->bytes_done, 1);
     } else {
-        char *str = ep_in(ep->ep_addr) ? "│ZLP/O" : "│ZLP/I";
+        char *str = ep_in(ep->ep_addr) ? "│ZLP/I" : "│ZLP/O";
         bindump(str, 0);
     }
 }
