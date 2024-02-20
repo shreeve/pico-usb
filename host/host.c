@@ -622,16 +622,44 @@ void set_device_address(endpoint_t *ep) {
     }));
 }
 
-void enumerate(bool reset) {
+void get_configuration_descriptor(endpoint_t *ep) {
+    printf("Get configuration descriptor\n");
+
+    start_control_transfer(ep, &((usb_setup_packet_t) {
+        .bmRequestType = USB_DIR_IN
+                       | USB_REQ_TYPE_STANDARD
+                       | USB_REQ_TYPE_RECIPIENT_DEVICE,
+        .bRequest      = USB_REQUEST_GET_DESCRIPTOR,
+        .wValue        = MAKE_U16(USB_DT_CONFIG, 0),
+        .wIndex        = 0,
+        .wLength       = sizeof(usb_configuration_descriptor_t),
+    }));
+}
+
+void set_configuration(endpoint_t *ep, uint16_t cfg) {
+    printf("Set configuration to %u\n", cfg);
+
+    start_control_transfer(ep, &((usb_setup_packet_t) {
+        .bmRequestType = USB_DIR_OUT
+                       | USB_REQ_TYPE_STANDARD
+                       | USB_REQ_TYPE_RECIPIENT_DEVICE,
+        .bRequest      = USB_REQUEST_SET_CONFIGURATION,
+        .wValue        = cfg,
+        .wIndex        = 0,
+        .wLength       = 0,
+    }));
+}
+
+void enumerate(endpoint_t *ep) {
     static uint8_t step;
     static uint8_t new_addr;
 
-    if (reset) step = ENUMERATION_START;
+    if (!ep) step = ENUMERATION_START;
 
     switch (step++) {
 
         case ENUMERATION_START:
-            printf("Start enumeration\n");
+            printf("Enumeration started\n");
 
             printf("Starting GET_MAXSIZE\n");
             get_device_descriptor(epx);
@@ -644,8 +672,10 @@ void enumerate(bool reset) {
             printf("Starting SET_ADDRESS\n");
 
             // Allocate a new device
-            new_addr = next_dev_addr();
+            new_addr      = next_dev_addr();
             device_t *dev = get_device(new_addr);
+            dev->speed    = dev0->speed;
+            dev->state    = DEVICE_ALLOCATED;
 
             // Allocate EP0 for the new device
             endpoint_t *ep = next_ep(new_addr, &((usb_endpoint_descriptor_t) {
@@ -672,34 +702,57 @@ void enumerate(bool reset) {
 
         case ENUMERATION_GET_DEVICE: {
             usb_device_descriptor_t *desc;
-            desc = (usb_device_descriptor_t *) epx->data_buf;
+            desc = (usb_device_descriptor_t *) ep->data_buf; // TODO: We should have a different buffer here...
 
             printf("\nConnected device:\n");
-            printb("  USB version:\t"       , desc->bcdUSB);
-            printf("  Device class:\t%u\n"  , desc->bDeviceClass);
-            printf("    Subclass:\t%u\n"    , desc->bDeviceSubClass);
-            printf("    Protocol:\t%u\n"    , desc->bDeviceProtocol);
-            printf("  Packet size:\t%u\n"   , desc->bMaxPacketSize0);
-            printf("  Vendor ID:\t0x%04x\n" , desc->idVendor);
-            printf("  Product ID:\t0x%04x\n", desc->idProduct);
-            printb("  Revision:\t"          , desc->bcdDevice);
-            printf("  Manufacturer:\t%u\n"  , desc->iManufacturer);
-            printf("  Product:\t%u\n"       , desc->iProduct);
-            printf("  Serial:\t%u\n"        , desc->iSerialNumber);
+            printb("  USB version:\t"        , desc->bcdUSB);
+            printf("  Device class:\t%u\n"   , desc->bDeviceClass);
+            printf("    Subclass:\t%u\n"     , desc->bDeviceSubClass);
+            printf("    Protocol:\t%u\n"     , desc->bDeviceProtocol);
+            printf("  Packet size:\t%u\n"    , desc->bMaxPacketSize0);
+            printf("  Vendor ID:\t0x%04x\n"  , desc->idVendor);
+            printf("  Product ID:\t0x%04x\n" , desc->idProduct);
+            printb("  Revision:\t"           , desc->bcdDevice);
+            printf("  Manufacturer:\t[#%u]\n", desc->iManufacturer);
+            printf("  Product:\t[#%u]\n"     , desc->iProduct);
+            printf("  Serial:\t[#%u]\n"      , desc->iSerialNumber);
             printf("\n");
 
             printf("Starting GET_CONFIG\n");
+            get_configuration_descriptor(ep);
         }   break;
 
-        case ENUMERATION_GET_CONFIG:
+        case ENUMERATION_GET_CONFIG: {
+            usb_configuration_descriptor_t *desc;
+            desc = (usb_configuration_descriptor_t *) ep->data_buf; // TODO: We should have a different buffer here...
+
+            printf("\nConfiguration descriptor:\n");
+            printf("  Total length:\t%u\n"  , desc->wTotalLength);
+            printf("  Interfaces:\t%u\n"    , desc->bNumInterfaces);
+            printf("  Config Value:\t%u\n"  , desc->bConfigurationValue);
+            printf("  Config Name:\t[#%u]\n", desc->iConfiguration);
+            printf("  Attributes:\t");
+            {
+                char *sp = desc->bmAttributes & 0x40 ? "Self-powered"  : NULL;
+                char *rw = desc->bmAttributes & 0x20 ? "Remote wakeup" : NULL;
+
+                if (sp && rw) printf("%s, %s\n", sp, rw);
+                else if  (sp) printf("%s\n", sp);
+                else if  (rw) printf("%s\n", rw);
+                else          printf("None\n");
+            }
+            printf("  Max power:\t%umA\n"   , desc->bMaxPower * 2);
+            printf("\n");
 
             printf("Starting SET_CONFIG\n");
-            break;
+            set_configuration(ep, 1);
+        }   break;
 
         case ENUMERATION_SET_CONFIG:
-            dev0->state = DEVICE_CONFIGURED;
+            device_t *dev = get_device(ep->dev_addr);
+            dev->state = DEVICE_CONFIGURED;
 
-            printf("End enumeration\n");
+            printf("Enumeration completed\n");
             break;
     }
 }
@@ -963,7 +1016,7 @@ void usb_task() {
                 printf("Device connected (%s speed)\n", str);
 
                 // Start the enumeration process
-                enumerate(true);
+                enumerate(NULL);
                 break;
 
             case TASK_TRANSFER: {
@@ -981,7 +1034,7 @@ void usb_task() {
                 }
 
                 // Transfer a ZLP or advance the enumeration
-                len ? transfer_zlp(ep) : enumerate(false);
+                len ? transfer_zlp(ep) : enumerate(ep);
             }   break;
 
             case TASK_FUNCTION:
