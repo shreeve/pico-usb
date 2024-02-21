@@ -307,8 +307,8 @@ void sync_buffers(endpoint_t *ep) {
     }
 }
 
-// Prep a buffer and return its buffer control register value
-uint32_t prep_buffer(endpoint_t *ep, uint8_t buf_id) {
+// Load a buffer and return its buffer control register value
+uint32_t load_buffer(endpoint_t *ep, uint8_t buf_id) {
     uint16_t len = MIN(ep->bytes_left, ep->maxsize);
     uint32_t bcr = (ep->data_pid ? USB_BUF_CTRL_DATA1_PID : USB_BUF_CTRL_DATA0_PID)
                  | USB_BUF_CTRL_AVAIL
@@ -332,18 +332,18 @@ uint32_t prep_buffer(endpoint_t *ep, uint8_t buf_id) {
     return buf_id ? bcr << 16 : bcr;
 }
 
-void prep_buffers(endpoint_t *ep) {
+void load_buffers(endpoint_t *ep) {
     // const bool host = is_host_mode(); // TODO: Use a static variable here, not a function call
     // const bool in = ep->usb->bEndpointAddress & USB_DIR_IN;
     // const bool allow_double = host ? !in : in; // TODO: host/out and device/in? Doesn't seem right
     bool allow_double = false; // TODO: This is a hack for now
 
     uint32_t ecr = usbh_dpram->epx_ctrl;
-    uint32_t bcr = prep_buffer(ep, 0);
+    uint32_t bcr = load_buffer(ep, 0);
 
     // Double buffering is only supported in specific cases // TODO: Properly determine this
     if (ep->bytes_left && allow_double) {
-        bcr |=  prep_buffer(ep, 1); // TODO: Fix isochronous for buf_1!
+        bcr |=  load_buffer(ep, 1); // TODO: Fix isochronous for buf_1!
         ecr |=  EP_CTRL_DOUBLE_BUFFERED_BITS;
     } else {
         ecr &= ~EP_CTRL_DOUBLE_BUFFERED_BITS;
@@ -362,7 +362,7 @@ void handle_buffer(endpoint_t *ep) {
 
     sync_buffers(ep);
 
-    if (ep->bytes_left) prep_buffers(ep);
+    if (ep->bytes_left) load_buffers(ep);
 
     if (ep->bytes_done) {
         hexdump("│Data", usbh_dpram->epx_data, ep->bytes_done, 1);
