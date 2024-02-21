@@ -312,7 +312,6 @@ uint32_t load_buffer(endpoint_t *ep, uint8_t buf_id) {
                  | USB_BUF_CTRL_AVAIL
                  | len;
 
-    ep->bytes_left -= len;
     ep->data_pid   ^= 1u;
 
     // Copy the outbound user buffer to the data buffer
@@ -495,6 +494,9 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         ep->ep_addr ^= USB_DIR_IN;
     }
 
+    // Is this the begining of a multiple packet transfer?
+    bool beg = len > ep->maxsize;
+
     // Calculate register values
     uint32_t scr, dar, bcr;
     scr =            USB_SIE_CTRL_BASE              // SIE_CTRL defaults
@@ -506,7 +508,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     dar = dev_addr | ep_num(ep)                     // Device address
                   << USB_ADDR_ENDP_ENDPOINT_LSB;    // EP number
     bcr = (in  ? 0 : USB_BUF_CTRL_FULL)             // IN/Recv=0, OUT/Send=1
-        |            USB_BUF_CTRL_LAST              // Trigger TRANS_COMPLETE
+        | (beg ? 0 : USB_BUF_CTRL_LAST)             // Trigger TRANS_COMPLETE
         |            USB_BUF_CTRL_DATA1_PID         // Start IN/OUT at DATA1
         |            USB_BUF_CTRL_AVAIL             // Buffer is available now
         | len;                                      // Length of DATA stage
