@@ -513,7 +513,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         |            USB_BUF_CTRL_LAST              // Trigger TRANS_COMPLETE
         |            USB_BUF_CTRL_DATA1_PID         // Start IN/OUT at DATA1
         |            USB_BUF_CTRL_AVAIL             // Buffer is available now
-        | MIN(ep->maxsize, len);                    // IN or OUT buffer length
+        | len;                                      // Length of DATA stage
 
     // Debug output
     bindump(" SSR", usb_hw->sie_status);   // SIE status register
