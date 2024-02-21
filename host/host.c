@@ -225,6 +225,7 @@ enum {
 
 typedef struct {
     uint8_t type;
+    uint32_t guid;
 
     union {
         struct {
@@ -840,6 +841,7 @@ void isr_usbctrl() {
         if (speed) {
             queue_add_blocking(queue, &((task_t) {
                 .type          = TASK_CONNECT,
+                .guid          = ++guid,
                 .connect.speed = speed,
             }));
         } else {
@@ -857,6 +859,7 @@ void isr_usbctrl() {
         // // Queue the stalled transfer
         // queue_add_blocking(queue, &((task_t) {
         //     .type              = TASK_TRANSFER,
+        //     .guid              = ++guid,
         //     .transfer.dev_addr = 42, // TODO: Need to flesh this out
         //     .transfer.ep_addr  = 37, // TODO: Need to flesh this out
         //     .transfer.len      = 0,  // TODO: Need to flesh this out
@@ -933,12 +936,14 @@ void isr_usbctrl() {
         if (!ep->active) panic("EP should still be active in TRANS_COMPLETE");
 
         // Debug output
+        uint32_t this_guid = ++guid;
         printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
-        printf( "│Trans\t│ %4u │ %35s │ %10s │\n", ep->bytes_done, "", "");
+        printf( "│Trans\t│ %4u │ %35s │ Task #%-4u │\n", ep->bytes_done, "", this_guid);
 
         // Queue a task for the transfer
         queue_add_blocking(queue, &((task_t) {
             .type              = TASK_TRANSFER,
+            .guid              = this_guid,
             .transfer.dev_addr = ep->dev_addr,
             .transfer.ep_addr  = ep->ep_addr,
             .transfer.len      = ep->bytes_done,
@@ -993,7 +998,7 @@ void usb_task() {
 
     while (queue_try_remove(queue, &task)) {
         uint8_t type = task.type;
-        printf("\n=> Start task: %s\n", task_name(type));
+        printf("\n=> Start task #%u: %s\n", task.guid, task_name(type));
         switch (type) {
             case TASK_CONNECT:
 
@@ -1044,7 +1049,7 @@ void usb_task() {
                 printf("Unknown task type\n");
                 break;
         }
-        printf("=> Finish task: %s\n", task_name(type));
+        printf("=> Finish task #%u: %s\n", task.guid, task_name(type));
     }
 }
 
