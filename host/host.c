@@ -876,9 +876,6 @@ void isr_usbctrl() {
         printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
         bindump(dubs ? "│BUF/2" : "│BUF/1", bits);
 
-        // Clear all buffer bits, panic later if we missed any
-        usb_hw_clear->buf_status = (uint32_t) ~0;
-
         // NOTE: Miroslav says we should handle these in pairs of IN/OUT
         // endpoints, since they "come in pairs". So, we would deal with
         // EP3IN/EP3OUT at the same time and mask with 0b11, etc.
@@ -891,7 +888,7 @@ void isr_usbctrl() {
 
         // Lookup the endpoint
         endpoint_t *ep = find_endpoint(dev_addr, ep_addr);
-        handle_buffer(ep); bits ^= 0x01; // TODO: Remove this block
+        handle_buffer(ep); usb_hw_clear->buf_status = 0x01; bits ^= 0x01; // TODO: TOTAL HACK!
 
 //         // Check the interrupt/asynchronous endpoints (IN and OUT)
 //         for (uint8_t i = 0; i <= MAX_ENDPOINTS && bits; i++) {
