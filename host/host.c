@@ -258,9 +258,9 @@ const char *task_name(uint8_t type) {
 
 // ==[ Buffers ]===============================================================
 
-// Sync a buffer and return byte count
-uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
-    uint32_t bcr = usbh_dpram->epx_buf_ctrl; if (buf_id) bcr = bcr >> 16; // TODO: Move this to sync_buffers and calculate it only once
+// Read a buffer and return its byte count
+uint16_t read_buffer(endpoint_t *ep, uint8_t buf_id) {
+    uint32_t bcr = usbh_dpram->epx_buf_ctrl; if (buf_id) bcr = bcr >> 16; // TODO: Move this to read_buffers and calculate it only once
     uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK; if (!len) return 0; // TODO: Do we need to set ep->bytes_left = 0
     bool    full = bcr & USB_BUF_CTRL_FULL;
     bool      in = ep_in(ep);
@@ -286,16 +286,16 @@ uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
     return len;
 }
 
-void sync_buffers(endpoint_t *ep) {
-    if (sync_buffer(ep, 0) == ep->maxsize) { // Full buf_0
+void read_buffers(endpoint_t *ep) {
+    if (read_buffer(ep, 0) == ep->maxsize) { // Full buf_0
         if (usbh_dpram->epx_ctrl & EP_CTRL_DOUBLE_BUFFERED_BITS) {
-            sync_buffer(ep, 1); // TODO: What if buf_1 is 0 bytes or short?
+            read_buffer(ep, 1); // TODO: What if buf_1 is 0 bytes or short?
         }
     }
 }
 
-// Prepare a buffer and return its buffer control register value
-uint32_t prepare_buffer(endpoint_t *ep, uint8_t buf_id) {
+// Load a buffer and return its buffer control register value
+uint32_t load_buffer(endpoint_t *ep, uint8_t buf_id) {
     uint16_t len = MIN(ep->bytes_left, ep->maxsize);
     uint32_t bcr = (ep->data_pid ? USB_BUF_CTRL_DATA1_PID : USB_BUF_CTRL_DATA0_PID)
                  | USB_BUF_CTRL_AVAIL
@@ -319,18 +319,18 @@ uint32_t prepare_buffer(endpoint_t *ep, uint8_t buf_id) {
     return buf_id ? bcr << 16 : bcr;
 }
 
-void prepare_buffers(endpoint_t *ep) {
+void load_buffers(endpoint_t *ep) {
     // const bool host = is_host_mode(); // TODO: Use a static variable here, not a function call
     // const bool in = ep->usb->bEndpointAddress & USB_DIR_IN;
     // const bool allow_double = host ? !in : in; // TODO: host/out and device/in? Doesn't seem right
     bool allow_double = false; // TODO: This is a hack for now
 
     uint32_t ecr = usbh_dpram->epx_ctrl;
-    uint32_t bcr = prepare_buffer(ep, 0) | USB_BUF_CTRL_SEL; // TODO: Datasheet (p. 387) says this is for device only. Can we remove it?
+    uint32_t bcr = load_buffer(ep, 0);
 
     // Double buffering is only supported in specific cases // TODO: Properly determine this
     if (ep->bytes_left && allow_double) {
-        bcr |=  prepare_buffer(ep, 1); // TODO: Fix isochronous for buf_1!
+        bcr |=  load_buffer(ep, 1); // TODO: Fix isochronous for buf_1!
         ecr |=  EP_CTRL_DOUBLE_BUFFERED_BITS;
     } else {
         ecr &= ~EP_CTRL_DOUBLE_BUFFERED_BITS;
@@ -347,9 +347,9 @@ void handle_buffer(endpoint_t *ep) {
         panic("Inactive EP 0x%02x for device %u", ep->ep_addr, ep->dev_addr);
     }
 
-    sync_buffers(ep);
+    read_buffers(ep);
 
-    if (ep->bytes_left) prepare_buffers(ep);
+    if (ep->bytes_left) load_buffers(ep);
 
     if (ep->bytes_done) {
         hexdump("│Data", usbh_dpram->epx_data, ep->bytes_done, 1);
