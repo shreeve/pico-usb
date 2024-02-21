@@ -24,6 +24,14 @@
 
 // ==[ PicoUSB ]===============================================================
 
+// Set this to 1 to suppress debug output
+#if 0
+    #define printf(...)
+    #define printb(...)
+    #define hexdump(...)
+    #define bindump(...)
+#endif
+
 static uint32_t guid;
 
 #include "helpers.h"              // Helper functions
