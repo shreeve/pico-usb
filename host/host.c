@@ -276,8 +276,6 @@ uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
     bool    full = bcr & USB_BUF_CTRL_FULL;
     bool      in = ep_in(ep);
 
-printf("sync_buffer: in=%s\n", in ? "true" : "false");
-
     // We should only read from a full buffer or write to an empty buffer
     assert(in == full);
 
