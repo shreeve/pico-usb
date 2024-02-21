@@ -24,6 +24,8 @@
 
 // ==[ PicoUSB ]===============================================================
 
+static uint32_t guid;
+
 #include "helpers.h"              // Helper functions
 
 #define memclr(ptr, len) memset((ptr), 0, (len))
