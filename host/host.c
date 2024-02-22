@@ -331,7 +331,7 @@ uint32_t load_buffer(endpoint_t *ep, uint8_t buf_id) {
     return buf_id ? bcr << 16u : bcr;
 }
 
-// Simpler handler until we enable double buffering
+// Process pending endpoint buffers
 void handle_buffer(endpoint_t *ep) {
     if (!ep->active) show_endpoint(ep, "Inactive"), panic("Halted");
 
