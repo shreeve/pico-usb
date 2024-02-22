@@ -32,8 +32,6 @@
     #define bindump(...)
 #endif
 
-static uint32_t guid;
-
 #include "helpers.h"              // Helper functions
 
 #define memclr(ptr, len) memset((ptr), 0, (len))
@@ -52,6 +50,8 @@ static uint32_t guid;
 #define MAX_DEVICES   2
 #define MAX_ENDPOINTS 4
 #define TEMP_BUF_SIZE 256
+
+static uint32_t guid = 1; // TODO: Remove this little debug helper variable
 
 // ==[ Hardware: rp2040 ]======================================================
 
@@ -272,7 +272,7 @@ const char *task_name(uint8_t type) {
 // Sync a buffer and return its byte count
 uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
     uint32_t bcr = usbh_dpram->epx_buf_ctrl; if (buf_id) bcr = bcr >> 16; // TODO: Move this to sync_buffers and calculate it only once
-    uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK; if (!len) return 0; // TODO: Do we need to set ep->bytes_left = 0
+    uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK; if (!len) { ep->bytes_left = 0; return 0; } // TODO: Fix this
     bool    full = bcr & USB_BUF_CTRL_FULL;
     bool      in = ep_in(ep);
 
@@ -307,22 +307,22 @@ void sync_buffers(endpoint_t *ep) {
 
 // Load a buffer and return its buffer control register value
 uint32_t load_buffer(endpoint_t *ep, uint8_t buf_id) {
-    uint16_t len = MIN(ep->bytes_left, ep->maxsize);
+    uint16_t len = ep->bytes_left;
     uint32_t bcr = (ep->data_pid ? USB_BUF_CTRL_DATA1_PID : USB_BUF_CTRL_DATA0_PID)
                  | USB_BUF_CTRL_AVAIL
                  | len;
 
     ep->data_pid   ^= 1u;
 
-    // Copy the outbound user buffer to the data buffer
-    if (!ep_in(ep)) {
-        memcpy((void *) (ep->data_buf + buf_id * 64), ep->user_buf, len);
-        ep->user_buf += len;
-        bcr |= USB_BUF_CTRL_FULL;
-    }
+    // // Copy the outbound user buffer to the data buffer
+    // if (!ep_in(ep)) {
+    //     memcpy((void *) (ep->data_buf + buf_id * 64), ep->user_buf, len);
+    //     ep->user_buf += len;
+    //     bcr |= USB_BUF_CTRL_FULL;
+    // }
 
     // If we're done, set LAST to trigger TRANS_COMPLETE and stop polling
-    if (!ep->bytes_left) {
+    if (ep->bytes_left <= ep->maxsize) {
         bcr |= USB_BUF_CTRL_LAST;
     }
 
@@ -333,21 +333,23 @@ void load_buffers(endpoint_t *ep) {
     // const bool host = is_host_mode(); // TODO: Use a static variable here, not a function call
     // const bool in = ep->usb->bEndpointAddress & USB_DIR_IN;
     // const bool allow_double = host ? !in : in; // TODO: host/out and device/in? Doesn't seem right
-    bool allow_double = false; // TODO: This is a hack for now
+    // bool allow_double = false; // TODO: This is a hack for now
 
-    uint32_t ecr = usbh_dpram->epx_ctrl;
+    // uint32_t ecr = usbh_dpram->epx_ctrl;
     uint32_t bcr = load_buffer(ep, 0);
 
-    // Double buffering is only supported in specific cases // TODO: Properly determine this
-    if (ep->bytes_left && allow_double) {
-        bcr |=  load_buffer(ep, 1); // TODO: Fix isochronous for buf_1!
-        ecr |=  EP_CTRL_DOUBLE_BUFFERED_BITS;
-    } else {
-        ecr &= ~EP_CTRL_DOUBLE_BUFFERED_BITS;
-    }
+    // // Double buffering is only supported in specific cases // TODO: Properly determine this
+    // if (ep->bytes_left && allow_double) {
+    //     bcr |=  load_buffer(ep, 1); // TODO: Fix isochronous for buf_1!
+    //     ecr |=  EP_CTRL_DOUBLE_BUFFERED_BITS;
+    // } else {
+    //     ecr &= ~EP_CTRL_DOUBLE_BUFFERED_BITS;
+    // }
+
+    bindump("~bcr~", bcr);
 
     // Update ECR and BCR
-    usbh_dpram->epx_ctrl     = ecr;
+    // usbh_dpram->epx_ctrl     = ecr;
     usbh_dpram->epx_buf_ctrl = bcr & ~USB_BUF_CTRL_AVAIL;
     nop();
     nop();
@@ -512,17 +514,19 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     dar = dev_addr | ep_num(ep)                     // Device address
                   << USB_ADDR_ENDP_ENDPOINT_LSB;    // EP number
     bcr = (in  ? 0 : USB_BUF_CTRL_FULL)             // IN/Recv=0, OUT/Send=1
-        | (beg ? 0 : USB_BUF_CTRL_LAST)             // Trigger TRANS_COMPLETE
+        // | (beg ? 0 : USB_BUF_CTRL_LAST)             // Trigger TRANS_COMPLETE
         |            USB_BUF_CTRL_DATA1_PID         // Start IN/OUT at DATA1
         |            USB_BUF_CTRL_AVAIL             // Buffer is available now
         | len;                                      // Length of DATA stage
 
     // Debug output
-    bindump(" SSR", usb_hw->sie_status);   // SIE status register
-    bindump(" SCR", scr);                  // SIE control register
-    bindump(" DAR", dar);                  // Device address register
-    bindump(" ECR", usbh_dpram->epx_ctrl); // EPX control register
-    bindump(" BCR", bcr);                  // EPX buffer control register
+    bindump(" INTR", usb_hw->intr);
+    bindump(" INTS", usb_hw->intr);
+    bindump(" SSR" , usb_hw->sie_status);   // SIE status register
+    bindump(" SCR" , scr);                  // SIE control register
+    bindump(" DAR" , dar);                  // Device address register
+    bindump(" ECR" , usbh_dpram->epx_ctrl); // EPX control register
+    bindump(" BCR" , bcr);                  // EPX buffer control register
 
     hexdump("<Setup", packet, size, 1);
 
@@ -579,9 +583,16 @@ void *transfer_zlp(endpoint_t *ep) {
     dar = ep->dev_addr | ep_num(ep)                  // Device address
                   << USB_ADDR_ENDP_ENDPOINT_LSB;     // EP number
     bcr = (in  ? 0 : USB_BUF_CTRL_FULL)              // IN/Recv=0, OUT/Send=1
-        |            USB_BUF_CTRL_LAST               // Trigger TRANS_COMPLETE
+     // |            USB_BUF_CTRL_LAST               // Trigger TRANS_COMPLETE
         |            USB_BUF_CTRL_DATA1_PID          // Start IN/OUT at DATA1
         |            USB_BUF_CTRL_AVAIL;             // Buffer is available now
+
+    // Debug output
+    bindump(" SSR", usb_hw->sie_status);   // SIE status register
+    bindump(" SCR", scr);                  // SIE control register
+    bindump(" DAR", dar);                  // Device address register
+    bindump(" ECR", usbh_dpram->epx_ctrl); // EPX control register
+    bindump(" BCR", bcr);                  // EPX buffer control register
 
     printf("%cZLP\n", in ? '>' : '<');
 
@@ -828,7 +839,7 @@ void isr_usbctrl() {
     uint32_t ints = usb_hw->ints;
     task_t task;
 
-    printf( "\n=> New ISR");
+    printf( "\n=> New ISR #%u", guid++);
     printf_interrupts(ints);
     printf( "\n");
     printf( "┌───────┬──────┬─────────────────────────────────────┬────────────┐\n");
@@ -951,21 +962,39 @@ void isr_usbctrl() {
 
         // Debug output
         printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
-
-        // Queue a task for the transfer
-        queue_add_blocking(queue, &((task_t) {
-            .type              = TASK_TRANSFER,
-            .guid              = guid++,
-            .transfer.dev_addr = ep->dev_addr,
-            .transfer.ep_addr  = ep->ep_addr,
-            .transfer.len      = ep->bytes_done,
-            .transfer.status   = TRANSFER_SUCCESS,
-        }));
         printf( "│Trans\t│ %4u │ Device %-28u │ Task #%-4u │\n", ep->bytes_done, ep->dev_addr, guid);
+        hexdump("│Data", usbh_dpram->epx_data, ep->bytes_done, 1);
 
-        hexdump(" Data", usbh_dpram->epx_data, ep->bytes_done, 1);
+        // Queue a ZLP if needed
+        if (ep->bytes_done) {
+            clear_endpoint(ep); // TODO: Do we need the size or bytes later???
+            queue_add_blocking(queue, &((task_t) {
+                .type          = TASK_FUNCTION,
+                .guid          = guid++,
+                .function.fn   = (void (*)(void *)) transfer_zlp,
+                .function.arg  = ep,
+            }));
+        } else { // If we got here via ZLP trigger, advance the enumeration
+            clear_endpoint(ep); // TODO: Do we need the size or bytes later???
+            queue_add_blocking(queue, &((task_t) {
+                .type          = TASK_FUNCTION,
+                .guid          = guid++,
+                .function.fn   = (void (*)(void *)) enumerate,
+                .function.arg  = ep,
+            }));
+        }
 
-        clear_endpoint(ep);
+        // // Queue an enumeration advance
+        // queue_add_blocking(queue, &((task_t) {
+        //     .type              = TASK_TRANSFER,
+        //     .guid              = guid++,
+        //     .transfer.dev_addr = ep->dev_addr,
+        //     .transfer.ep_addr  = ep->ep_addr,
+        //     .transfer.len      = ep->bytes_done,
+        //     .transfer.status   = TRANSFER_SUCCESS,
+        // }));
+
+        // clear_endpoint(ep); // TODO: Is this even needed?
     }
 
     // Receive timeout (waited too long without seeing an ACK)
@@ -1033,32 +1062,42 @@ void usb_task() {
                 char *str = dev0->speed == LOW_SPEED ? "low" : "full";
                 printf("Device connected (%s speed)\n", str);
 
-                // Start the enumeration process
+                // // Queue the enumeration process
+                // queue_add_blocking(queue, &((task_t) {
+                //     .type          = TASK_FUNCTION,
+                //     .guid          = guid++,
+                //     .function.fn   = enumerate,
+                //     .function.arg  = NULL,
+                // })); // enumerate(NULL);
+
+                // Let's just call enumerate directly?
                 enumerate(NULL);
+
                 break;
 
-            case TASK_TRANSFER: {
-                uint8_t dev_addr = task.transfer.dev_addr;
-                uint8_t ep_addr  = task.transfer.ep_addr;
-                uint16_t len     = task.transfer.len;
+//             case TASK_TRANSFER: {
+//                 uint8_t dev_addr = task.transfer.dev_addr;
+//                 uint8_t ep_addr  = task.transfer.ep_addr;
+//                 uint16_t len     = task.transfer.len;
+//
+//                 // Lookup endpoint
+//                 endpoint_t *ep = find_endpoint(dev_addr, ep_addr);
+//
+//                 // Debug output, unless this is a ZLP on dev0
+//                 // if (dev_addr || len) {
+//                     show_endpoint(ep, "Transfer");
+//                     hexdump(" Data", usbh_dpram->epx_data, len, 1);
+//                 // }
+//
+//                 // Advance the enumeration
+//
+//             }   break;
 
-                // Lookup endpoint
-                endpoint_t *ep = find_endpoint(dev_addr, ep_addr);
-
-                // Debug output, unless this is a ZLP on dev0
-                if (dev_addr || len) {
-                    show_endpoint(ep, "Transfer");
-                    hexdump(" Data", usbh_dpram->epx_data, len, 1);
-                }
-
-                // Transfer a ZLP or advance the enumeration
-                len ? transfer_zlp(ep) : enumerate(ep);
-            }   break;
-
-            case TASK_FUNCTION:
-                printf("Function call\n");
+            case TASK_FUNCTION: {
+                if (task.function.fn == transfer_zlp) printf("Calling transfer_zlp()\n");
+                if (task.function.fn == enumerate   ) printf("Calling enumerate()\n"   );
                 task.function.fn(task.function.arg);
-                break;
+            }   break;
 
             default:
                 printf("Unknown task type\n");
