@@ -318,7 +318,7 @@ void handle_buffer(endpoint_t *ep) {
         // Toggle DATA0/DATA1 each packet
         ep->data_pid   ^= 1u;
 
-        // Copy the outbound user buffer to the data buffer
+        // Copy the user buffer to the outbound data buffer
         if (!in) {
             memcpy((void *) ep->data_buf, ep->user_buf, len);
             ep->user_buf += len;
