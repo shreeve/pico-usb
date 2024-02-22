@@ -2,6 +2,12 @@
 
 #### Using a Pico W as Host and a Pico Debug Probe as Device
 
+<kbd>
+<img width="675" alt="pico-usb" src="https://github.com/shreeve/pico-usb/assets/142875/7daaf85d-302d-46e8-9360-e97e20c2a100">
+</kbd>
+
+#### Example console output
+
 ```
 ==[ USB host example]==
 
