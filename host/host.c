@@ -549,6 +549,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     usb_hw->sie_ctrl         = scr ^ USB_SIE_CTRL_START_TRANS_BITS;
     usb_hw->dev_addr_ctrl    = dar;
     usbh_dpram->epx_buf_ctrl = bcr ^ USB_BUF_CTRL_AVAIL;
+    nop(); // TODO: I think we can remove this one
     nop();
     nop();
     usbh_dpram->epx_buf_ctrl = bcr;
@@ -584,6 +585,7 @@ void transfer_zlp(endpoint_t *ep) {
     usb_hw->sie_ctrl         = scr ^ USB_SIE_CTRL_START_TRANS_BITS;
     usb_hw->dev_addr_ctrl    = dar;
     usbh_dpram->epx_buf_ctrl = bcr ^ USB_BUF_CTRL_AVAIL;
+    nop(); // TODO: I think we can remove this one
     nop();
     nop();
     usbh_dpram->epx_buf_ctrl = bcr;
