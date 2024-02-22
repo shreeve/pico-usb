@@ -314,12 +314,12 @@ uint32_t load_buffer(endpoint_t *ep, uint8_t buf_id) {
 
     ep->data_pid   ^= 1u;
 
-    // // Copy the outbound user buffer to the data buffer
-    // if (!ep_in(ep)) {
-    //     memcpy((void *) (ep->data_buf + buf_id * 64), ep->user_buf, len);
-    //     ep->user_buf += len;
-    //     bcr |= USB_BUF_CTRL_FULL;
-    // }
+    // Copy the outbound user buffer to the data buffer
+    if (!ep_in(ep)) {
+        memcpy((void *) (ep->data_buf + buf_id * 64), ep->user_buf, len);
+        ep->user_buf += len;
+        bcr |= USB_BUF_CTRL_FULL;
+    }
 
     // If we're done, set LAST to trigger TRANS_COMPLETE and stop polling
     if (ep->bytes_left <= ep->maxsize) {
