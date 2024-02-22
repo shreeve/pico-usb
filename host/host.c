@@ -566,7 +566,8 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 
 // Transfer a ZLP, but it makes several critical assumptions so be careful!
 // TODO: Merge with start_control_transfer (ep has info, packet would be NULL)
-void *transfer_zlp(endpoint_t *ep) {
+void transfer_zlp(void *arg) {
+    endpoint_t *ep = (endpoint_t *) arg;
 
     // Update the endpoint
     ep->active = true;         // Transfer is now active
@@ -677,7 +678,8 @@ void set_configuration(endpoint_t *ep, uint16_t cfg) {
     }));
 }
 
-void *enumerate(endpoint_t *ep) {
+void enumerate(void *arg) {
+    endpoint_t *ep = (endpoint_t *) arg;
     static uint8_t step;
     static uint8_t new_addr;
 
@@ -967,36 +969,16 @@ void isr_usbctrl() {
         printf( "│Trans\t│ %4u │ Device %-28u │ Task #%-4u │\n", ep->bytes_done, ep->dev_addr, guid);
         hexdump("│Data", usbh_dpram->epx_data, ep->bytes_done, 1);
 
-        // Queue a ZLP if needed
-        if (ep->bytes_done) {
-            clear_endpoint(ep); // TODO: Do we need the size or bytes later???
-            queue_add_blocking(queue, &((task_t) {
-                .type          = TASK_FUNCTION,
-                .guid          = guid++,
-                .function.fn   = (void (*)(void *)) transfer_zlp,
-                .function.arg  = ep,
-            }));
-        } else { // If we got here via ZLP trigger, advance the enumeration
-            clear_endpoint(ep); // TODO: Do we need the size or bytes later???
-            queue_add_blocking(queue, &((task_t) {
-                .type          = TASK_FUNCTION,
-                .guid          = guid++,
-                .function.fn   = (void (*)(void *)) enumerate,
-                .function.arg  = ep,
-            }));
-        }
+        // Clear the endpoint (since its complete)
+        clear_endpoint(ep);
 
-        // // Queue an enumeration advance
-        // queue_add_blocking(queue, &((task_t) {
-        //     .type              = TASK_TRANSFER,
-        //     .guid              = guid++,
-        //     .transfer.dev_addr = ep->dev_addr,
-        //     .transfer.ep_addr  = ep->ep_addr,
-        //     .transfer.len      = ep->bytes_done,
-        //     .transfer.status   = TRANSFER_SUCCESS,
-        // }));
-
-        // clear_endpoint(ep); // TODO: Is this even needed?
+        // Queue a ZLP or advance the enumeration
+        queue_add_blocking(queue, &((task_t) {
+            .type         = TASK_FUNCTION,
+            .guid         = guid++,
+            .function.fn  = len ? transfer_zlp : enumerate,
+            .function.arg = ep,
+        }));
     }
 
     // Receive timeout (waited too long without seeing an ACK)
