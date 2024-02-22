@@ -270,6 +270,80 @@ const char *task_name(uint8_t type) {
 
 // ==[ Buffers ]===============================================================
 
+void handle_buffer(endpoint_t *ep) {
+    if (!ep->active) show_endpoint(ep, "Inactive"), panic("Halted");
+
+    // -- Sync the buffer -----------------------------------------------------
+
+    uint32_t bcr = usbh_dpram->epx_buf_ctrl;    // Buffer control register
+    uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK; // Buffer length
+    bool    full = bcr & USB_BUF_CTRL_FULL;     // Is buffer marked as full?
+    bool      in = ep_in(ep);                   // IN or OUT endpoint?
+
+    // Inbound buffers must be full and outbound buffer must be empty
+    assert(in == full);
+
+    // Copy the inbound data buffer to the user buffer
+    if (in) {
+        memcpy(ep->user_buf, (void *) ep->data_buf, len);
+        ep->user_buf += len;
+    }
+
+    // Update byte counts
+    ep->bytes_done += len;
+    ep->bytes_left -= len;
+
+    // Short packet (below maxsize) means the transfer is done
+    if (len < ep->maxsize) { // TODO: This may be anything smaller than what was requested?!
+        ep->bytes_left = 0;
+    }
+
+    // -- Load the buffer -----------------------------------------------------
+
+    if (ep->bytes_left) {
+
+        // Update byte counts
+        len = MIN(ep->maxsize, ep->bytes_left);
+        ep->bytes_left -= len;
+
+        // Calculate new BCR
+        bool pid = ep->data_pid;
+        bool mas = ep->bytes_left > ep->maxsize;
+        bcr = (pid ? USB_BUF_CTRL_DATA1_PID  // Toggle DATA0/DATA1
+                   : USB_BUF_CTRL_DATA1_PID) // for next packet
+            | (in  ? 0 : USB_BUF_CTRL_FULL)  // IN/Recv=0, OUT/Send=1
+            | (mas ? 0 : USB_BUF_CTRL_LAST)  // Trigger TRANS_COMPLETE
+            |            USB_BUF_CTRL_AVAIL  // Buffer available now
+            | len;                           // Length of next buffer
+
+        // Toggle DATA0/DATA1 each packet
+        ep->data_pid ^= 1u;
+
+        // Copy the user buffer to the outbound data buffer
+        if (!in) {
+            memcpy((void *) ep->data_buf, ep->user_buf, len);
+            ep->user_buf += len;
+        }
+
+        // Update BCR
+        bindump("~bcr~", bcr);
+        usbh_dpram->epx_buf_ctrl = bcr & ~USB_BUF_CTRL_AVAIL;
+        nop(); // TODO: I think we can remove this one
+        nop();
+        nop();
+        usbh_dpram->epx_buf_ctrl = bcr;
+    }
+
+    // == Debug output ========================================================
+
+    if (ep->bytes_done) {
+        hexdump("│Data", usbh_dpram->epx_data, ep->bytes_done, 1);
+    } else {
+        char *str = ep_in(ep) ? "│ZLP/I" : "│ZLP/O";
+        bindump(str, 0);
+    }
+}
+
 // ==[ Devices ]===============================================================
 
 enum {
