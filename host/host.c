@@ -272,6 +272,7 @@ const char *task_name(uint8_t type) {
 
 // Sync a buffer and return its length
 uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
+    if (buf_id) bcr >>= 16u;                     // Use the correct half of BCR
     uint16_t len  = bcr & USB_BUF_CTRL_LEN_MASK; // Buffer length
     bool     full = bcr & USB_BUF_CTRL_FULL;     // Is buffer marked as full?
     bool     in   = ep_in(ep);                   // IN or OUT endpoint?
@@ -341,7 +342,7 @@ void handle_buffer(endpoint_t *ep) {
 
     if (sync_buffer(ep, 0, bcr) == ep->maxsize) {
         if (ecr & EP_CTRL_DOUBLE_BUFFERED_BITS) {
-            sync_buffer(ep, 1, bcr >> 16);
+            sync_buffer(ep, 1, bcr);
         }
     }
 
