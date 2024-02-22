@@ -308,7 +308,6 @@ void handle_buffer(endpoint_t *ep) {
         bcr =(ep->data_pid
             ? USB_BUF_CTRL_DATA1_PID
             : USB_BUF_CTRL_DATA0_PID)
-            | USB_BUF_CTRL_SEL
             | USB_BUF_CTRL_AVAIL
             | len;
 
