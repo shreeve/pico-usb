@@ -3,7 +3,7 @@ void hexdump(const unsigned char *str, const void *data, size_t size, uint mode)
     const unsigned char *byte = (const unsigned char *) data;
     size_t i, j;
 
-    for (i = 0; i <= size; i += 16) {
+    for (i = 0; i < size; i += 16) {
         printf("%s\t│ %04x │ ", str, i); // Print the offset
 
         // Print hex values
