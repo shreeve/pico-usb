@@ -310,7 +310,7 @@ void handle_buffer(endpoint_t *ep) {
         bool pid = ep->data_pid;
         bool mas = ep->bytes_left > ep->maxsize;
         bcr = (pid ? USB_BUF_CTRL_DATA1_PID  // Toggle DATA0/DATA1
-                   : USB_BUF_CTRL_DATA1_PID) // for next packet
+                   : USB_BUF_CTRL_DATA0_PID) // for next packet
             | (in  ? 0 : USB_BUF_CTRL_FULL)  // IN/Recv=0, OUT/Send=1
             | (mas ? 0 : USB_BUF_CTRL_LAST)  // Trigger TRANS_COMPLETE
             |            USB_BUF_CTRL_AVAIL  // Buffer available now
