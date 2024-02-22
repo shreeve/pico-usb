@@ -945,7 +945,6 @@ void isr_usbctrl() {
 
         // Debug output
         printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
-        printf( "│Trans\t│ %4u │ %35s │ Task #%-4u │\n", ep->bytes_done, "", guid);
 
         // Queue a task for the transfer
         queue_add_blocking(queue, &((task_t) {
@@ -956,6 +955,9 @@ void isr_usbctrl() {
             .transfer.len      = ep->bytes_done,
             .transfer.status   = TRANSFER_SUCCESS,
         }));
+        printf( "│Trans\t│ %4u │ Device %-28u │ Task #%-4u │\n", ep->bytes_done, ep->dev_addr, guid);
+
+        hexdump(" Data", usbh_dpram->epx_data, ep->bytes_done, 1);
 
         clear_endpoint(ep);
     }
