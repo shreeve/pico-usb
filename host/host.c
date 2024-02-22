@@ -326,7 +326,7 @@ void handle_buffer(endpoint_t *ep) {
         }
 
         // If this is the last buffer, trigger TRANS_COMPLETE
-        if (!len) {
+        if (!ep->bytes_left) {
             bcr |= USB_BUF_CTRL_LAST;
         }
 
