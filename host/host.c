@@ -348,6 +348,10 @@ void load_buffers(endpoint_t *ep) {
 
     // Update ECR and BCR
     usbh_dpram->epx_ctrl     = ecr;
+    usbh_dpram->epx_buf_ctrl = bcr & ~USB_BUF_CTRL_AVAIL;
+    nop();
+    nop();
+    nop();
     usbh_dpram->epx_buf_ctrl = bcr;
 }
 
