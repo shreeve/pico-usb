@@ -941,7 +941,7 @@ void isr_usbctrl() {
         // Debug output
         printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
         printf( "│Trans\t│ %4u │ Device %-28u │ Task #%-4u │\n", ep->bytes_done, ep->dev_addr, guid);
-        hexdump("│Data", usbh_dpram->epx_data, ep->bytes_done, 1);
+        if (ep->bytes_done) hexdump("│Data", usbh_dpram->epx_data, ep->bytes_done, 1);
 
         // Clear the endpoint (since its complete)
         clear_endpoint(ep);
