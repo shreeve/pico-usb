@@ -270,6 +270,118 @@ const char *task_name(uint8_t type) {
 
 // ==[ Buffers ]===============================================================
 
+// Sync a buffer and return its length
+uint16_t sync_buffer(endpoint_t *ep, uint32_t bcr, uint8_t buf_id) {
+    uint16_t len;
+    bool full, in;
+
+    bcr  =(bcr >> (buf_id ? 16 : 0)) & 0xffff; // Use correct half of BCR
+    len  = bcr & USB_BUF_CTRL_LEN_MASK;        // Length of this double buffer
+    full = bcr & USB_BUF_CTRL_FULL;            // Is the buffer full?
+    in   = ep_in(ep);                          // Endpoint direction
+
+    // We only read from full in buffers and write to empty out buffers
+    assert(in == full);
+
+    // Copy the inbound data buffer to the user buffer
+    if (in) {
+        memcpy(ep->user_buf, (void *) (ep->data_buf + buf_id * 64), len);
+        ep->user_buf += len;
+    }
+
+    // Update byte counts
+    ep->bytes_done += len;
+ // ep->bytes_left -= len; // NOTE: This happens in load_buffer
+
+    // Short packet (below maxsize) means the transfer is done
+    if (len < ep->maxsize) {
+        ep->bytes_left = 0;
+    }
+
+    return len;
+}
+
+// Load a buffer and return its half of the BCR (buffer control register)
+uint32_t load_buffer(endpoint_t *ep, uint8_t buf_id) {
+    uint16_t len = MIN(ep->maxsize, ep->bytes_left); // Length of this buffer
+    bool     in  = ep_in(ep);                       // Endpoint direction
+
+    // Calculate BCR
+    uint32_t bcr =(ep->data_pid
+                 ? USB_BUF_CTRL_DATA1_PID
+                 : USB_BUF_CTRL_DATA0_PID)
+                 | USB_BUF_CTRL_AVAIL
+                 | len;
+
+    // Update byte counts
+    ep->bytes_left -= len;
+
+    // Toggle DATA0/DATA1 each packet
+    ep->data_pid   ^= 1u;
+
+    // Copy the user buffer to the outbound data buffer
+    if (!in) {
+        memcpy((void *) (ep->data_buf + buf_id * 64), ep->user_buf, len);
+        ep->user_buf += len;
+        bcr |= USB_BUF_CTRL_FULL;
+    }
+
+    // If this is the last buffer, trigger TRANS_COMPLETE
+    if (!ep->bytes_left) {
+        bcr |= USB_BUF_CTRL_LAST;
+    }
+
+    return buf_id ? bcr << 16 : bcr;
+}
+
+// Simpler handler until we enable double buffering
+void handle_buffer(endpoint_t *ep) {
+    if (!ep->active) show_endpoint(ep, "Inactive"), panic("Halted");
+
+    // -- Sync the buffer(s) --------------------------------------------------
+
+    uint32_t ecr = usbh_dpram->epx_ctrl;                 bindump("•ECR•", ecr);
+    uint32_t bcr = usbh_dpram->epx_buf_ctrl;             bindump("•BCR•", bcr);
+
+    if (sync_buffer(ep, bcr, 0) == ep->maxsize) {
+        if (ecr & EP_CTRL_DOUBLE_BUFFERED_BITS) {
+            sync_buffer(ep, bcr, 1);
+        }
+    }
+
+    // -- Load the buffer(s) --------------------------------------------------
+
+    if (ep->bytes_left) {
+        bcr = load_buffer(ep, 0);                         bindump("•BCR1", bcr);
+        if (true) { // TODO: Add conditions for double buffering
+            ecr |= EP_CTRL_DOUBLE_BUFFERED_BITS;          bindump("•ECR2", ecr);
+            bcr |= load_buffer(ep, 1);                    bindump("•BCR3", bcr);
+        } else {
+            ecr &= ~EP_CTRL_DOUBLE_BUFFERED_BITS;         bindump("•ECR4", ecr);
+        }
+
+        bindump("~ecr~", ecr);
+        bindump("~bcr~", bcr);
+
+        // Update ECR and BCR
+        usbh_dpram->epx_ctrl     = ecr;
+        usbh_dpram->epx_buf_ctrl = bcr & ~USB_BUF_CTRL_AVAIL;
+        nop(); // TODO: I think we can remove this one
+        nop();
+        nop();
+        usbh_dpram->epx_buf_ctrl = bcr;
+    }
+
+    // == Debug output ========================================================
+
+    if (ep->bytes_done) {
+        hexdump("│Data", usbh_dpram->epx_data, ep->bytes_done, 1);
+    } else {
+        char *str = ep_in(ep) ? "│ZLP/I" : "│ZLP/O";
+        bindump(str, 0);
+    }
+}
+
 // ==[ Devices ]===============================================================
 
 enum {
