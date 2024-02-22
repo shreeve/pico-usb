@@ -304,7 +304,7 @@ void handle_buffer(endpoint_t *ep) {
     if (ep->bytes_left) {
 
         // Calculate BCR
-        len = MIN(ep->bytes_left, ep->maxsize);
+        len = MIN(ep->maxsize, ep->bytes_left);
         bcr =(ep->data_pid
             ? USB_BUF_CTRL_DATA1_PID
             : USB_BUF_CTRL_DATA0_PID)
@@ -440,7 +440,7 @@ enum {
 
 void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     uint8_t size = sizeof(usb_setup_packet_t); // Size of the setup packet
-    uint8_t len  = packet->wLength;            // Length of the data phase
+    uint8_t left = packet->wLength;            // Length of the data phase
 
     // Sanity checks
     if ( ep_num(ep))     panic("Control transfers must use EP0");
@@ -459,7 +459,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     // Transfer is now active
     ep->active     = true;
     ep->ep_addr    = packet->bmRequestType & USB_DIR_IN;
-    ep->bytes_left = len;
+    ep->bytes_left = left;
     ep->bytes_done = 0;
     ep->user_buf   = temp_buf; // TODO: Add something asap, NULL is... sub-optimal. Maybe use something like a ring buffer here?
 
@@ -471,13 +471,13 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 
     // If there's no data phase, flip the direction for the USB controller
     bool in = ep_in(ep);
-    if (!len) {
+    if (!left) {
         in = !in;
         ep->ep_addr ^= USB_DIR_IN;
     }
 
     // Is this the begining of a multiple packet transfer?
-    bool beg = len > ep->maxsize;
+    bool beg = left > ep->maxsize;
 
     // Calculate register values
     uint32_t scr, dar, bcr;
@@ -487,13 +487,12 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS // Receive bit means IN
                    : USB_SIE_CTRL_SEND_DATA_BITS)   // Send bit means OUT
         |            USB_SIE_CTRL_START_TRANS_BITS; // Start the transfer now
-    dar = dev_addr | ep_num(ep)                     // Device address
-                  << USB_ADDR_ENDP_ENDPOINT_LSB;    // EP number
+    dar = dev_addr;                                 // Device address for EP0
     bcr = (in  ? 0 : USB_BUF_CTRL_FULL)             // IN/Recv=0, OUT/Send=1
         // | (beg ? 0 : USB_BUF_CTRL_LAST)             // Trigger TRANS_COMPLETE
         |            USB_BUF_CTRL_DATA1_PID         // Start IN/OUT at DATA1
         |            USB_BUF_CTRL_AVAIL             // Buffer is available now
-        | len;                                      // Length of DATA stage
+        | MIN(ep->maxsize, left);                   // Length of next buffer
 
     // Debug output
     bindump(" INTR", usb_hw->intr);
