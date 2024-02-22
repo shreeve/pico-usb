@@ -173,7 +173,8 @@ SDK_INLINE void reset_epx() {
         .bDescriptorType  = USB_DT_ENDPOINT,
         .bEndpointAddress = 0,
         .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
-        .wMaxPacketSize   = 64, // 8, // Default per USB 2.0 spec
+        .wMaxPacketSize   = 8, // Default per USB 2.0 spec
+     // .wMaxPacketSize   = 64,
         .bInterval        = 0,
     }));
     epx->configured = true;
@@ -662,7 +663,8 @@ void get_configuration_descriptor(endpoint_t *ep) {
         .bRequest      = USB_REQUEST_GET_DESCRIPTOR,
         .wValue        = MAKE_U16(USB_DT_CONFIG, 0),
         .wIndex        = 0,
-        .wLength       = 98, // sizeof(usb_configuration_descriptor_t),
+        .wLength       = sizeof(usb_configuration_descriptor_t),
+     // .wLength       = 98,
     }));
 }
 
@@ -691,8 +693,10 @@ void enumerate(void *arg) {
 
         case ENUMERATION_START:
             printf("Enumeration started\n");
-get_configuration_descriptor(epx);
-break;
+
+// TODO: Remove this testing shortcut
+// get_configuration_descriptor(epx);
+// break;
 
             printf("Starting GET_MAXSIZE\n");
             get_device_descriptor(epx);
