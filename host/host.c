@@ -558,7 +558,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 
 // Transfer a ZLP, but it makes several critical assumptions so be careful!
 // TODO: Merge with start_control_transfer (ep has info, packet would be NULL)
-void transfer_zlp(endpoint_t *ep) {
+void *transfer_zlp(endpoint_t *ep) {
 
     // Update the endpoint
     ep->active = true;         // Transfer is now active
@@ -662,7 +662,7 @@ void set_configuration(endpoint_t *ep, uint16_t cfg) {
     }));
 }
 
-void enumerate(endpoint_t *ep) {
+void *enumerate(endpoint_t *ep) {
     static uint8_t step;
     static uint8_t new_addr;
 
