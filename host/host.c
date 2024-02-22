@@ -292,7 +292,7 @@ void handle_buffer(endpoint_t *ep) {
 
     // Update byte counts
     ep->bytes_done += len;
-    // ep->bytes_left -= len; // TODO: Why doesn't TinyUSB update this also?
+    // ep->bytes_left -= len; // NOTE: TinyUSB may defer updating this to the block, so all the other code can run?
 
     // Short packet (below maxsize) means the transfer is done
     if (len < ep->maxsize) {
