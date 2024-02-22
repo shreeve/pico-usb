@@ -350,13 +350,14 @@ void handle_buffer(endpoint_t *ep) {
 
     if (ep->bytes_left) {
         bcr = load_buffer(ep, 0);                         bindump("•BCR1", bcr);
-        if (~bcr & USB_BUF_CTRL_LAST) { // TODO: Add better conditions for double buffering
+        if (~bcr & USB_BUF_CTRL_LAST) { // TODO: Improve!
             ecr |= EP_CTRL_DOUBLE_BUFFERED_BITS;          bindump("•ECR2", ecr);
             bcr |= load_buffer(ep, 1);                    bindump("•BCR3", bcr);
         } else {
             ecr &= ~EP_CTRL_DOUBLE_BUFFERED_BITS;         bindump("•ECR4", ecr);
         }
 
+        // Debug output
         bindump("~ecr~", ecr);
         bindump("~bcr~", bcr);
 
