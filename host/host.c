@@ -304,7 +304,6 @@ void handle_buffer(endpoint_t *ep) {
 
         // Update byte counts
         len = MIN(ep->maxsize, ep->bytes_left);
-        ep->bytes_left -= len;
 
         // Calculate new BCR
         bool pid = ep->data_pid;
