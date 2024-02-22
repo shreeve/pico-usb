@@ -271,16 +271,12 @@ const char *task_name(uint8_t type) {
 // ==[ Buffers ]===============================================================
 
 // Sync a buffer and return its length
-uint16_t sync_buffer(endpoint_t *ep, uint32_t bcr, uint8_t buf_id) {
-    uint16_t len;
-    bool full, in;
+uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
+    uint16_t len  = bcr & USB_BUF_CTRL_LEN_MASK; // Buffer length
+    bool     full = bcr & USB_BUF_CTRL_FULL;     // Is buffer marked as full?
+    bool     in   = ep_in(ep);                   // IN or OUT endpoint?
 
-    bcr  =(bcr >> (buf_id ? 16 : 0)) & 0xffff; // Use correct half of BCR
-    len  = bcr & USB_BUF_CTRL_LEN_MASK;        // Length of this double buffer
-    full = bcr & USB_BUF_CTRL_FULL;            // Is the buffer full?
-    in   = ep_in(ep);                          // Endpoint direction
-
-    // We only read from full in buffers and write to empty out buffers
+    // Inbound buffers must be full and outbound buffer must be empty
     assert(in == full);
 
     // Copy the inbound data buffer to the user buffer
@@ -303,8 +299,8 @@ uint16_t sync_buffer(endpoint_t *ep, uint32_t bcr, uint8_t buf_id) {
 
 // Load a buffer and return its half of the BCR (buffer control register)
 uint32_t load_buffer(endpoint_t *ep, uint8_t buf_id) {
-    uint16_t len = MIN(ep->maxsize, ep->bytes_left); // Length of this buffer
-    bool     in  = ep_in(ep);                       // Endpoint direction
+    uint16_t len = MIN(ep->maxsize, ep->bytes_left); // Buffer length
+    bool      in = ep_in(ep);                        // IN or OUT endpoint?
 
     // Calculate BCR
     uint32_t bcr =(ep->data_pid
@@ -317,7 +313,7 @@ uint32_t load_buffer(endpoint_t *ep, uint8_t buf_id) {
     ep->bytes_left -= len;
 
     // Toggle DATA0/DATA1 each packet
-    ep->data_pid   ^= 1u;
+    ep->data_pid ^= 1u;
 
     // Copy the user buffer to the outbound data buffer
     if (!in) {
@@ -331,7 +327,7 @@ uint32_t load_buffer(endpoint_t *ep, uint8_t buf_id) {
         bcr |= USB_BUF_CTRL_LAST;
     }
 
-    return buf_id ? bcr << 16 : bcr;
+    return buf_id ? bcr << 16u : bcr;
 }
 
 // Simpler handler until we enable double buffering
@@ -343,9 +339,9 @@ void handle_buffer(endpoint_t *ep) {
     uint32_t ecr = usbh_dpram->epx_ctrl;                 bindump("•ECR•", ecr);
     uint32_t bcr = usbh_dpram->epx_buf_ctrl;             bindump("•BCR•", bcr);
 
-    if (sync_buffer(ep, bcr, 0) == ep->maxsize) {
+    if (sync_buffer(ep, 0, bcr) == ep->maxsize) {
         if (ecr & EP_CTRL_DOUBLE_BUFFERED_BITS) {
-            sync_buffer(ep, bcr, 1);
+            sync_buffer(ep, 1, bcr >> 16);
         }
     }
 
