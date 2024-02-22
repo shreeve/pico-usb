@@ -471,8 +471,8 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         ep->ep_addr ^= USB_DIR_IN;
     }
 
-    // Is this the begining of a multiple packet transfer?
-    bool beg = left > ep->maxsize;
+    // Are there more packets to send?
+    bool mas = left > ep->maxsize;
 
     // Calculate register values
     uint32_t scr, dar, bcr;
@@ -484,9 +484,9 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         |            USB_SIE_CTRL_START_TRANS_BITS; // Start the transfer now
     dar = dev_addr;                                 // Device address for EP0
     bcr = (in  ? 0 : USB_BUF_CTRL_FULL)             // IN/Recv=0, OUT/Send=1
-        | (beg ? 0 : USB_BUF_CTRL_LAST)             // Trigger TRANS_COMPLETE
+        | (mas ? 0 : USB_BUF_CTRL_LAST)             // Trigger TRANS_COMPLETE
         |            USB_BUF_CTRL_DATA1_PID         // Start IN/OUT at DATA1
-        |            USB_BUF_CTRL_AVAIL             // Buffer is available now
+        |            USB_BUF_CTRL_AVAIL             // Buffer available now
         | MIN(ep->maxsize, left);                   // Length of next buffer
 
     // Debug output
@@ -556,7 +556,7 @@ void transfer_zlp(void *arg) {
     bcr = (in  ? 0 : USB_BUF_CTRL_FULL)              // IN/Recv=0, OUT/Send=1
         |            USB_BUF_CTRL_LAST               // Trigger TRANS_COMPLETE
         |            USB_BUF_CTRL_DATA1_PID          // Start IN/OUT at DATA1
-        |            USB_BUF_CTRL_AVAIL;             // Buffer is available now
+        |            USB_BUF_CTRL_AVAIL;             // Buffer available now
 
     // Debug output
     bindump(" SSR", usb_hw->sie_status);   // SIE status register
