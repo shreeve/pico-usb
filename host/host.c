@@ -270,103 +270,76 @@ const char *task_name(uint8_t type) {
 
 // ==[ Buffers ]===============================================================
 
-// Sync a buffer and return its byte count
-uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id) {
-    uint32_t bcr = usbh_dpram->epx_buf_ctrl; if (buf_id) bcr = bcr >> 16; // TODO: Move this to sync_buffers and calculate it only once
-    uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK; if (!len) { ep->bytes_left = 0; return 0; } // TODO: Fix this
+// Simpler handler until we enable double buffering
+void handle_buffer(endpoint_t *ep) {
+    if (!ep->active) show_endpoint(ep, "Inactive"), panic("Halted");
+
+    // == Sync the buffer =====================================================
+
+    uint32_t bcr = usbh_dpram->epx_buf_ctrl;
+    uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK;
     bool    full = bcr & USB_BUF_CTRL_FULL;
     bool      in = ep_in(ep);
 
-    // We should only read from a full buffer or write to an empty buffer
+    // We only read from full in buffers and write to empty out buffers
     assert(in == full);
 
     // Copy the inbound data buffer to the user buffer
     if (in) {
-        memcpy(ep->user_buf, (void *) (ep->data_buf + buf_id * 64), len);
+        memcpy(ep->user_buf, (void *) ep->data_buf, len);
         ep->user_buf += len;
     }
 
     // Update byte counts
-    ep->bytes_left -= len;
     ep->bytes_done += len;
+    // ep->bytes_left -= len; // TODO: Why doesn't TinyUSB update this also?
 
     // Short packet (below maxsize) means the transfer is done
     if (len < ep->maxsize) {
         ep->bytes_left = 0;
     }
 
-    return len;
-}
+    // == Load the buffer =====================================================
 
-void sync_buffers(endpoint_t *ep) {
-    if (sync_buffer(ep, 0) == ep->maxsize) { // Full buf_0
-        if (usbh_dpram->epx_ctrl & EP_CTRL_DOUBLE_BUFFERED_BITS) {
-            sync_buffer(ep, 1); // TODO: What if buf_1 is 0 bytes or short?
+    if (ep->bytes_left) {
+
+        // Calculate BCR
+        len = MIN(ep->bytes_left, ep->maxsize);
+        bcr =(ep->data_pid
+            ? USB_BUF_CTRL_DATA1_PID
+            : USB_BUF_CTRL_DATA0_PID)
+            | USB_BUF_CTRL_SEL
+            | USB_BUF_CTRL_AVAIL
+            | len;
+
+        // Update byte counts
+        ep->bytes_left -= len;
+
+        // Toggle DATA0/DATA1 each packet
+        ep->data_pid   ^= 1u;
+
+        // Copy the outbound user buffer to the data buffer
+        if (!in) {
+            memcpy((void *) ep->data_buf, ep->user_buf, len);
+            ep->user_buf += len;
+            bcr |= USB_BUF_CTRL_FULL;
         }
-    }
-}
 
-// Load a buffer and return its buffer control register value
-uint32_t load_buffer(endpoint_t *ep, uint8_t buf_id) {
-    uint16_t len = ep->bytes_left;
-    uint32_t bcr =(ep->data_pid
-                 ? USB_BUF_CTRL_DATA1_PID
-                 : USB_BUF_CTRL_DATA0_PID)
-                 | USB_BUF_CTRL_AVAIL
-                 | len;
+        // If this is the last buffer, trigger TRANS_COMPLETE
+        if (!len) {
+            bcr |= USB_BUF_CTRL_LAST;
+        }
 
-    ep->data_pid   ^= 1u;
-
-    // Copy the outbound user buffer to the data buffer
-    if (!ep_in(ep)) {
-        memcpy((void *) (ep->data_buf + buf_id * 64), ep->user_buf, len);
-        ep->user_buf += len;
-        bcr |= USB_BUF_CTRL_FULL;
+        // Update BCR
+        bindump("~bcr~", bcr);
+        usbh_dpram->epx_buf_ctrl = bcr & ~USB_BUF_CTRL_AVAIL;
+        nop();
+        nop();
+        nop();
+        usbh_dpram->epx_buf_ctrl = bcr;
     }
 
-    // If we're done, set LAST to trigger TRANS_COMPLETE and stop polling
-    if (ep->bytes_left <= ep->maxsize) {
-        bcr |= USB_BUF_CTRL_LAST;
-    }
-
-    return buf_id ? bcr << 16 : bcr;
-}
-
-void load_buffers(endpoint_t *ep) {
-    // const bool host = is_host_mode(); // TODO: Use a static variable here, not a function call
-    // const bool in = ep->usb->bEndpointAddress & USB_DIR_IN;
-    // const bool allow_double = host ? !in : in; // TODO: host/out and device/in? Doesn't seem right
-    // bool allow_double = false; // TODO: This is a hack for now
-
-    // uint32_t ecr = usbh_dpram->epx_ctrl;
-    uint32_t bcr = load_buffer(ep, 0);
-
-    // // Double buffering is only supported in specific cases // TODO: Properly determine this
-    // if (ep->bytes_left && allow_double) {
-    //     bcr |=  load_buffer(ep, 1); // TODO: Fix isochronous for buf_1!
-    //     ecr |=  EP_CTRL_DOUBLE_BUFFERED_BITS;
-    // } else {
-    //     ecr &= ~EP_CTRL_DOUBLE_BUFFERED_BITS;
-    // }
-
-    bindump("~bcr~", bcr);
-
-    // Update ECR and BCR
-    // usbh_dpram->epx_ctrl     = ecr;
-    usbh_dpram->epx_buf_ctrl = bcr & ~USB_BUF_CTRL_AVAIL;
-    nop();
-    nop();
-    nop();
-    usbh_dpram->epx_buf_ctrl = bcr;
-}
-
-// Handle a buffer within the interrupt handler
-void handle_buffer(endpoint_t *ep) {
-    if (!ep->active) show_endpoint(ep, "Inactive"), panic("Halted");
-
-    sync_buffers(ep);
-
-    if (ep->bytes_left) load_buffers(ep);
+    // == Debug output ========================================================
 
     if (ep->bytes_done) {
         hexdump("│Data", usbh_dpram->epx_data, ep->bytes_done, 1);
