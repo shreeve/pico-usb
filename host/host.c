@@ -275,10 +275,10 @@ void handle_buffer(endpoint_t *ep) {
 
     // -- Sync the buffer -----------------------------------------------------
 
-    uint32_t bcr = usbh_dpram->epx_buf_ctrl;    // Buffer control register
-    uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK; // Buffer length
-    bool    full = bcr & USB_BUF_CTRL_FULL;     // Is buffer marked as full?
-    bool      in = ep_in(ep);                   // IN or OUT endpoint?
+    uint32_t bcr = usbh_dpram->epx_buf_ctrl;      // Buffer control register
+    uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK;   // Buffer length
+    bool    full = bcr & USB_BUF_CTRL_FULL;       // Is buffer marked as full?
+    bool      in = ep_in(ep);                     // IN or OUT endpoint?
 
     // Inbound buffers must be full and outbound buffer must be empty
     assert(in == full);
@@ -827,6 +827,7 @@ void isr_usbctrl() {
     bindump("│DAR", usb_hw->dev_addr_ctrl);
     bindump("│ECR", usbh_dpram->epx_ctrl);
     bindump("│BCR", usbh_dpram->epx_buf_ctrl);
+    bindump("│BCH", usb_hw->buf_cpu_should_handle);
 
     // Connection (attach or detach)
     if (ints &  USB_INTS_HOST_CONN_DIS_BITS) {
