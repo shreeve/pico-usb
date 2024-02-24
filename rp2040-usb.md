@@ -33,7 +33,11 @@ The main USB connectors encountered are USB A, USB B, Micro USB, and USB C.
 
 ### Wires
 
-There are four main wires used for USB. These include VCC (which is a red wire at +5V), Ground (which is a black wire at +0V), Data Positive (called DP or D+ and is a green wire), and Data Minus (called DM or D- and is a white wire). The following diagram is for a USB Type A connector, but each of the other connector types have similar wiring, but just use different connector pins.
+There are four main wires used for USB. These include VCC (which is a red wire
+at +5V), Ground (which is a black wire at +0V), Data Positive (called DP or D+
+and is a green wire), and Data Minus (called DM or D- and is a white wire). The
+following diagram is for a USB Type A connector, but each of the other connector
+types have similar wiring, but just use different connector pins.
 
 <div align="center"><img width="300" src="https://github.com/shreeve/pico-usb/assets/142875/c3732290-69ca-4b29-a3b8-e39ecf4fd31f"></div>
 
