@@ -13,8 +13,9 @@ storage devices which offer higher data transfer rates.
 USB operates by connecting one or more USB devices on a common bus, which is
 connected to a USB host. A device called a USB hub can connect other USB devices
 upstream. A maximum of 127 USB devices can be connected, all controlled by a
-single USB host. Sometimes a USB device is referred to as a "function", but we
-will only use the term "device".
+single USB host, and each device assigned a unique address between 1 and 127.
+Sometimes a USB device is referred to as a "function", but we will only use the
+term "device".
 
 <div align="center"><img width="360" src="https://github.com/shreeve/pico-usb/assets/142875/7b2e9004-c0a9-475a-a9ef-e3cf9e081eed"></div>
 
