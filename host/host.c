@@ -455,7 +455,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     ep->ep_addr    = packet->bmRequestType & USB_DIR_IN;
     ep->bytes_left = left;
     ep->bytes_done = 0;
-    ep->user_buf   = temp_buf; // TODO: Add something asap, NULL is... sub-optimal. Maybe use something like a ring buffer here?
+    ep->user_buf   = temp_buf; // TODO: Add something useful. Maybe use something like a ring buffer here?
 
     // Debug output
     show_endpoint(ep, "Start");
