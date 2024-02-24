@@ -17,7 +17,7 @@ USB, we begin at the most basic level and work up from there:
 
 The main USB connectors are USB A, USB B, USB Micro B, and USB C.
 
-![usb-types](https://github.com/shreeve/pico-usb/assets/142875/5a5a3e1e-a997-428b-aa28-82a01f103fdd)
+<div align="center"><img width="600" src="https://github.com/shreeve/pico-usb/assets/142875/5a5a3e1e-a997-428b-aa28-82a01f103fdd"></div>
 
 ## `RP2040:` USB Controller
 
