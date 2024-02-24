@@ -524,12 +524,12 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 
     // Set registers optimally => scr, dar, bcr, nop, nop, bcr, scr
     usb_hw->sie_ctrl         = scr & ~USB_SIE_CTRL_START_TRANS_BITS;
-    usb_hw->dev_addr_ctrl    = dar;
     usbh_dpram->epx_buf_ctrl = bcr & ~USB_BUF_CTRL_AVAIL;
-    nop(); // TODO: I think we can remove this one
+    usb_hw->dev_addr_ctrl    = dar;
     nop();
     nop();
     usbh_dpram->epx_buf_ctrl = bcr;
+    nop(); // TODO: Might not need this one
     usb_hw->sie_ctrl         = scr;
 }
 
@@ -568,12 +568,12 @@ void transfer_zlp(void *arg) {
 
     // Set registers optimally => scr, nop, bcr, nop, nop, bcr, scr
     usb_hw->sie_ctrl         = scr & ~USB_SIE_CTRL_START_TRANS_BITS;
-    usb_hw->dev_addr_ctrl    = dar;
     usbh_dpram->epx_buf_ctrl = bcr & ~USB_BUF_CTRL_AVAIL;
-    nop(); // TODO: I think we can remove this one
+    usb_hw->dev_addr_ctrl    = dar;
     nop();
     nop();
     usbh_dpram->epx_buf_ctrl = bcr;
+    nop(); // TODO: Might not need this one
     usb_hw->sie_ctrl         = scr;
 }
 
