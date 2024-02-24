@@ -125,16 +125,27 @@ cost-effective interface.
 The smallest useful unit of data in USB is known as a packet, which has three
 components:
 
-1) Begins with a Start of Packet (SOP) sequence
-2) Data component, which depends on the type of packet
-3) Ends with an End of Packet (EOP) sequence
+<div align="center">
+  <table border="1">
+  <tr style="background:#5383EC; color:white">
+    <th style="text-align:center">1. SOP</th>
+    <th style="text-align:center">2. Body</th>
+    <th style="text-align:center">3. EOP</th>
+  </tr>
+  </table>
+</div>
+
+1) Start of Packet (SOP) sequence
+2) Body, which depends on the type of packet
+3) End of Packet (EOP) sequence
 
 Each packet begins with a Start of Packet (SOP) sequence. This means the line
 state goes from idle to SE0 for two bit times, then to a J state (idle) for 1
 bit time, and is then followed by the 8 bit sequence "KJKJKJKK" (known as the
-SYNC). The bits comprising the data component of a packet depending on the type
-of packet. Once complete, the End of Packet (EOP) sequence indicates the packet
-is now complete. An "ACK" packet is shown below:
+SYNC). The bits comprising the body of a packet depend on the type of packet
+being sent. The End of Packet (EOP) sequence indicates the packet has ended and
+is now complete. The SOP and EOP components are always the same. Sandwiched
+between them is the actual data that defines the packet type and its contents.
 
 <div align="center"><img width="500" src="https://github.com/shreeve/pico-usb/assets/142875/3e618a8b-bc7c-4f32-b9a0-d84a36045803"></div>
 
