@@ -136,7 +136,7 @@ SYNC). The bits comprising the data component of a packet depending on the type
 of packet. Once complete, the End of Packet (EOP) sequence indicates the packet
 is now complete. An "ACK" packet is shown below:
 
-<div align="center"><img width="580" src="https://github.com/shreeve/pico-usb/assets/142875/3e618a8b-bc7c-4f32-b9a0-d84a36045803"></div>
+<div align="center"><img width="500" src="https://github.com/shreeve/pico-usb/assets/142875/3e618a8b-bc7c-4f32-b9a0-d84a36045803"></div>
 
 ### Packet Types
 
