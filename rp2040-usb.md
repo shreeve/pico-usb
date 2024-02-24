@@ -168,9 +168,9 @@ There are four main packet types, each identified by a 4 bit packet id (PID).
 | Special   | Reserved | 0000 |
 
 PID Type bits are sent least significant bit (LSB) first. For example, a SETUP
-packet (for example) would be *sent* as `1011` even though it is *defined* as
-`1101`. As a check when sending these four bits, the inverse of these four bits
-is immediately sent after, which helps to confirm that the correct PID Type has
+packet would be *sent* as `1011` even though it is *defined* as `1101`. As a
+check when sending these four bits, the inverse of these four bits is
+immediately sent after, which helps to confirm that the correct PID Type has
 been received. To continue with the SETUP packet example, the complete 8 bit
 sequence sent is `10110100` (notice the second four bits are the opposite of the
 first four, thus confirming proper transmission). Review the image of the ACK
