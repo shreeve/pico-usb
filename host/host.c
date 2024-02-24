@@ -337,7 +337,7 @@ void handle_buffer(endpoint_t *ep) {
         usbh_dpram->epx_buf_ctrl = bcr;
     }
 
-    // == Debug output ========================================================
+    // -- Debug output --------------------------------------------------------
 
     if (ep->bytes_done) {
         hexdump("│Data", usbh_dpram->epx_data, ep->bytes_done, 1);
