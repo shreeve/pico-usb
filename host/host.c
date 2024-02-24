@@ -309,6 +309,9 @@ void handle_buffer(endpoint_t *ep) {
         // Update byte counts
         len = MIN(ep->maxsize, ep->bytes_left);
 
+        // Toggle DATA0/DATA1 each packet
+        ep->data_pid ^= 1u;
+
         // Calculate new BCR
         bool pid = ep->data_pid;
         bool mas = ep->bytes_left > ep->maxsize;
@@ -318,9 +321,6 @@ void handle_buffer(endpoint_t *ep) {
             | (mas ? 0 : USB_BUF_CTRL_LAST)  // Trigger TRANS_COMPLETE
             |            USB_BUF_CTRL_AVAIL  // Buffer available now
             | len;                           // Length of next buffer
-
-        // Toggle DATA0/DATA1 each packet
-        ep->data_pid ^= 1u;
 
         // Copy the user buffer to the outbound data buffer
         if (!in) {
