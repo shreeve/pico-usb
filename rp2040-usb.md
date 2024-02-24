@@ -89,6 +89,36 @@ and synchronize data transfers across the USB bus. These states include:
 | Resume State | Wakes a device from the suspend state to normal operation. Begins with a K state for at least 20 ms, an SE0 state, then a J state. |
 | Disconnect | SE0 for at least 2 μs. |
 
+### Bits and Bytes
+
+The line states are represented by a series of zero and one bits. However,
+because there is no central clock in USB from which to synchronize all events,
+the actual bit transitions themselves are used for synchronization. If a
+particular sequence of bits were to be represented by a long series of either
+zeroes or ones, it could be impossible to maintain accurate timing solely by
+observing bit changes, given that small variations in the timing intervals would
+soon yield timing and bit framing errors.
+
+To resolve this, a special encoding called Non-Return-to-Zero Inverted (NRZI) is
+used. NRZI works by inverting the signal level if a '1' bit is encountered and
+by passing the signal as-is if a '0' bit is encountered. This means that
+consecutive '1's will result in the signal level changing state at each bit,
+while consecutive '0's will result in no change in the level. This form of
+encoding is used because it can make it easier to synchronize the transmitter
+and receiver without requiring an additional clock signal.
+
+Long sequences of zeros, however, still poses a problem for clock recovery. To
+overcome this, USB 2.0 combines NRZI with a technique called bit stuffing. Bit
+stuffing works by inserting a '0' in the data stream after every six consecutive
+'1's in the data stream. This ensures that there will not be more than six
+consecutive '1's, meaning there will not be a gap of more than six bit times
+without a transition. The receiver, knowing this rule, removes these stuffed '0'
+bits to recover the original data stream. By combining NRZI with bit stuffing,
+USB ensures that there are enough transitions to keep the transmitter and
+receiver in sync without the need for a separate clock signal. This is a form of
+self-clocking signal, which allows USB to be a relatively simple and
+cost-effective interface.
+
 ## `RP2040:` USB Controller
 
 ### Memory Layout
