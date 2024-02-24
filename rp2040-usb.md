@@ -99,6 +99,59 @@ host or device mode.
 | 0x94 | INTF | Forced interrupts |
 | 0x98 | **INTS** | Interrupt status (masked or forced) |
 
+### Device Enumeration
+
+The [USB 2.0 Spec](https://www.usb.org/document-library/usb-20-specification)
+states that when a USB device is attached to a USB bus, the host should perform
+a reset and then begin a very specific process known as "device enumeration."
+This process uses only SETUP packets, CONTROL transfers, endpoint zero (EP0),
+and device zero (dev0) until a new device address is set. The purpose of device
+enumeration is to assign the device a unique address and determine its
+attributes so that it can operate properly.
+
+A simple enumeration process looks like:
+
+* **Reset** - The host resets the USB line state.
+* **GDD/8/IN** - The host sends a `Get Device Descriptor` request and asks the
+  device to send 8 bytes IN (from the device to the host) from the first 8 bytes
+  of its device descriptor, using `80 06 00 01 00 00 08 00`. The device responds
+  with the first 8 bytes of its device descriptor, in this example `12 01 10 02
+  00 00 00 40` is sent. Once this is received, the host sends back a zero length
+  status packet (called a "ZLP") to indicate that it has received the
+  information from the device and is done with this request. The last byte of
+  the packet sent by the device (`0x40` in this example), indicates that the
+  maximum packet size of the device's endpoint zero (EP0) is 64 bytes. Using
+  this information, the host then assigns the device a unique address and then
+  requests the full device descriptor.
+* **SDA/0/OUT** - The host sends a `Set Device Address` request, which includes
+  the newly assigned device address and asks for 0 bytes of data back from the
+  device. An example packet is `00 05 01 00 00 00 00 00`, with the `0x01`
+  meaning that the device is being assigned device address 1. This request is an
+  OUT request and request 0 bytes of data in return. Thus, the device only
+  responds with a ZLP to indicate that the request has been received and
+  acknowledged.
+* **GDD/18/IN** - Now that the device has been assigned address 1, the host will
+  request the full device descriptor from device 1, on endpoint 0, using a
+  maximum packet size of 64 bytes, and it asks for 18 bytes of data. The reason
+  it asks for 18 bytes is because the first byte of the device's initial
+  response (the `0x12`) indicated that its full device descriptor is 18 bytes.
+  Thus, this request would look like: `80 06 00 01 00 00 12 00`. The device will
+  respond with all 18 bytes and the host will send back a ZLP to indicate that
+  it has received the device's response, which may look something like `12 01 10
+  02 00 00 00 40 8a 2e 0c 00 03 01 01 02 03 01`.
+* **GCD/9/I** - The host now issues the `Get Configuration Descriptor` to
+  request the device send the first 9 bytes of its configuration data. The
+  process is similar to the requests above. The request looks like `80 06 00 02
+  00 00 09 00` and the response looks like `09 02 62 00 03 01 00 80 32`.
+* **SDC/0/O** - The host now issues a `Set Device Configuration` request to tell
+  the device to use one of its configurations. In practice, this always seems to
+  be configuration 1. The request looks like `00 09 01 00 00 00 00 00` and there
+  is no response, except for the ZLP packet indicating the device is now
+  configured.
+
+At this point, the device has been assigned a unique address and is now
+considered to be enumerated and configured.
+
 ### Endpoint control register (ECR)
 
 The endpoint control register (ECR) controls how the endpoint behaves.
