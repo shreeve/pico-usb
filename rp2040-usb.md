@@ -33,6 +33,10 @@ there:
 7) Packet Types
 8) Transactions
 9) Transfers
+10) Endpoints
+11) Devices
+12) Hubs
+13) Hosts
 
 ### Connectors
 
@@ -234,6 +238,18 @@ used in the status stage of a transaction, when required.
         <td>PID<br>8 bits</td>
       </tr>
     </table>
+
+### Transactions
+
+### Transfers
+
+### Endpoints
+
+### Devices
+
+### Hubs
+
+### Hosts
 
 ## `RP2040:` USB Controller
 
