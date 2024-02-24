@@ -17,7 +17,7 @@ single USB host, and each device assigned a unique address between 1 and 127.
 Sometimes a USB device is referred to as a "function", but we will only use the
 term "device".
 
-<div align="center"><img width="360" src="https://github.com/shreeve/pico-usb/assets/142875/7b2e9004-c0a9-475a-a9ef-e3cf9e081eed"></div>
+<div align="center"><img width="300" src="https://github.com/shreeve/pico-usb/assets/142875/7b2e9004-c0a9-475a-a9ef-e3cf9e081eed"></div>
 
 ### Main Components
 
@@ -37,7 +37,7 @@ there:
 
 The main USB connectors encountered are USB A, USB B, Micro USB, and USB C.
 
-<div align="center"><img width="580" src="https://github.com/shreeve/pico-usb/assets/142875/b9cf5f00-e9f6-40af-b042-01c2adf88888"></div>
+<div align="center"><img width="480" src="https://github.com/shreeve/pico-usb/assets/142875/b9cf5f00-e9f6-40af-b042-01c2adf88888"></div>
 
 ### Wires
 
