@@ -119,6 +119,23 @@ receiver in sync without the need for a separate clock signal. This is a form of
 self-clocking signal, which allows USB to be a relatively simple and
 cost-effective interface.
 
+### Packets
+
+The smallest useful unit of data in USB is known as a packet, which has three
+components:
+
+1) Begins with a Start of Packet (SOP) sequence
+2) Data component, which depends on the type of packet
+3) Ends with an End of Packet (EOP) sequence
+
+Each packet begins with a Start of Packet (SOP) sequence. This means the line
+state goes from idle to SE0 for two bit times, then to a J state (idle) for 1
+bit time, and is then followed by the 8 bit sequence "KJKJKJKK" (known as the
+SYNC). The bits comprising the data component of a packet depending on the type
+of packet. Once complete, the End of Packet (EOP) sequence indicates the packet
+is now complete. An "ACK" packet is shown below:
+
+
 ## `RP2040:` USB Controller
 
 ### Memory Layout
