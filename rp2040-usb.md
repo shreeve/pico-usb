@@ -13,6 +13,12 @@ USB, we begin at the most basic level and work up from there:
 7) Transactions
 8) Transfers
 
+### Connectors
+
+The main USB connectors are USB A, USB B, USB Micro B, and USB C.
+
+
+
 ## `RP2040:` USB Controller
 
 ### Memory Layout
