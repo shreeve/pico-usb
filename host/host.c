@@ -654,6 +654,8 @@ void set_configuration(endpoint_t *ep, uint16_t cfg) {
 
 void enumerate(void *arg) {
     endpoint_t *ep = (endpoint_t *) arg;
+
+    // Prepare to advance the enumeration
     static uint8_t step;
     static uint8_t new_addr;
 
