@@ -44,13 +44,21 @@ types have similar wiring, but just use different connector pins.
 ### Voltages
 
 The USB host and USB devices connected to a USB bus communicate with each other
-by altering the voltage of the DP and DM wires. USB uses a method called differential
-signaling, which involves transmitting information as the difference in voltages
-between the differential pair of wires (DP and DM). This method enhances noise
-immunity, as any interference picked up along the cable is likely to affect both
-lines equally and can be effectively canceled out at the receiver. Differential
-signaling allows for more reliable data transmission over longer distances and
-at higher speeds compared to single-ended signaling methods.
+by altering the voltage of the DP and DM wires. USB uses a method called
+differential signaling, which involves transmitting information as the
+difference in voltages between the differential pair of wires (DP and DM).
+
+To create a differential '1' signal, the DP line goes high while the DM line is
+low. To create a differential '0' signal, the DP line is low while the DM line
+goes high. If you think of the DP line on top and the DM line on bottom, a
+differential '1' is the greatest difference in voltages and a differential '0'
+is the smallest difference in voltages.
+
+Differential signaling enhances noise immunity, as any interference picked up
+along the cable is likely to affect both lines equally and can be effectively
+canceled out at the receiver. Differential signaling allows for more reliable
+data transmission over longer distances and at higher speeds compared to
+single-ended signaling methods.
 
 ### Line States
 
