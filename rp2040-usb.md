@@ -202,3 +202,20 @@ writing to it.
 | 11     | `HOST:` Received a STALL. `DEVICE:` Send a STALL. |
 | 10     | Buffer is AVAILABLE for, and now owned by, the controller. 0: controller clears this bit to indicate that the processer now owns this buffer, 1: processor sets this bit to indicate that the controller now owns this buffer. |
 | 9:0    | Buffer length for this buffer. |
+
+### SETUP Requests
+
+The first 8 bytes of DPSRAM (for both `host` mode and `device` mode) are
+reserved for SETUP packets, which are exactly 8 bytes in length. In order for
+the host controller to send a SETUP request, the following is needed:
+
+1) The USB controller must have been reset and configured
+2) The MAIN_CTRL must have a value such as 0x3
+3) The DAR must have a value of 0x0
+4) The software ECR must have a value such as 0xA0000180
+5) The 8 byte SETUP packet must be written to address 0x50100000
+6) The software BCR must have a value such as 0x0000047B
+7) The SCR (SIE_CTRL) must have a value such as 0X20008E0B
+
+Once conditions such as this are established, the host controller will send a
+packet to the device to begin the enumeration process.
