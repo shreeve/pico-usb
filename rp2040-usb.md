@@ -1,8 +1,20 @@
 ## USB Overview
 
 USB is ubiquitous. It is one of the most successful computing protocols ever
-developed, but its details are surprisingly complicated. In order to understand
-USB, we begin at the most basic level and work up from there:
+developed, but its details are surprisingly complicated. USB 2.0 defines two
+speeds: LS (low speed) which operates at 1.5 Mbps (megabits per second), and
+FS (full speed) which operates at 12 Mbps. Low Speed USB is typically used
+for devices that require lower bandwidth, such as keyboards and mice, while
+Full Speed USB is used for a wider range of devices, including audio devices,
+and storage devices which offer higher data transfer rates. 
+
+USB operates by connecting one or more USB devices on a common bus, which is
+connected to a USB host. A device called a USB hub can connect other USB
+devices upstream. A maximum of 127 USB devices can be connected, all
+controlled by a single USB host.
+
+In order to understand USB, we begin at the most basic level and work up from
+there:
 
 1) Connectors
 2) Wires
@@ -15,9 +27,40 @@ USB, we begin at the most basic level and work up from there:
 
 ### Connectors
 
-The main USB connectors are USB A, USB B, USB Micro B, and USB C.
+The main USB connectors encountered are USB A, USB B, Micro USB, and USB C.
 
-<div align="center"><img width="600" src="https://github.com/shreeve/pico-usb/assets/142875/5a5a3e1e-a997-428b-aa28-82a01f103fdd"></div>
+<div align="center"><img width="580" src="https://github.com/shreeve/pico-usb/assets/142875/b9cf5f00-e9f6-40af-b042-01c2adf88888"></div>
+
+### Wires
+
+There are four main wires used for USB. These include VCC (which is a red wire at +5V), Ground (which is a black wire at +0V), Data Positive (called DP or D+ and is a green wire), and Data Minus (called DM or D- and is a white wire). The following diagram is for a USB Type A connector, but each of the other connector types have similar wiring, but just use different connector pins.
+
+<div align="center"><img width="300" src="https://github.com/shreeve/pico-usb/assets/142875/c3732290-69ca-4b29-a3b8-e39ecf4fd31f"></div>
+
+### Voltages
+
+The USB host and USB devices connected to a USB bus communicate with each other
+by altering the voltage of the DP and DM wires. USB uses a method called differential
+signaling, which involves transmitting information as the difference in voltages
+between the differential pair of wires (DP and DM). This method enhances noise
+immunity, as any interference picked up along the cable is likely to affect both
+lines equally and can be effectively canceled out at the receiver. Differential
+signaling allows for more reliable data transmission over longer distances and
+at higher speeds compared to single-ended signaling methods.
+
+### Line States
+
+USB uses various line states to communicate efficiently, manage power states, and
+synchronize data transfers across the USB bus. These states include:
+
+1) SE0 (Single Ended 0): Both DP and DM lines are low. SE0 is used to signal a reset condition or to indicate the end of packet (EOP).
+2) SE1 (Single Ended 1): This state is not used in standard USB signaling because it would imply both DP and DM lines are high, which violates the differential signaling scheme.
+3) J State: In USB Full Speed and Low Speed modes, the J state is the default or idle state for the differential bus. It represents a logical "1" and is defined by the DP line being high and the DM line being low. In USB High Speed mode, the interpretation of J and K states is inverted depending on the speed and the specific conditions of data transmission.
+4) K State: Opposite to the J state, representing a logical "0". In Full Speed and Low Speed, a K state is defined by the DP line being low and the DM line being high. Like the J state, its interpretation is inverted under certain conditions in High Speed mode.
+5) Suspend: When there is no activity on the bus for a specified period, the bus is considered to be in a suspend state, aimed at reducing power consumption. This is not a line state per se but results from the lack of signal transitions.
+6) Resume: To wake the bus from a suspend state, a specific signaling sequence is used, starting with a driven K state for at least 20ms followed by an SE0 state and then a J state. This sequence signals devices to resume normal operation.
+
+
 
 ## `RP2040:` USB Controller
 
