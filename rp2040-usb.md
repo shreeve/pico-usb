@@ -24,19 +24,19 @@ term "device".
 In order to understand USB, we begin at the most basic level and work up from
 there:
 
-1) Connectors
-2) Wires
-3) Voltages
-4) Line states
-5) Bits and bytes
-6) Packets
-7) Packet Types
-8) Transactions
-9) Transfers
-10) Endpoints
-11) Devices
-12) Hubs
-13) Hosts
+1) [Connectors](#connectors)
+2) [Wires](#wires)
+3) [Voltages](#voltages)
+4) [Line states](#line-states)
+5) [Bits and bytes](#bits-and-bytes)
+6) [Packets](#packets)
+7) [Packet Types](#packet-types)
+8) [Transactions](#transactions)
+9) [Transfers](#transfers)
+10) [Endpoints](#endpoints)
+11) [Devices](#devices)
+12) [Hubs](#hubs)
+13) [Hosts](#hosts)
 
 ### Connectors
 
