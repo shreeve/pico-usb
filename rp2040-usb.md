@@ -165,7 +165,6 @@ There are four main packet types, each identified by a 4 bit packet id (PID).
 | Handshake | NAK      | 1010 |
 | Handshake | STALL    | 1110 |
 | Special   | PRE      | 1100 |
-| Special   | Reserved | 0000 |
 
 PID Type bits are sent least significant bit (LSB) first. For example, a SETUP
 packet would be *sent* as `1011` even though it is *defined* as `1101`. As a
