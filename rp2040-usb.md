@@ -203,7 +203,21 @@ writing to it.
 | 10     | Buffer is AVAILABLE for, and now owned by, the controller. 0: controller clears this bit to indicate that the processer now owns this buffer, 1: processor sets this bit to indicate that the controller now owns this buffer. |
 | 9:0    | Buffer length for this buffer. |
 
-### SETUP Requests
+### SETUP Packets
+
+The following is the SETUP packet structure:
+
+```c
+struct usb_setup_packet {
+    uint8_t  bmRequestType;
+    uint8_t  bRequest;
+    uint16_t wValue;
+    uint16_t wIndex;
+    uint16_t wLength;
+};
+```
+
+### SETUP requests
 
 The first 8 bytes of DPSRAM (for both `host` mode and `device` mode) are
 reserved for SETUP packets, which are exactly 8 bytes in length. In order for
