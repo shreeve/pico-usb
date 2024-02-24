@@ -159,7 +159,7 @@ host or device mode.
 | ...  | ...  | ... |
 | 0x3C | ADDR_ENDP15 | DAR for 15th polled endpoint |
 | 0x40 | **MAIN_CTRL** | Main control register |
-| 0x44 | SOF_WR | `HOST:` Set the frame number for the next SOF (Start of Frame) sent by the host controller. SOF packets are sent every 1ms and the host will increment the frame number by 1 each time. |
+| 0x44 | SOF_WR | `HOST:` Set the frame number for the next SOF (Start of Frame) sent by the host controller. SOF packets are sent every 1 ms and the host will increment the frame number by 1 each time. |
 | 0x48 | SOF_RD | `DEVICE:` Read the frame number from the last SOF (Start of Frame) received by the device controller. |
 | 0x4C | SIE_CTRL (**SCR**) | SIE control register |
 | 0x50 | SIE_STATUS (**SSR**) | SIE status register |
@@ -246,7 +246,7 @@ The endpoint control register (ECR) controls how the endpoint behaves.
 | 29    | Raise an interrupt for every buffer transferred |
 | 28    | Raise an interrupt for every 2 buffers transferred (only for double buffering) |
 | 27:26 | Type of endpoint, 0: control, 1: isochronous, 2: bulk, 3: interrupt |
-| 25:18 | Polling interval minus 1ms (14 means poll every 15ms) |
+| 25:18 | Polling interval minus 1 ms (14 means poll every 15 ms) |
 | 15:0  | Byte offset for DPSRAM data buffer (lowest 6 bits must be zero) |
 
 ### Buffer control register (BCR)
