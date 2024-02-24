@@ -30,8 +30,9 @@ there:
 4) Line states
 5) Bits and bytes
 6) Packets
-7) Transactions
-8) Transfers
+7) Packet Types
+8) Transactions
+9) Transfers
 
 ### Connectors
 
@@ -136,6 +137,92 @@ of packet. Once complete, the End of Packet (EOP) sequence indicates the packet
 is now complete. An "ACK" packet is shown below:
 
 <div align="center"><img width="580" src="https://github.com/shreeve/pico-usb/assets/142875/3e618a8b-bc7c-4f32-b9a0-d84a36045803"></div>
+
+### Packet Types
+
+There are four main packet types, each identified by a 4 bit packet id (PID).
+
+| PID Type | PID Name | PID Bits |
+| --- | --- | --- |
+| Token     | SETUP    | 1101 |
+| Token     | IN       | 1001 |
+| Token     | OUT      | 0001 |
+| Token     | SOF      | 0101 |
+| Data      | DATA0    | 0011 |
+| Data      | DATA1    | 1011 |
+| Handshake | ACK      | 0010 |
+| Handshake | NAK      | 1010 |
+| Handshake | STALL    | 1110 |
+| Special   | PRE      | 1100 |
+| Special   | Reserved | 0000 |
+
+PID Type bits are sent least significant bit (LSB) first. For example, a SETUP
+packet (for example) would be *sent* as `1011` even though it is *defined* as
+`1101`. As a check when sending these four bits, the inverse of these four bits
+is immediately sent after, which helps to confirm that the correct PID Type has
+been received. To continue with the SETUP packet example, the complete 8 bit
+sequence sent is `10110100` (notice the second four bits are the opposite of the
+first four, thus confirming proper transmission). Review the image of the ACK
+packet to ensure that you understand each bit in the entire packet.
+
+1. **Token Packets** are used for SETUP, OUT and IN packets. They are always the
+first packet in a transaction, identifying the targeted endpoint, and the
+purpose of the transaction. The SOF packet is also defined as a Token packet,
+but has a slightly different format and purpose, which is described below.
+
+    <table border="1">
+      <tr style="background:#5383EC; color:white">
+        <th colspan="4" style="text-align:center">Token Packet</th>
+      </tr>
+      <tr>
+        <td>PID<br>8 bits</td>
+        <td>ADDR<br>7 bits</td>
+        <td>ENDP<br>4 bits</td>
+        <td>CRC5<br>5 bits</td>
+      </tr>
+    </table>
+
+2. **Data Packets** are used for DATA0 and DATA1 packets. If a transaction has a
+data stage this is the packet format used.
+
+    <table border="1">
+      <tr style="background:#5383EC; color:white">
+        <th colspan="3" style="text-align:center">Data Packet</th>
+      </tr>
+      <tr>
+        <td>PID<br>8 bits</td>
+        <td>DATA<br>0 to 1023 bytes</td>
+        <td>CRC16<br>16 bits</td>
+      </tr>
+    </table>
+
+3. **Handshake Packets** are used for ACK and NAK packets. This is the packet format
+used in the status stage of a transaction, when required.
+
+    <table border="1">
+      <tr style="background:#5383EC; color:white">
+        <th style="text-align:center">Handshake Packet</th>
+      </tr>
+      <tr>
+        <td>PID<br>8 bits</td>
+      </tr>
+    </table>
+
+4. **SOF Packets** are used to send a Start of Frame (SOF) packet every 1 ms on
+full speed links. The frame is used as a time frame in which to schedule the
+data transfers which are required. For example, an isochronous endpoint will be
+assigned one transfer per frame.
+
+    <table border="1">
+      <tr style="background:#5383EC; color:white">
+        <th colspan="3" style="text-align:center">SOF Packet</th>
+      </tr>
+      <tr>
+        <td>PID<br>8 bits</td>
+        <td>Frame Number<br>11 bits</td>
+        <td>CRC5<br>5 bits</td>
+      </tr>
+    </table>
 
 ## `RP2040:` USB Controller
 
