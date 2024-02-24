@@ -8,6 +8,8 @@ devices that require lower bandwidth, such as keyboards and mice, while Full
 Speed USB is used for a wider range of devices, including audio devices, and
 storage devices which offer higher data transfer rates.
 
+### Bus Topology
+
 USB operates by connecting one or more USB devices on a common bus, which is
 connected to a USB host. A device called a USB hub can connect other USB devices
 upstream. A maximum of 127 USB devices can be connected, all controlled by a
@@ -15,6 +17,8 @@ single USB host. Sometimes a USB device is referred to as a "function", but we
 will only use the term "device".
 
 <div align="center"><img width="360" src="https://github.com/shreeve/pico-usb/assets/142875/7b2e9004-c0a9-475a-a9ef-e3cf9e081eed"></div>
+
+### Main Components
 
 In order to understand USB, we begin at the most basic level and work up from
 there:
