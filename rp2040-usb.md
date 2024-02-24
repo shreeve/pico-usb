@@ -1,3 +1,18 @@
+## USB Overview
+
+USB is ubiquitous. It is one of the most successful computing protocols ever
+developed, but its details are surprisingly complicated. In order to understand
+USB, we begin at the most basic level and work up from there:
+
+1) Connectors
+2) Wires
+3) Voltages
+4) Line states
+5) Bits and bytes
+6) Packets
+7) Transactions
+8) Transfers
+
 ## `RP2040:` USB Controller
 
 ### Memory Layout
