@@ -493,3 +493,6 @@ packet to the device to begin the enumeration process.
 * https://www.beyondlogic.org/usbnutshell/
 * https://codelv.com/usb/setup-packets/
 * https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf
+* https://www.youtube.com/watch?v=wdgULBpRoXk
+* https://www.youtube.com/watch?v=N0O5Uwc3C0o
+* https://www.youtube.com/watch?v=2lPzTU-3ONI
