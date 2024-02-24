@@ -151,7 +151,8 @@ between them is the actual data that defines the packet type and its contents.
 
 ### Packet Types
 
-There are four main packet types, each identified by a 4 bit packet id (PID).
+There are four main packet types, with 10 specific packets defined. These are
+identified by a 4 bit Packet ID (PID).
 
 | PID Type | PID Name | PID Bits |
 | --- | --- | --- |
@@ -182,7 +183,7 @@ but has a slightly different format and purpose, which is described below.
 
     <table border="1">
       <tr style="background:#5383EC; color:white">
-        <th colspan="4" style="text-align:center">Token Packet</th>
+        <th colspan="4" style="text-align:center">Token Packet (3 bytes)</th>
       </tr>
       <tr>
         <td>PID<br>8 bits</td>
@@ -192,12 +193,28 @@ but has a slightly different format and purpose, which is described below.
       </tr>
     </table>
 
-2. **Data Packets** are used for DATA0 and DATA1 packets. If a transaction has a
+1. **SOF Packets** are used to send a Start of Frame (SOF) packet every 1 ms on
+full speed links. The frame is used as a time frame in which to schedule the
+data transfers which are required. For example, an isochronous endpoint will be
+assigned one transfer per frame.
+
+    <table border="1">
+      <tr style="background:#5383EC; color:white">
+        <th colspan="3" style="text-align:center">SOF Packet (3 bytes)</th>
+      </tr>
+      <tr>
+        <td>PID<br>8 bits</td>
+        <td>Frame Number<br>11 bits</td>
+        <td>CRC5<br>5 bits</td>
+      </tr>
+    </table>
+
+1. **Data Packets** are used for DATA0 and DATA1 packets. If a transaction has a
 data stage this is the packet format used.
 
     <table border="1">
       <tr style="background:#5383EC; color:white">
-        <th colspan="3" style="text-align:center">Data Packet</th>
+        <th colspan="3" style="text-align:center">Data Packet (3 to 1,026 bytes)</th>
       </tr>
       <tr>
         <td>PID<br>8 bits</td>
@@ -206,31 +223,15 @@ data stage this is the packet format used.
       </tr>
     </table>
 
-3. **Handshake Packets** are used for ACK and NAK packets. This is the packet format
+1. **Handshake Packets** are used for ACK and NAK packets. This is the packet format
 used in the status stage of a transaction, when required.
 
     <table border="1">
       <tr style="background:#5383EC; color:white">
-        <th style="text-align:center">Handshake Packet</th>
+        <th style="text-align:center">Handshake Packet (1 byte)</th>
       </tr>
       <tr>
         <td>PID<br>8 bits</td>
-      </tr>
-    </table>
-
-4. **SOF Packets** are used to send a Start of Frame (SOF) packet every 1 ms on
-full speed links. The frame is used as a time frame in which to schedule the
-data transfers which are required. For example, an isochronous endpoint will be
-assigned one transfer per frame.
-
-    <table border="1">
-      <tr style="background:#5383EC; color:white">
-        <th colspan="3" style="text-align:center">SOF Packet</th>
-      </tr>
-      <tr>
-        <td>PID<br>8 bits</td>
-        <td>Frame Number<br>11 bits</td>
-        <td>CRC5<br>5 bits</td>
       </tr>
     </table>
 
