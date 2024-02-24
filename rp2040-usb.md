@@ -62,17 +62,24 @@ single-ended signaling methods.
 
 ### Line States
 
-USB uses various line states to communicate efficiently, manage power states, and
-synchronize data transfers across the USB bus. These states include:
+USB uses various line states to communicate efficiently, manage power states,
+and synchronize data transfers across the USB bus. These states include:
 
-1) SE0 (Single Ended 0): Both DP and DM lines are low. SE0 is used to signal a reset condition or to indicate the end of packet (EOP).
-2) SE1 (Single Ended 1): This state is not used in standard USB signaling because it would imply both DP and DM lines are high, which violates the differential signaling scheme.
-3) J State: In USB Full Speed and Low Speed modes, the J state is the default or idle state for the differential bus. It represents a logical "1" and is defined by the DP line being high and the DM line being low. In USB High Speed mode, the interpretation of J and K states is inverted depending on the speed and the specific conditions of data transmission.
-4) K State: Opposite to the J state, representing a logical "0". In Full Speed and Low Speed, a K state is defined by the DP line being low and the DM line being high. Like the J state, its interpretation is inverted under certain conditions in High Speed mode.
-5) Suspend: When there is no activity on the bus for a specified period, the bus is considered to be in a suspend state, aimed at reducing power consumption. This is not a line state per se but results from the lack of signal transitions.
-6) Resume: To wake the bus from a suspend state, a specific signaling sequence is used, starting with a driven K state for at least 20ms followed by an SE0 state and then a J state. This sequence signals devices to resume normal operation.
-
-
+| Line State | Meaning |
+| --- | --- |
+| Differential '1' | D+ high, D- low. |
+| Differential '0' | D+ low, D- high. |
+| Single Ended Zero (SE0) | D+ and D- low. Signals a reset condition or the End of Packet (EOP). |
+| Single Ended One (SE1) | D+ and D- high. This state is invalid. |
+| *Low Speed*<br>Idle State<br>Data J State<br>Data K State | <br>Differential '0' (D+ low, D- high).<br>Differential '0', same as the idle state.<br>Differential '1', opposite of the J state. |
+| *Full Speed*<br>Idle State<br>Data J State<br>Data K State | <br>Differential '1' (D+ high, D- low).<br>Differential '1', same as the idle state.<br>Differential '0', opposite of the J state. |
+| Connect | When a device connects and drives the line idle for at 2.5 μs or more. |
+| Reset | SE0 for at least 10 ms. One of the few times both lines are driven to the same level (low). |
+| Start of Packet (SOP) | When the line state goes from idle to SE0 for two bit times, then J state (idle) for 1 bit time, followed by the 8 bit sequence "KJKJKJKK". |
+| End of Packet (EOP) | SE0 for 2 bit times followed by J state for 1 bit time. |
+| Suspend State | Idle state that is entered after 3 ms or more of inactivity, designed to save power. |
+| Resume State | Wakes a device from the suspend state to normal operation. Begins with a K state for at least 20 ms, an SE0 state, then a J state. |
+| Disconnect | SE0 for at least 2 μs. |
 
 ## `RP2040:` USB Controller
 
