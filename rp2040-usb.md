@@ -2,16 +2,16 @@
 
 USB is ubiquitous. It is one of the most successful computing protocols ever
 developed, but its details are surprisingly complicated. USB 2.0 defines two
-speeds: LS (low speed) which operates at 1.5 Mbps (megabits per second), and
-FS (full speed) which operates at 12 Mbps. Low Speed USB is typically used
-for devices that require lower bandwidth, such as keyboards and mice, while
-Full Speed USB is used for a wider range of devices, including audio devices,
-and storage devices which offer higher data transfer rates. 
+speeds: LS (Low Speed) which operates at 1.5 Mbps (megabits per second), and FS
+(Full Speed) which operates at 12 Mbps. Low Speed USB is typically used for
+devices that require lower bandwidth, such as keyboards and mice, while Full
+Speed USB is used for a wider range of devices, including audio devices, and
+storage devices which offer higher data transfer rates.
 
 USB operates by connecting one or more USB devices on a common bus, which is
-connected to a USB host. A device called a USB hub can connect other USB
-devices upstream. A maximum of 127 USB devices can be connected, all
-controlled by a single USB host.
+connected to a USB host. A device called a USB hub can connect other USB devices
+upstream. A maximum of 127 USB devices can be connected, all controlled by a
+single USB host.
 
 In order to understand USB, we begin at the most basic level and work up from
 there:
