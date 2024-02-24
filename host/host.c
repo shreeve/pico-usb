@@ -276,6 +276,10 @@ void handle_buffer(endpoint_t *ep) {
     // -- Sync the buffer -----------------------------------------------------
 
     uint32_t bcr = usbh_dpram->epx_buf_ctrl;      // Buffer control register
+
+    uint32_t bch = usb_hw->buf_cpu_should_handle; // RP2040-E4: Check for bits
+    if (bch & 1u) bcr >>= 16;                     // RP2040-E4: Perform bitshift
+
     uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK;   // Buffer length
     bool    full = bcr & USB_BUF_CTRL_FULL;       // Is buffer marked as full?
     bool      in = ep_in(ep);                     // IN or OUT endpoint?
