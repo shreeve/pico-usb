@@ -4,11 +4,10 @@
 
 The USB controller uses two blocks of memory.
 
-The first block of memory
-contains endpoint data buffers and consists of 4,096 bytes of DPSRAM (dual-port
-static random access memory), beginning at address 0x5010000. The second block
-of memory contains additional registers and consists of 156 bytes of standard
-(non-DPSRAM) memory, beginning at address 0x50110000.
+The first block of memory contains endpoint data buffers and consists of 4,096
+bytes of DPSRAM (dual-port static random access memory), beginning at address
+0x5010000. The second block of memory contains additional registers and consists
+of 156 bytes of standard (non-DPSRAM) memory, beginning at address 0x50110000.
 
 DPSRAM memory is different from most memory on the RP2040 because it:
 
@@ -22,7 +21,7 @@ host or device mode.
 
 ### `HOST:` Memory Block 1: 0x50100000 - 0x50100FFF
 
-| Offset | Bytes | Host             | Notes |
+| Offset | Bytes | Host             | Info  |
 | ---    | ---   | ---              | ---   |
 | 0x00   | 8     | **SETUP packet** | 8 bytes for setup packet     |
 | 0x08   | 4     | ECR1             | ECR for 1st polled endpoint  |
@@ -30,12 +29,12 @@ host or device mode.
 | 0x18   | 4     | ECR3             | ECR for 3rd polled endpoint  |
 | ...    | ...   | ...              | ... |
 | 0x78   | 4     | ECR15            | ECR for 15th polled endpoint |
-| 0x80   | 4     | **BCR**          | Buffer control register (BCR) for software endpoint    |
+| 0x80   | 4     | **BCR**          | Buffer control register (BCR) for software endpoint |
 | 0x88   | 4     | BCR1             | BCR for 1st polled endpoint  |
 | 0x90   | 4     | BCR2             | BCR for 2nd polled endpoint  |
 | 0x98   | 4     | BCR3             | BCR for 3rd polled endpoint  |
 | ...    | ...   | ...              | ... |
-| 0x100  | 4     | **ECR**          | Endpoint control register (ECR) for software endpoint    |
+| 0x100  | 4     | **ECR**          | Endpoint control register (ECR) for software endpoint |
 | ...    | ...   | ...              | ... |
 | 0x180  | 64    | **Buffer 1**     | Data for 1st data buffer     |
 | 0x1c0  | 64    | Buffer 2         | Data for 2nd data buffer     |
@@ -45,7 +44,7 @@ host or device mode.
 
 ### `DEVICE:` Memory Block 1: 0x50100000 - 0x50100FFF
 
-| Offset | Bytes | Device           | Notes |
+| Offset | Bytes | Device           | Info  |
 | ---    | ---   | ---              | ---   |
 | 0x00   | 8     | **SETUP packet** | 8 bytes for setup packet |
 | 0x08   | 4     | ECR1/IN          | ECR for EP1/IN   |
@@ -64,11 +63,11 @@ host or device mode.
 | 0x140  | 64    | EP0B1            | EP0 buffer 1 (if double buffering on EP0) |
 | 0x180  | 64    | Buffer 3         |     |
 | ...    | ...   | ...              | ... |
-| 0xFC0  | 64    | Buffer 60        | Data for 60th data buffer    |
+| 0xFC0  | 64    | Buffer 60        | Data for 60th data buffer |
 
 ### Memory Block 2: 0x50110000 - 0x5011009B
 
-| Offset | Host    | Notes |
+| Offset | Host    | Info  |
 | ---    | ---     | ---   |
 | 0x00 | ADDR_ENDP (**DAR**) | Device and endpoint address (DAR) register for software endpoint |
 | 0x04 | ADDR_ENDP1 | DAR for 1st polled endpoint |
@@ -99,3 +98,54 @@ host or device mode.
 | 0x90 | **INTE** | Enable interrupts |
 | 0x94 | INTF | Forced interrupts |
 | 0x98 | **INTS** | Interrupt status (masked or forced) |
+
+### Endpoint control register (ECR)
+
+The endpoint control register (ECR) controls how the endpoint behaves.
+
+| Bits  | Info  |
+| ---   | ---   |
+| 31    | Enable this endpoint |
+| 30    | 0: single buffer (64 bytes), 1: double buffering (64 bytes x 2)|
+| 29    | Raise an interrupt for every buffer transferred |
+| 28    | Raise an interrupt for every 2 buffers transferred (only for double buffering) |
+| 27:26 | Type of endpoint, 0: control, 1: isochronous, 2: bulk, 3: interrupt |
+| 25:18 | Polling interval minus 1ms (14 means poll every 15ms) |
+| 15:0  | Byte offset for DPSRAM data buffer (lowest 6 bits must be zero) |
+
+### Buffer control register (BCR)
+
+The buffer control register (BCR) controls how to deal with single or double
+buffering for each endpoint. If the endpoint is configured for single buffering,
+then only the low bits (15:0) are used and they refer to the first buffer
+(buffer 0). If the endpoint is configured for double buffering, then the high
+bits (31:16) refer to the second/double buffer (buffer 1). Notice that each 16
+bit half of this register is not exactly the same.
+
+This register is also special because the upper 16 bits and lower 16 bits can be
+read or written to independently. If this endpoint is single buffered, this has
+no impact. But, if the endpoint is double buffered, then care should be taken to
+write each 16 bit half of the register independently. In practice, this means it
+is better to consider this 32 bit register as two separate 16 bit registers when
+writing to it.
+
+| Bits   | Info  |
+| ---    | ---   |
+| *High* | *Only used if double buffering and refers only to the second/double buffer (buffer 1)* |
+| 31     | FULL buffer. `HOST:` 0: buffer is empty, ready to receive an IN packet from the device; 1: buffer is full, ready to send an OUT packet to the device. `DEVICE:` 0: buffer is empty, ready to receive an OUT packet from the host; 1: buffer is full, ready to send an IN packet to the host.
+| 30     | LAST buffer in the transfer. If INTE has TRANS_COMPLETE set (bit 3), then the TRANS_COMPLETE interrupt will be raised when this buffer completes. |
+| 29     | DATA PID for this packet. 0: DATA0, 1: DATA1. |
+| 28:27  | `Isochronous endpoints:` Byte offset of this second buffer relative to the first buffer, 0: 128, 1: 256, 3: 1024. |
+| 26     | Buffer is AVAILABLE for, and now owned by, the controller. 0: controller clears this bit to indicate that the processer now owns this buffer, 1: processor sets this bit to indicate that the controller now owns this buffer. |
+| 25:16  | Buffer length for this buffer. |
+
+| Bits   | Info  |
+| ---    | ---   |
+| *Low*  | *Used for the first buffer (buffer 0) of this endpoint* |
+| 15     | FULL buffer. `HOST:` 0: buffer is empty, ready to receive an IN packet from the device; 1: buffer is full, ready to send an OUT packet to the device. `DEVICE:` 0: buffer is empty, ready to receive an OUT packet from the host; 1: buffer is full, ready to send an IN packet to the host.
+| 14     | LAST buffer in the transfer. If INTE has TRANS_COMPLETE set (bit 3), then the TRANS_COMPLETE interrupt will be raised when this buffer completes. |
+| 13     | DATA PID for this packet. 0: DATA0, 1: DATA1. |
+| 12     | `DEVICE:` Reset buffer select to buffer 0. |
+| 11     | `HOST:` Received a STALL. `DEVICE:` Send a STALL. |
+| 10     | Buffer is AVAILABLE for, and now owned by, the controller. 0: controller clears this bit to indicate that the processer now owns this buffer, 1: processor sets this bit to indicate that the controller now owns this buffer. |
+| 9:0    | Buffer length for this buffer. |
