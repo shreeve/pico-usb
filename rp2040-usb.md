@@ -486,3 +486,10 @@ the host controller to send a SETUP request, the following is needed:
 
 Once conditions such as this are established, the host controller will send a
 packet to the device to begin the enumeration process.
+
+#### References
+
+* https://www.usbmadesimple.co.uk/
+* https://www.beyondlogic.org/usbnutshell/
+* https://codelv.com/usb/setup-packets/
+* https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf
