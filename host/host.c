@@ -899,7 +899,7 @@ void isr_usbctrl() {
 
         // Lookup the endpoint
         endpoint_t *ep = find_endpoint(dev_addr, ep_addr);
-        handle_buffer(ep); usb_hw_clear->buf_status = 0x01; bits ^= 0x01; // TODO: TOTAL HACK!
+        handle_buffer(ep); usb_hw_clear->buf_status = ~0; bits ^= 0x01; // TODO: TOTAL HACK!
 
 //         // Check the interrupt/asynchronous endpoints (IN and OUT)
 //         for (uint8_t i = 0; i <= MAX_ENDPOINTS && bits; i++) {
