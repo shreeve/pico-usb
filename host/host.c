@@ -1024,7 +1024,7 @@ void isr_usbctrl() {
 
         // Lookup the endpoint
         endpoint_t *ep = find_endpoint(dev_addr, ep_addr);
-        bool len = ep->bytes_done > 0;
+        uint16_t len = ep->bytes_done;
 
         // Panic if the endpoint is not active
         if (!ep->active) panic("EP should still be active in TRANS_COMPLETE");
