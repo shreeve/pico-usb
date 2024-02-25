@@ -335,7 +335,7 @@ host or device mode.
 | 0x50 | SIE_STATUS (**SSR**) | SIE status register |
 | 0x54 | INT_EP_CTRL | Polled endpoint control register |
 | 0x58 | **BUFF_STATUS** | Buffer status register. When an endpoint enables an interrupt for its buffer status, this register will be set each time that buffer completes. |
-| 0x5C | BUFF_CPU_SHOULD_HANDLE | When an endpoint is set for double buffering and sends an interrupt per buffer completion, this register toggles between 0 for buf_0 and 1 for buf_1 to indicate the buffer to handle. |
+| 0x5C | BUFF_CPU_SHOULD_HANDLE (**BCH**) | When an endpoint is set for double buffering and sends an interrupt per buffer completion, this register toggles between 0 for buf_0 and 1 for buf_1 to indicate the buffer to handle. |
 | 0x60 | EP_ABORT | `DEVICE:` For each bit in this register, a NAK will be sent for every access to the corresponding endpoint, overriding the BCR for that endpoint. |
 | 0x64 | EP_ABORT_DONE | `DEVICE:` Used in conjunction with EP_ABORT. Set once an endpoint is idle, so the programmer knows it is safe to modify the BCR. |
 | 0x68 | EP_STALL_ARM | `DEVICE:` This bit must be set in conjunction with the STALL bit in the BCR to send a STALL on EP0. The controller clears these bits when a SETUP packet is received. |
