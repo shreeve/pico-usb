@@ -259,15 +259,6 @@ typedef struct {
 
 static queue_t *queue = &((queue_t) { 0 });
 
-const char *task_name(uint8_t type) {
-    switch (type) {
-        case TASK_CONNECT:   return "TASK_CONNECT";
-        case TASK_TRANSFER:  return "TASK_TRANSFER";
-        case TASK_FUNCTION:  return "TASK_FUNCTION";
-        default:             return "UNKNOWN";
-    }
-}
-
 // ==[ Buffers ]===============================================================
 
 void handle_buffer(endpoint_t *ep) {
@@ -771,12 +762,21 @@ void enumerate(void *arg) {
 
 // ==[ Tasks ]=================================================================
 
+const char *task_type(uint8_t type) {
+    switch (type) {
+        case TASK_CONNECT:  return "TASK_CONNECT";
+        case TASK_TRANSFER: return "TASK_TRANSFER";
+        case TASK_FUNCTION: return "TASK_FUNCTION";
+        default:            return "UNKNOWN";
+    }
+}
+
 void usb_task() {
     task_t task;
 
     while (queue_try_remove(queue, &task)) {
         uint8_t type = task.type;
-        printf("\n=> Start task #%u: %s\n", task.guid, task_name(type));
+        printf("\n=> Start task #%u: %s\n", task.guid, task_type(type));
         switch (type) {
             case TASK_CONNECT:
 
