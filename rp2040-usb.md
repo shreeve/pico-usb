@@ -1,12 +1,13 @@
 ## USB Overview
 
 USB is ubiquitous. It is one of the most successful computing protocols ever
-developed, but its details are surprisingly complicated. USB 2.0 defines two
-speeds: LS (Low Speed) which operates at 1.5 Mbps (megabits per second), and FS
-(Full Speed) which operates at 12 Mbps. Low Speed USB is typically used for
-devices that require lower bandwidth, such as keyboards and mice, while Full
-Speed USB is used for a wider range of devices, including audio devices, and
-storage devices which offer higher data transfer rates.
+developed, but its details are surprisingly complicated. The [USB 2.0
+Specification](https://www.usb.org/document-library/usb-20-specification)
+defines two speeds: LS (Low Speed) which operates at 1.5 Mbps (megabits per
+second), and FS (Full Speed) which operates at 12 Mbps. Low Speed USB is
+typically used for devices that require lower bandwidth, such as keyboards and
+mice, while Full Speed USB is used for a wider range of devices, including audio
+devices, and storage devices which offer higher data transfer rates.
 
 ### Bus Topology
 
@@ -254,13 +255,12 @@ used in the status stage of a transaction, when required.
 
 ### Enumeration
 
-The [USB 2.0 Spec](https://www.usb.org/document-library/usb-20-specification)
-states that when a USB device is attached to a USB bus, the host should perform
-a reset and then begin a very specific process known as "device enumeration."
-This process uses only SETUP packets, CONTROL transfers, endpoint zero (EP0),
-and device zero (dev0) until a new device address is set. The purpose of device
-enumeration is to assign the device a unique address and determine its
-attributes so that it can operate properly.
+When a USB device is attached to a USB bus, the host should perform a reset and
+then begin a very specific process known as enumeration. This process uses only
+SETUP packets, CONTROL transfers, endpoint zero (EP0), and device zero (dev0)
+until a new device address is set. The purpose of enumeration is to assign the
+device a unique address and determine its attributes so that it can operate
+properly.
 
 A simple enumeration process looks like:
 
