@@ -543,22 +543,25 @@ void transfer_zlp(void *arg) {
     endpoint_t *ep = (endpoint_t *) arg;
 
     // Update the endpoint
-    ep->active = true;         // Transfer is now active
-    ep->ep_addr ^= USB_DIR_IN; // Flip the direction
+    ep->active    = true;       // Transfer is now active
+    ep->ep_addr  ^= USB_DIR_IN; // Flip the direction
+    ep->data_pid ^= 1u;         // Toggle DATA0/DATA1 each packet
 
     // Calculate register values
     uint32_t scr, dar, bcr;
-    bool in = ep_in(ep);
+    bool in  = ep_in(ep);
+    bool pid = ep->data_pid;
     scr =            USB_SIE_CTRL_BASE               // SIE_CTRL defaults
      // | (ls  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS)  // Preamble (LS on FS hub)
         | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive bit means IN
-                   : USB_SIE_CTRL_SEND_DATA_BITS)    // Send bit means OUT
+               :     USB_SIE_CTRL_SEND_DATA_BITS)    // Send bit means OUT
         |            USB_SIE_CTRL_START_TRANS_BITS;  // Start the transfer now
     dar = ep->dev_addr | ep_num(ep)                  // Device address
                   << USB_ADDR_ENDP_ENDPOINT_LSB;     // EP number
     bcr = (in  ? 0 : USB_BUF_CTRL_FULL)              // IN/Recv=0, OUT/Send=1
         |            USB_BUF_CTRL_LAST               // Trigger TRANS_COMPLETE
-        |            USB_BUF_CTRL_DATA1_PID          // Start IN/OUT at DATA1
+        | (pid ?     USB_BUF_CTRL_DATA1_PID          // Toggle DATA0/DATA1
+               :     USB_BUF_CTRL_DATA0_PID)         // for next packet
         |            USB_BUF_CTRL_AVAIL;             // Buffer available now
 
     // Debug output
