@@ -110,7 +110,7 @@ void show_endpoint(endpoint_t *ep, const char *str) {
              ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr, str);
 }
 
-void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
+void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
 
     // Populate the endpoint
     *ep = (endpoint_t) {
@@ -156,8 +156,8 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
     usbh_dpram->epx_ctrl = ecr;
 }
 
-SDK_INLINE void reset_epx() {
-    reset_endpoint(epx, &((usb_endpoint_descriptor_t) {
+SDK_INLINE void setup_epx() {
+    setup_endpoint(epx, &((usb_endpoint_descriptor_t) {
         .bLength          = sizeof(usb_endpoint_descriptor_t),
         .bDescriptorType  = USB_DT_ENDPOINT,
         .bEndpointAddress = 0,
@@ -175,7 +175,7 @@ void reset_endpoints() {
     memclr(eps, sizeof(eps));
 
     // Allocate the endpoints
-    reset_epx();
+    setup_epx();
     // TODO: Add the rest here
 }
 
@@ -206,7 +206,7 @@ endpoint_t *next_ep(uint8_t dev_addr, usb_endpoint_descriptor_t *usb) {
         ep = &eps[i];
         if (!ep->configured) {
             ep->dev_addr = dev_addr;
-            reset_endpoint(ep, usb);
+            setup_endpoint(ep, usb);
             ep->configured = true;
             return ep;
         }
@@ -930,7 +930,7 @@ void isr_usbctrl() {
                 .connect.speed = speed,
             }));
         } else {
-            reset_epx(); // TODO: There's a lot more to do here
+            setup_epx(); // TODO: There's a lot more to do here
         }
     }
 
