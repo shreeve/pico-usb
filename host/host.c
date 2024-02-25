@@ -130,7 +130,7 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
         .type       = usb->bmAttributes,     // Control, bulk, int, iso
         .maxsize    = usb->wMaxPacketSize,   // Maximum packet size
         .interval   = usb->bInterval,        // Polling interval in ms
-        .data_pid   = 1,                     // Toggle DATA0/DATA1
+        .data_pid   = 0,                     // Toggle DATA0/DATA1
         .configured = false,                 // Not configured yet
         .active     = false,                 // Transfer is active
         .data_buf   = usbh_dpram->epx_data,  // Data buffer // TODO: What should this default to?
