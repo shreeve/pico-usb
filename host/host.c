@@ -771,6 +771,12 @@ const char *task_type(uint8_t type) {
     }
 }
 
+const char *function_name(void (*fn) (void *)) {
+    if (fn == enumerate   ) return "enumerate";
+    if (fn == transfer_zlp) return "transfer_zlp";
+    panic("Unknown function queued");
+}
+
 void usb_task() {
     task_t task;
 
@@ -828,8 +834,7 @@ void usb_task() {
 //             }   break;
 
             case TASK_FUNCTION: {
-                if (task.function.fn == transfer_zlp) printf("Calling transfer_zlp()\n");
-                if (task.function.fn == enumerate   ) printf("Calling enumerate()\n"   );
+                printf("Calling %s\n", function_name(task.function.fn));
                 task.function.fn(task.function.arg);
             }   break;
 
