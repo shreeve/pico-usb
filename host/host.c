@@ -296,7 +296,7 @@ void handle_buffer(endpoint_t *ep) {
         }
 
         // Update BCR
-        bindump("~bcr~", bcr);
+        bindump("│BCR •", bcr);
         usbh_dpram->epx_buf_ctrl = bcr & ~USB_BUF_CTRL_AVAIL;
         nop(); // TODO: I think we can remove this one
         nop();
