@@ -508,7 +508,7 @@ void transfer_zlp(void *arg) {
 
     // Calculate register values
     uint32_t scr, dar, bcr;
-    bool in  = ep_in(ep);
+    uint8_t pid = ep->data_pid;
     bool in = ep_in(ep);
     scr =            USB_SIE_CTRL_BASE               // SIE_CTRL defaults
      // | (ls  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS)  // Preamble (LS on FS hub)
