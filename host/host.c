@@ -216,7 +216,7 @@ void handle_buffer(endpoint_t *ep) {
 
     // -- Sync the buffer -----------------------------------------------------
 
-    // Work around RP2040-E4
+    // Workaround for RP2040-E4
     uint32_t bcr = usbh_dpram->epx_buf_ctrl;      // Buffer control register
     uint32_t bch = usb_hw->buf_cpu_should_handle; // Check for CPU handle bits
     if (bch & 1u) bcr >>= 16;                     // Perform bitshift correction // TODO: Process all affected buffers
@@ -886,7 +886,7 @@ void isr_usbctrl() {
     uint32_t ints = usb_hw->ints;
     task_t task;
 
-    // Work around RP2040-E4
+    // Workaround for RP2040-E4
     uint32_t bcr = usbh_dpram->epx_buf_ctrl;      // Buffer control register
     uint32_t bch = usb_hw->buf_cpu_should_handle; // Check for CPU handle bits
     if (bch & 1u) bcr >>= 16;                     // Perform bitshift correction // TODO: Process all affected buffers
