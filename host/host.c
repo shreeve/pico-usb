@@ -280,8 +280,8 @@ void handle_buffer(endpoint_t *ep) {
         ep->data_pid ^= 1u;
 
         // Calculate new BCR
-        bool pid = ep->data_pid;
         bool mas = ep->bytes_left > ep->maxsize;
+        bool pid = ep->data_pid;
         bcr = (pid ? USB_BUF_CTRL_DATA1_PID  // Toggle DATA0/DATA1
                    : USB_BUF_CTRL_DATA0_PID) // for next packet
             | (in  ? 0 : USB_BUF_CTRL_FULL)  // IN/Recv=0, OUT/Send=1
