@@ -292,15 +292,15 @@ A simple enumeration process looks like:
   respond with all 18 bytes and the host will send back a ZLP to indicate that
   it has received the device's response, which may look something like `12 01 10
   02 00 00 00 40 8a 2e 0c 00 03 01 01 02 03 01`.
-* **GCD/9/I** - The host now issues the `Get Configuration Descriptor` to
+* **GCD/9/IN** - The host now issues the `Get Configuration Descriptor` to
   request the device send the first 9 bytes of its configuration data. The
   process is similar to the requests above. The request looks like `80 06 00 02
   00 00 09 00` and the response looks like `09 02 62 00 03 01 00 80 32`.
-* **SDC/0/O** - The host now issues a `Set Device Configuration` request to tell
-  the device to use one of its configurations. In practice, this always seems to
-  be configuration 1. The request looks like `00 09 01 00 00 00 00 00` and there
-  is no response, except for the ZLP packet indicating the device is now
-  configured.
+* **SDC/0/OUT** - The host now issues a `Set Device Configuration` request to
+  tell the device to use one of its configurations. In practice, this always
+  seems to be configuration 1. The request looks like `00 09 01 00 00 00 00 00`
+  and there is no response, except for the ZLP packet indicating the device is
+  now configured.
 
 At this point, the device has been assigned a unique address and is now
 considered to be enumerated and configured.
