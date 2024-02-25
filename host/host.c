@@ -21,21 +21,14 @@
 #include "hardware/resets.h"      // Resetting the native USB controller
 
 #include "usb_common.h"           // USB 2.0 definitions
+#include "helpers.h"              // Helper functions
 
 // ==[ PicoUSB ]===============================================================
 
-// Set this to 1 to suppress debug output
-#if 0
-    #define printf(...)
-    #define printb(...)
-    #define hexdump(...)
-    #define bindump(...)
-#endif
-
-#include "helpers.h"              // Helper functions
-
-#define memclr(ptr, len) memset((ptr), 0, (len))
-#define nop() __asm volatile("nop" ::: "memory")
+#define MAX_HUBS      0
+#define MAX_DEVICES   2
+#define MAX_ENDPOINTS 4
+#define TEMP_BUF_SIZE 256
 
 #define MAKE_U16(x, y) (((x) << 8) | ((y)     ))
 #define SWAP_U16(x)    (((x) >> 8) | ((x) << 8))
@@ -46,12 +39,8 @@
 #define SDK_PACKED         __attribute__ ((packed))
 #define SDK_WEAK           __attribute__ ((weak))
 
-#define MAX_HUBS      0
-#define MAX_DEVICES   2
-#define MAX_ENDPOINTS 4
-#define TEMP_BUF_SIZE 256
-
-static uint32_t guid = 1; // TODO: Remove this little debug helper variable
+#define memclr(ptr, len) memset((ptr), 0, (len))
+#define nop() __asm volatile("nop" ::: "memory")
 
 // ==[ Hardware ]==============================================================
 
@@ -796,6 +785,8 @@ typedef struct {
         } function;
     };
 } task_t;
+
+static uint32_t guid = 1; // TODO: Remove this little debug helper variable
 
 static queue_t *queue = &((queue_t) { 0 });
 
