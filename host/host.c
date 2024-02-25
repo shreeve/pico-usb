@@ -821,6 +821,12 @@ void isr_usbctrl() {
     uint32_t ints = usb_hw->ints;
     task_t task;
 
+    // Work around RP2040-E4
+    uint32_t bcr = usbh_dpram->epx_buf_ctrl;      // Buffer control register
+    uint32_t bch = usb_hw->buf_cpu_should_handle; // Check for CPU handle bits
+    if (bch & 1u) bcr >>= 16;                     // Perform correction bitshift
+
+    // Show system state
     printf( "\n=> New ISR #%u", guid++);
     printf_interrupts(ints);
     printf( "\n");
@@ -832,8 +838,8 @@ void isr_usbctrl() {
     bindump("│SCR", usb_hw->sie_ctrl);
     bindump("│DAR", usb_hw->dev_addr_ctrl);
     bindump("│ECR", usbh_dpram->epx_ctrl);
-    bindump("│BCR", usbh_dpram->epx_buf_ctrl);
-    bindump("│BCH", usb_hw->buf_cpu_should_handle);
+    bindump("│BCR", bcr);
+    bindump("│BCH", bch);
 
     // Connection (attach or detach)
     if (ints &  USB_INTS_HOST_CONN_DIS_BITS) {
