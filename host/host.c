@@ -280,14 +280,14 @@ void handle_buffer(endpoint_t *ep) {
         ep->data_pid ^= 1u;
 
         // Calculate new BCR
-        bool mas = ep->bytes_left > ep->maxsize;
+        bool mas = ep->bytes_left > ep->maxsize; // Are there more packets?
         bool pid = ep->data_pid;
-        bcr = (pid ? USB_BUF_CTRL_DATA1_PID  // Toggle DATA0/DATA1
-                   : USB_BUF_CTRL_DATA0_PID) // for next packet
-            | (in  ? 0 : USB_BUF_CTRL_FULL)  // IN/Recv=0, OUT/Send=1
-            | (mas ? 0 : USB_BUF_CTRL_LAST)  // Trigger TRANS_COMPLETE
-            |            USB_BUF_CTRL_AVAIL  // Buffer available now
-            | len;                           // Length of next buffer
+        bcr = (in  ? 0 : USB_BUF_CTRL_FULL)      // IN/Recv=0, OUT/Send=1
+            | (mas ? 0 : USB_BUF_CTRL_LAST)      // Trigger TRANS_COMPLETE
+            | (pid ?     USB_BUF_CTRL_DATA1_PID  // Use DATA1 if needed
+                       : USB_BUF_CTRL_DATA0_PID) // Use DATA0 if needed
+            |            USB_BUF_CTRL_AVAIL      // Buffer available now
+            | len;                               // Length of next buffer
 
         // Copy the user buffer to the outbound data buffer
         if (!in) {
@@ -414,6 +414,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 
     // Transfer is now active
     ep->active     = true;
+    ep->data_pid   = 1;
     ep->ep_addr    = packet->bmRequestType & USB_DIR_IN;
     ep->bytes_left = left;
     ep->bytes_done = 0;
@@ -432,11 +433,10 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
         ep->ep_addr ^= USB_DIR_IN;
     }
 
-    // Are there more packets to send?
-    bool mas = left > ep->maxsize;
-
     // Calculate register values
     uint32_t scr, dar, bcr;
+    bool mas = left > ep->maxsize; // Are there more packets?
+    bool pid = ep->data_pid;       // NOTE: For the RP2040, this is always DATA1
     scr =            USB_SIE_CTRL_BASE              // SIE_CTRL defaults
      // | (ls  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS) // Preamble (LS on FS hub)
         |            USB_SIE_CTRL_SEND_SETUP_BITS   // Send SETUP transaction
@@ -446,7 +446,8 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
     dar = dev_addr;                                 // Device address for EP0
     bcr = (in  ? 0 : USB_BUF_CTRL_FULL)             // IN/Recv=0, OUT/Send=1
         | (mas ? 0 : USB_BUF_CTRL_LAST)             // Trigger TRANS_COMPLETE
-        |            USB_BUF_CTRL_DATA1_PID         // Start IN/OUT at DATA1
+        | (pid ?     USB_BUF_CTRL_DATA1_PID         // Use DATA1 if needed
+                   : USB_BUF_CTRL_DATA0_PID)        // Use DATA0 if needed
         |            USB_BUF_CTRL_AVAIL             // Buffer available now
         | MIN(ep->maxsize, left);                   // Length of next buffer
 
@@ -511,13 +512,14 @@ void transfer_zlp(void *arg) {
     scr =            USB_SIE_CTRL_BASE               // SIE_CTRL defaults
      // | (ls  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS)  // Preamble (LS on FS hub)
         | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive bit means IN
-               :     USB_SIE_CTRL_SEND_DATA_BITS)    // Send bit means OUT
+                   : USB_SIE_CTRL_SEND_DATA_BITS)    // Send bit means OUT
         |            USB_SIE_CTRL_START_TRANS_BITS;  // Start the transfer now
     dar = ep->dev_addr | ep_num(ep)                  // Device address
                   << USB_ADDR_ENDP_ENDPOINT_LSB;     // EP number
     bcr = (in  ? 0 : USB_BUF_CTRL_FULL)              // IN/Recv=0, OUT/Send=1
         |            USB_BUF_CTRL_LAST               // Trigger TRANS_COMPLETE
-        |            USB_BUF_CTRL_DATA1_PID          // Always DATA1 for SETUP
+        | (pid ?     USB_BUF_CTRL_DATA1_PID          // Use DATA1 if needed
+                   : USB_BUF_CTRL_DATA0_PID)         // Use DATA0 if needed
         |            USB_BUF_CTRL_AVAIL;             // Buffer available now
 
     // Debug output
