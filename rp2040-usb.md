@@ -322,7 +322,7 @@ host or device mode.
 
 | Offset | Host    | Info  |
 | ---    | ---     | ---   |
-| 0x00 | ADDR_ENDP (**DAR**) | Device and endpoint address (DAR) register for software endpoint |
+| 0x00 | ADDR_ENDP (**DAR**) | Device and endpoint address register (DAR) for software endpoint |
 | 0x04 | ADDR_ENDP1 | DAR for 1st polled endpoint |
 | 0x08 | ADDR_ENDP2 | DAR for 2nd polled endpoint |
 | 0x0c | ADDR_ENDP3 | DAR for 3rd polled endpoint |
