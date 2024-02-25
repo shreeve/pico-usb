@@ -275,10 +275,10 @@ void handle_buffer(endpoint_t *ep) {
 
     // -- Sync the buffer -----------------------------------------------------
 
+    // Work around RP2040-E4
     uint32_t bcr = usbh_dpram->epx_buf_ctrl;      // Buffer control register
-
-    uint32_t bch = usb_hw->buf_cpu_should_handle; // RP2040-E4: Check for bits
-    if (bch & 1u) bcr >>= 16;                     // RP2040-E4: Perform bitshift
+    uint32_t bch = usb_hw->buf_cpu_should_handle; // Check for CPU handle bits
+    if (bch & 1u) bcr >>= 16;                     // Perform bitshift correction // TODO: Process all affected buffers
 
     uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK;   // Buffer length
     bool    full = bcr & USB_BUF_CTRL_FULL;       // Is buffer marked as full?
@@ -824,7 +824,7 @@ void isr_usbctrl() {
     // Work around RP2040-E4
     uint32_t bcr = usbh_dpram->epx_buf_ctrl;      // Buffer control register
     uint32_t bch = usb_hw->buf_cpu_should_handle; // Check for CPU handle bits
-    if (bch & 1u) bcr >>= 16;                     // Perform correction bitshift
+    if (bch & 1u) bcr >>= 16;                     // Perform bitshift correction // TODO: Process all affected buffers
 
     // Show system state
     printf( "\n=> New ISR #%u", guid++);
