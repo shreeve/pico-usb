@@ -397,7 +397,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 
     // Transfer is now active
     ep->active     = true;
-    ep->data_pid   = 1;
+    ep->data_pid   = 1; // With SEND_SETUP, this is always DATA1
     ep->ep_addr    = packet->bmRequestType & USB_DIR_IN;
     ep->bytes_left = left;
     ep->bytes_done = 0;
