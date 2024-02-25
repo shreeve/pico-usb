@@ -762,7 +762,7 @@ void enumerate(void *arg) {
 
 // ==[ Tasks ]=================================================================
 
-const char *task_type(uint8_t type) {
+const char *task_name(uint8_t type) {
     switch (type) {
         case TASK_CONNECT:  return "TASK_CONNECT";
         case TASK_TRANSFER: return "TASK_TRANSFER";
@@ -782,7 +782,7 @@ void usb_task() {
 
     while (queue_try_remove(queue, &task)) {
         uint8_t type = task.type;
-        printf("\n=> Start task #%u: %s\n", task.guid, task_type(type));
+        printf("\n=> Start task #%u: %s\n", task.guid, task_name(type));
         switch (type) {
             case TASK_CONNECT:
 
