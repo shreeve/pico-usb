@@ -805,6 +805,7 @@ const char *task_name(uint8_t type) {
         case TASK_FUNCTION: return "TASK_FUNCTION";
         default:            return "UNKNOWN";
     }
+    panic("Unknown task queued");
 }
 
 const char *function_name(void (*fn) (void *)) {
@@ -875,7 +876,7 @@ void usb_task() {
             }   break;
 
             default:
-                printf("Unknown task type\n");
+                printf("Unknown task queued\n");
                 break;
         }
         printf("=> Finish task #%u: %s\n", task.guid, task_name(type));
