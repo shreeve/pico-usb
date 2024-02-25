@@ -280,7 +280,7 @@ A simple enumeration process looks like:
   the newly assigned device address and asks for 0 bytes of data back from the
   device. An example packet is `00 05 01 00 00 00 00 00`, with the `0x01`
   meaning that the device is being assigned device address 1. This request is an
-  OUT request and request 0 bytes of data in return. Thus, the device only
+  OUT request and requests 0 bytes of data in return. Thus, the device only
   responds with a ZLP to indicate that the request has been received and
   acknowledged.
 * **GDD/18/IN** - Now that the device has been assigned address 1, the host will
