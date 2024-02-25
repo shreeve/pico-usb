@@ -418,7 +418,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 
     // Calculate register values
     uint32_t scr, dar, bcr;
-    uint8_t pid = ep->data_pid;    // NOTE: For the RP2040, this is always DATA1
+    uint8_t pid = ep->data_pid;
     bool mas = left > ep->maxsize; // Are there more packets?
     scr =            USB_SIE_CTRL_BASE              // SIE_CTRL defaults
      // | (ls  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS) // Preamble (LS on FS hub)
