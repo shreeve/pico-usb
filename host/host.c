@@ -875,7 +875,7 @@ void printf_interrupts(uint32_t ints) {
     if (ints & USB_INTS_HOST_CONN_DIS_BITS   ) printf(", device"  );
     if (ints & USB_INTS_STALL_BITS           ) printf(", stall"   );
     if (ints & USB_INTS_BUFF_STATUS_BITS     ) printf(", buffer"  );
-    if (ints & USB_INTS_TRANS_COMPLETE_BITS  ) printf(", transfer");
+    if (ints & USB_INTS_TRANS_COMPLETE_BITS  ) printf(", done"    );
     if (ints & USB_INTS_ERROR_RX_TIMEOUT_BITS) printf(", timeout" );
     if (ints & USB_INTS_ERROR_DATA_SEQ_BITS  ) printf(", dataseq" );
     if (ints & USB_INTS_HOST_RESUME_BITS     ) printf(", power"   );
