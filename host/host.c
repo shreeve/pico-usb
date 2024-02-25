@@ -68,17 +68,17 @@ typedef void (*endpoint_c)(uint8_t *buf, uint16_t len);
 typedef struct endpoint {
     uint8_t    dev_addr  ; // Device address // HOST ONLY
     uint8_t    ep_addr   ; // Endpoint address
-    uint8_t    type      ; // Transfer type
+    uint8_t    type      ; // Transfer type: control/bulk/interrupt/isochronous
     uint16_t   maxsize   ; // Maximum packet size
     uint16_t   interval  ; // Polling interval in ms
     bool       configured; // Endpoint is configured
     bool       active    ; // Transfer is active
-    uint8_t    data_pid  ; // Toggle DATA0/DATA1 each packet
+    uint8_t    data_pid  ; // Toggle between DATA0/DATA1 packets
+    volatile               // Data buffer is volative
+    uint8_t   *data_buf  ; // Data buffer in DPSRAM
+    uint8_t   *user_buf  ; // User buffer in RAM or flash
     uint16_t   bytes_left; // Bytes remaining
     uint16_t   bytes_done; // Bytes transferred
-    volatile
-    uint8_t   *data_buf  ; // Data buffer
-    uint8_t   *user_buf  ; // User buffer
     endpoint_c cb        ; // Callback function
 } endpoint_t;
 
@@ -114,19 +114,19 @@ void reset_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
 
     // Populate the endpoint
     *ep = (endpoint_t) {
-        .dev_addr   = ep->dev_addr,          // Device address
-        .ep_addr    = usb->bEndpointAddress, // Endpoint address
-        .type       = usb->bmAttributes,     // Control, bulk, int, iso
-        .maxsize    = usb->wMaxPacketSize,   // Maximum packet size
-        .interval   = usb->bInterval,        // Polling interval in ms
-        .data_pid   = 0,                     // Toggle DATA0/DATA1
-        .configured = false,                 // Not configured yet
-        .active     = false,                 // Transfer is active
-        .data_buf   = usbh_dpram->epx_data,  // Data buffer // TODO: What should this default to?
-        .user_buf   = temp_buf,              // User buffer // TODO: What should this default to?
-        .bytes_left = 0,                     // Bytes remaining
-        .bytes_done = 0,                     // Bytes transferred
-        .cb         = NULL,                  // Callback function
+        .dev_addr   = ep->dev_addr,
+        .ep_addr    = usb->bEndpointAddress,
+        .type       = usb->bmAttributes,
+        .maxsize    = usb->wMaxPacketSize,
+        .interval   = usb->bInterval,
+        .configured = true,
+        .active     = false,
+        .data_pid   = 0,
+        .data_buf   = usbh_dpram->epx_data,
+        .user_buf   = temp_buf,
+        .bytes_left = 0,
+        .bytes_done = 0,
+        .cb         = NULL,
     };
 
     // We're done unless this is EPX or an interrupt endpoint
