@@ -82,14 +82,14 @@ typedef struct endpoint {
     uint8_t    type      ; // Transfer type
     uint16_t   maxsize   ; // Maximum packet size
     uint16_t   interval  ; // Polling interval in ms
-    uint8_t    data_pid  ; // Toggle DATA0/DATA1 each packet
     bool       configured; // Endpoint is configured
     bool       active    ; // Transfer is active
+    uint8_t    data_pid  ; // Toggle DATA0/DATA1 each packet
+    uint16_t   bytes_left; // Bytes remaining
+    uint16_t   bytes_done; // Bytes transferred
     volatile
     uint8_t   *data_buf  ; // Data buffer
     uint8_t   *user_buf  ; // User buffer
-    uint16_t   bytes_left; // Bytes remaining
-    uint16_t   bytes_done; // Bytes transferred
     endpoint_c cb        ; // Callback function
 } endpoint_t;
 
