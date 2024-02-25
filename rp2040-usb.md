@@ -151,7 +151,7 @@ being sent. The End of Packet (EOP) sequence indicates the packet has ended and
 is now complete. The SOP and EOP components are always the same. Sandwiched
 between them is the actual data that defines the packet type and its contents.
 
-<div align="center"><img width="500" src="https://github.com/shreeve/pico-usb/assets/142875/0ba789b5-ee8c-4f26-b706-72a665221669"></div>
+<div align="center"><img width="500" src="https://github.com/shreeve/pico-usb/assets/142875/128ffe21-893f-46f6-b984-4b636bc506d3"></div>
 
 ### Packet Types
 
