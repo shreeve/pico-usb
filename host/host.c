@@ -302,6 +302,15 @@ void handle_buffer(endpoint_t *ep) {
         ep->bytes_left = 0;
     }
 
+    // -- Debug output --------------------------------------------------------
+
+    if (ep->bytes_done) {
+        hexdump("│Data", usbh_dpram->epx_data, ep->bytes_done, 1);
+    } else {
+        char *str = ep_in(ep) ? "│ZLP/I" : "│ZLP/O";
+        bindump(str, 0);
+    }
+
     // -- Load the buffer -----------------------------------------------------
 
     if (ep->bytes_left) {
@@ -335,15 +344,6 @@ void handle_buffer(endpoint_t *ep) {
         nop();
         nop();
         usbh_dpram->epx_buf_ctrl = bcr;
-    }
-
-    // -- Debug output --------------------------------------------------------
-
-    if (ep->bytes_done) {
-        hexdump("│Data", usbh_dpram->epx_data, ep->bytes_done, 1);
-    } else {
-        char *str = ep_in(ep) ? "│ZLP/I" : "│ZLP/O";
-        bindump(str, 0);
     }
 }
 
