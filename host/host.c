@@ -503,6 +503,7 @@ void transfer_zlp(void *arg) {
 
     // Update the endpoint
     ep->active    = true;       // Transfer is now active
+    ep->data_pid  = 1;          // Control status stage is always DATA1
     ep->ep_addr  ^= USB_DIR_IN; // Flip the direction
 
     // Calculate register values
