@@ -769,6 +769,78 @@ void enumerate(void *arg) {
     }
 }
 
+// ==[ Tasks ]=================================================================
+
+void usb_task() {
+    task_t task;
+
+    while (queue_try_remove(queue, &task)) {
+        uint8_t type = task.type;
+        printf("\n=> Start task #%u: %s\n", task.guid, task_name(type));
+        switch (type) {
+            case TASK_CONNECT:
+
+                // TODO: See if we can get this to work
+                // // Prevent nested connections
+                // if (dev0->state == DEVICE_ENUMERATING) {
+                //     printf("Only one device can be enumerated at a time\n");
+                //     break;
+                // }
+
+                // Initialize dev0
+                reset_device(0); // TODO: Is this really necessary?
+                dev0->speed = task.connect.speed;
+                dev0->state = DEVICE_CONNECTED;
+
+                // Show the device connection and speed
+                char *str = dev0->speed == LOW_SPEED ? "low" : "full";
+                printf("Device connected (%s speed)\n", str);
+
+                // // Queue the enumeration process
+                // queue_add_blocking(queue, &((task_t) {
+                //     .type          = TASK_FUNCTION,
+                //     .guid          = guid++,
+                //     .function.fn   = enumerate,
+                //     .function.arg  = NULL,
+                // })); // enumerate(NULL);
+
+                // Let's just call enumerate directly?
+                enumerate(NULL);
+
+                break;
+
+//             case TASK_TRANSFER: {
+//                 uint8_t dev_addr = task.transfer.dev_addr;
+//                 uint8_t ep_addr  = task.transfer.ep_addr;
+//                 uint16_t len     = task.transfer.len;
+//
+//                 // Lookup endpoint
+//                 endpoint_t *ep = find_endpoint(dev_addr, ep_addr);
+//
+//                 // Debug output, unless this is a ZLP on dev0
+//                 // if (dev_addr || len) {
+//                     show_endpoint(ep, "Transfer");
+//                     hexdump(" Data", usbh_dpram->epx_data, len, 1);
+//                 // }
+//
+//                 // Advance the enumeration
+//
+//             }   break;
+
+            case TASK_FUNCTION: {
+                if (task.function.fn == transfer_zlp) printf("Calling transfer_zlp()\n");
+                if (task.function.fn == enumerate   ) printf("Calling enumerate()\n"   );
+                task.function.fn(task.function.arg);
+            }   break;
+
+            default:
+                printf("Unknown task type\n");
+                break;
+        }
+        printf("=> Finish task #%u: %s\n", task.guid, task_name(type));
+    }
+}
+
 // ==[ Interrupts ]============================================================
 
 void printf_interrupts(uint32_t ints) {
@@ -968,78 +1040,6 @@ void isr_usbctrl() {
     // usb_hw_clear->sie_status = 1 << 28u; // Clear the NAK??? // ALERT: Get rid of this!!!
 
     printf("└───────┴──────┴─────────────────────────────────────┴────────────┘\n");
-}
-
-// ==[ Tasks ]=================================================================
-
-void usb_task() {
-    task_t task;
-
-    while (queue_try_remove(queue, &task)) {
-        uint8_t type = task.type;
-        printf("\n=> Start task #%u: %s\n", task.guid, task_name(type));
-        switch (type) {
-            case TASK_CONNECT:
-
-                // TODO: See if we can get this to work
-                // // Prevent nested connections
-                // if (dev0->state == DEVICE_ENUMERATING) {
-                //     printf("Only one device can be enumerated at a time\n");
-                //     break;
-                // }
-
-                // Initialize dev0
-                reset_device(0); // TODO: Is this really necessary?
-                dev0->speed = task.connect.speed;
-                dev0->state = DEVICE_CONNECTED;
-
-                // Show the device connection and speed
-                char *str = dev0->speed == LOW_SPEED ? "low" : "full";
-                printf("Device connected (%s speed)\n", str);
-
-                // // Queue the enumeration process
-                // queue_add_blocking(queue, &((task_t) {
-                //     .type          = TASK_FUNCTION,
-                //     .guid          = guid++,
-                //     .function.fn   = enumerate,
-                //     .function.arg  = NULL,
-                // })); // enumerate(NULL);
-
-                // Let's just call enumerate directly?
-                enumerate(NULL);
-
-                break;
-
-//             case TASK_TRANSFER: {
-//                 uint8_t dev_addr = task.transfer.dev_addr;
-//                 uint8_t ep_addr  = task.transfer.ep_addr;
-//                 uint16_t len     = task.transfer.len;
-//
-//                 // Lookup endpoint
-//                 endpoint_t *ep = find_endpoint(dev_addr, ep_addr);
-//
-//                 // Debug output, unless this is a ZLP on dev0
-//                 // if (dev_addr || len) {
-//                     show_endpoint(ep, "Transfer");
-//                     hexdump(" Data", usbh_dpram->epx_data, len, 1);
-//                 // }
-//
-//                 // Advance the enumeration
-//
-//             }   break;
-
-            case TASK_FUNCTION: {
-                if (task.function.fn == transfer_zlp) printf("Calling transfer_zlp()\n");
-                if (task.function.fn == enumerate   ) printf("Calling enumerate()\n"   );
-                task.function.fn(task.function.arg);
-            }   break;
-
-            default:
-                printf("Unknown task type\n");
-                break;
-        }
-        printf("=> Finish task #%u: %s\n", task.guid, task_name(type));
-    }
 }
 
 // ==[ Resets ]================================================================
