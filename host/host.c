@@ -179,18 +179,13 @@ void reset_endpoints() {
 }
 
 endpoint_t *find_endpoint(uint8_t dev_addr, uint8_t ep_addr) {
-    endpoint_t *ep = NULL;
-    bool need_ep0 = !(ep_addr & 0x7f);
+    bool want_ep0 = !ep_num(ep_addr);
 
     for (uint8_t i = 0; i < MAX_ENDPOINTS; i++) {
-        ep = &eps[i];
+        endpoint_t *ep = &eps[i];
         if (ep->configured && ep->dev_addr == dev_addr) {
-            if (need_ep0) {
-                if (ep->ep_addr & 0x7f) continue;
-            } else {
-                if (ep->ep_addr != ep_addr) continue;
-            }
-            return ep;
+            if (want_ep0 && !ep_num(ep->ep_addr)) return ep;
+            if (ep->ep_addr == ep_addr) return ep;
         }
     }
     panic("Invalid endpoint 0x%02x for device %u", ep_addr, dev_addr);
