@@ -503,7 +503,6 @@ void transfer_zlp(void *arg) {
     // Update the endpoint
     ep->active    = true;       // Transfer is now active
     ep->ep_addr  ^= USB_DIR_IN; // Flip the direction
-    ep->data_pid ^= 1u;         // Toggle DATA0/DATA1 each packet
 
     // Calculate register values
     uint32_t scr, dar, bcr;
@@ -518,8 +517,7 @@ void transfer_zlp(void *arg) {
                   << USB_ADDR_ENDP_ENDPOINT_LSB;     // EP number
     bcr = (in  ? 0 : USB_BUF_CTRL_FULL)              // IN/Recv=0, OUT/Send=1
         |            USB_BUF_CTRL_LAST               // Trigger TRANS_COMPLETE
-        | (pid ?     USB_BUF_CTRL_DATA1_PID          // Toggle DATA0/DATA1
-               :     USB_BUF_CTRL_DATA0_PID)         // for next packet
+        |            USB_BUF_CTRL_DATA1_PID          // Always DATA1 for SETUP
         |            USB_BUF_CTRL_AVAIL;             // Buffer available now
 
     // Debug output
