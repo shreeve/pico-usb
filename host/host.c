@@ -226,39 +226,6 @@ endpoint_t *next_ep(uint8_t dev_addr, usb_endpoint_descriptor_t *usb) {
     return NULL;
 }
 
-// ==[ Tasks ]=================================================================
-
-enum {
-    TASK_CONNECT,
-    TASK_TRANSFER,
-    TASK_FUNCTION,
-};
-
-typedef struct {
-    uint8_t type;
-    uint32_t guid;
-
-    union {
-        struct {
-            uint8_t speed;
-        } connect;
-
-        struct {
-            uint8_t  dev_addr;
-            uint8_t  ep_addr;
-            uint16_t len;
-            uint8_t  status;
-        } transfer;
-
-        struct {
-            void (*fn) (void *);
-            void *arg;
-        } function;
-    };
-} task_t;
-
-static queue_t *queue = &((queue_t) { 0 });
-
 // ==[ Buffers ]===============================================================
 
 void handle_buffer(endpoint_t *ep) {
@@ -761,6 +728,37 @@ void enumerate(void *arg) {
 }
 
 // ==[ Tasks ]=================================================================
+
+enum {
+    TASK_CONNECT,
+    TASK_TRANSFER,
+    TASK_FUNCTION,
+};
+
+typedef struct {
+    uint8_t type;
+    uint32_t guid;
+
+    union {
+        struct {
+            uint8_t speed;
+        } connect;
+
+        struct {
+            uint8_t  dev_addr;
+            uint8_t  ep_addr;
+            uint16_t len;
+            uint8_t  status;
+        } transfer;
+
+        struct {
+            void (*fn) (void *);
+            void *arg;
+        } function;
+    };
+} task_t;
+
+static queue_t *queue = &((queue_t) { 0 });
 
 const char *task_name(uint8_t type) {
     switch (type) {
