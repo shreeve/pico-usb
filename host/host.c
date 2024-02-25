@@ -277,11 +277,11 @@ void handle_buffer(endpoint_t *ep) {
         len = MIN(ep->maxsize, ep->bytes_left);
 
         // Toggle DATA0/DATA1 each packet
-        ep->data_pid ^= 1u;
+        ep->data_pid ^= 1;
 
         // Calculate new BCR
+        uint8_t pid = ep->data_pid;
         bool mas = ep->bytes_left > ep->maxsize; // Are there more packets?
-        bool pid = ep->data_pid;
         bcr = (in  ? 0 : USB_BUF_CTRL_FULL)      // IN/Recv=0, OUT/Send=1
             | (mas ? 0 : USB_BUF_CTRL_LAST)      // Trigger TRANS_COMPLETE
             | (pid ?     USB_BUF_CTRL_DATA1_PID  // Use DATA1 if needed
@@ -435,8 +435,8 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *packet) {
 
     // Calculate register values
     uint32_t scr, dar, bcr;
+    uint8_t pid = ep->data_pid;    // NOTE: For the RP2040, this is always DATA1
     bool mas = left > ep->maxsize; // Are there more packets?
-    bool pid = ep->data_pid;       // NOTE: For the RP2040, this is always DATA1
     scr =            USB_SIE_CTRL_BASE              // SIE_CTRL defaults
      // | (ls  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS) // Preamble (LS on FS hub)
         |            USB_SIE_CTRL_SEND_SETUP_BITS   // Send SETUP transaction
@@ -509,7 +509,7 @@ void transfer_zlp(void *arg) {
     // Calculate register values
     uint32_t scr, dar, bcr;
     bool in  = ep_in(ep);
-    bool pid = ep->data_pid;
+    bool in = ep_in(ep);
     scr =            USB_SIE_CTRL_BASE               // SIE_CTRL defaults
      // | (ls  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS)  // Preamble (LS on FS hub)
         | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS  // Receive bit means IN
