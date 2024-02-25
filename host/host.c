@@ -769,44 +769,6 @@ void enumerate(void *arg) {
     }
 }
 
-// ==[ Resets ]================================================================
-
-void reset_usb_host() {
-    printf("USB host reset\n\n");
-
-    // Reset controller
-    reset_block       (RESETS_RESET_USBCTRL_BITS);
-    unreset_block_wait(RESETS_RESET_USBCTRL_BITS);
-
-    // Clear state
-    memset(usb_hw    , 0, sizeof(*usb_hw    ));
-    memset(usbh_dpram, 0, sizeof(*usbh_dpram));
-
-    // Configure USB host controller
-    usb_hw->muxing    = USB_USB_MUXING_TO_PHY_BITS       // Connect to USB Phy
-                      | USB_USB_MUXING_SOFTCON_BITS;     // Soft connect
-    usb_hw->pwr       = USB_USB_PWR_VBUS_DETECT_BITS     // Enable VBUS detect
-                      | USB_USB_PWR_VBUS_DETECT_OVERRIDE_EN_BITS;
-    usb_hw->main_ctrl = USB_MAIN_CTRL_CONTROLLER_EN_BITS // Enable controller
-                      | USB_MAIN_CTRL_HOST_NDEVICE_BITS; // Enable USB Host
-    usb_hw->sie_ctrl  = USB_SIE_CTRL_BASE;               // SIE_CTRL defaults
-    usb_hw->inte      = USB_INTE_HOST_CONN_DIS_BITS      // Connect/disconnect
-                      | USB_INTE_STALL_BITS              // Stall detected
-                      | USB_INTE_BUFF_STATUS_BITS        // Buffer ready
-                      | USB_INTE_TRANS_COMPLETE_BITS     // Transfer complete
-                      | USB_INTE_HOST_RESUME_BITS        // Device wakes host
-                      | USB_INTE_ERROR_DATA_SEQ_BITS     // DATA0/DATA1 wrong
-                      | USB_INTE_ERROR_RX_TIMEOUT_BITS   // Receive timeout
-                      | (0xffffffff ^ 0x00000004);       // NOTE: Debug all on
-
-    irq_set_enabled(USBCTRL_IRQ, true);
-
-    reset_devices();
-    reset_endpoints();
-
-    bindump(" INT", usb_hw->inte);
-}
-
 // ==[ Interrupts ]============================================================
 
 void printf_interrupts(uint32_t ints) {
