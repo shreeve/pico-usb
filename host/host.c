@@ -166,7 +166,6 @@ SDK_INLINE void setup_epx() {
      // .wMaxPacketSize   = 64,
         .bInterval        = 0,
     }));
-    epx->configured = true;
 }
 
 void reset_endpoints() {
