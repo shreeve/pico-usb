@@ -206,10 +206,9 @@ endpoint_t *next_ep(uint8_t dev_addr, usb_endpoint_descriptor_t *usb) {
 
 // Sync current buffer by checking its BCR half and returning the buffer length
 uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
-    if (buf_id) bcr >>= 16u;                     // Use the correct BCR half
-    uint16_t len  = bcr & USB_BUF_CTRL_LEN_MASK; // Buffer length
-    bool     full = bcr & USB_BUF_CTRL_FULL;     // Buffer is full (populated)
     bool     in   = ep_in(ep);                   // Buffer is inbound
+    bool     full = bcr & USB_BUF_CTRL_FULL;     // Buffer is full (populated)
+    uint16_t len  = bcr & USB_BUF_CTRL_LEN_MASK; // Buffer length
 
     // Inbound buffers must be full and outbound buffers must be empty
     assert(in == full);
@@ -234,10 +233,9 @@ uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
 
 // Prepare next buffer and return its BCR half
 uint32_t next_buffer(endpoint_t *ep, uint8_t buf_id) {
-
-    // Calculate BCR
+    bool     in  = ep_in(ep);                         // Buffer is inbound
     bool     mas = ep->bytes_left > ep->maxsize;      // Any more packets?
-    uint8_t  pid = ep->data_pid;                      // DATA0/DATA1 toggle
+    uint8_t  pid = ep->data_pid ^ 1u;                 // Toggle DATA0/DATA1 pid
     uint16_t len = MIN(ep->maxsize, ep->bytes_left);  // Buffer length
     uint32_t bcr = (mas ? 0 : USB_BUF_CTRL_LAST)      // Trigger TRANS_COMPLETE
                  | (pid ?     USB_BUF_CTRL_DATA1_PID  // Use DATA1 if needed
@@ -248,11 +246,11 @@ uint32_t next_buffer(endpoint_t *ep, uint8_t buf_id) {
     // Update byte counts
     ep->bytes_left -= len;
 
-    // Toggle DATA0/DATA1 each packet
-    ep->data_pid ^= 1u;
+    // Update DATA0/DATA1 pid
+    ep->data_pid = pid;
 
     // Copy the user buffer to the outbound data buffer
-    if (!ep_in(ep)) {
+    if (!in) {
         memcpy((void *) (ep->data_buf + buf_id * 64), ep->user_buf, len);
         ep->user_buf += len;
         bcr |= USB_BUF_CTRL_FULL;
@@ -263,7 +261,7 @@ uint32_t next_buffer(endpoint_t *ep, uint8_t buf_id) {
         bcr |= USB_BUF_CTRL_LAST;
     }
 
-    return buf_id ? bcr << 16u : bcr;
+    return bcr;
 }
 
 void handle_buffer(endpoint_t *ep) {
