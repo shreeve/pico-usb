@@ -185,16 +185,12 @@ endpoint_t *find_endpoint(uint8_t dev_addr, uint8_t ep_addr) {
     return NULL;
 }
 
-// Allocate the next endpoint
 endpoint_t *next_ep(uint8_t dev_addr, usb_endpoint_descriptor_t *usb) {
-    endpoint_t *ep = NULL;
-
     for (uint8_t i = 1; i < MAX_ENDPOINTS; i++) {
-        ep = &eps[i];
+        endpoint_t *ep = &eps[i];
         if (!ep->configured) {
             ep->dev_addr = dev_addr;
             setup_endpoint(ep, usb);
-            ep->configured = true;
             return ep;
         }
     }
