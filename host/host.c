@@ -211,7 +211,7 @@ endpoint_t *next_ep(uint8_t dev_addr, usb_endpoint_descriptor_t *usb) {
 void handle_buffer(endpoint_t *ep) {
     if (!ep->active) show_endpoint(ep, "Inactive"), panic("Halted");
 
-    // -- Sync the buffer -----------------------------------------------------
+    // -- Sync current buffer ---------------------------------------------------
 
     // Workaround for RP2040-E4
     uint32_t bcr = usbh_dpram->epx_buf_ctrl;      // Buffer control register
@@ -252,7 +252,7 @@ void handle_buffer(endpoint_t *ep) {
     // Toggle DATA0/DATA1 each packet
     ep->data_pid ^= 1;
 
-    // -- Load the buffer -----------------------------------------------------
+    // -- Prepare next buffer ---------------------------------------------------
 
     if (ep->bytes_left) {
 
