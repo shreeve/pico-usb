@@ -291,32 +291,24 @@ void handle_buffer(endpoint_t *ep) {
 
     // -- Prepare next buffer(s) -----------------------------------------------
 
-    // Toggle DATA0/DATA1 each packet
-    ep->data_pid ^= 1;
-
     if (ep->bytes_left) {
-
-        // Update byte counts
-        len = MIN(ep->maxsize, ep->bytes_left);
-
-        // Calculate new BCR
-        uint8_t pid = ep->data_pid;
-        bool mas = ep->bytes_left > ep->maxsize; // Are there more packets?
-        bcr = (in  ? 0 : USB_BUF_CTRL_FULL)      // IN/Recv=0, OUT/Send=1
-            | (mas ? 0 : USB_BUF_CTRL_LAST)      // Trigger TRANS_COMPLETE
-            | (pid ?     USB_BUF_CTRL_DATA1_PID  // Use DATA1 if needed
-                       : USB_BUF_CTRL_DATA0_PID) // Use DATA0 if needed
-            |            USB_BUF_CTRL_AVAIL      // Buffer available now
-            | len;                               // Length of next buffer
-
-        // Copy the user buffer to the outbound data buffer
-        if (!in) {
-            memcpy((void *) ep->data_buf, ep->user_buf, len);
-            ep->user_buf += len;
+        bcr = next_buffer(ep, 0);                         bindump("•BCR1", bcr);
+        if (~bcr & USB_BUF_CTRL_LAST) {
+            ecr |= EP_CTRL_DOUBLE_BUFFERED_BITS;          bindump("•ECR2", ecr);
+            bcr |= next_buffer(ep, 1) << 16;              bindump("•BCR3", bcr);
+        } else {
+            ecr &= ~EP_CTRL_DOUBLE_BUFFERED_BITS;         bindump("•ECR4", ecr);
         }
 
-        // Update BCR
+// if (bcr == 0x00000408) bcr = 0x00000409; // Sloppy, but fires TRANS_COMPLETE
+
+        // Debug output
+        bindump("~ecr~", ecr);
+        bindump("~bcr~", bcr);
+
+        // Update ECR and BCR
         bindump("│BCR •", bcr);
+        usbh_dpram->epx_ctrl     = ecr;
         usbh_dpram->epx_buf_ctrl = bcr & ~USB_BUF_CTRL_AVAIL;
         nop(); // TODO: I think we can remove this one
         nop();
