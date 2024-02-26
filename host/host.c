@@ -67,6 +67,7 @@ typedef struct endpoint {
     uint16_t   interval  ; // Polling interval in ms
     bool       configured; // Endpoint is configured
     bool       active    ; // Transfer is active
+    bool       setup     ; // SETUP packet flag // TODO: How useful is this?
     uint8_t    data_pid  ; // Toggle between DATA0/DATA1 packets
     volatile               // Data buffer is volative
     uint8_t   *data_buf  ; // Data buffer in DPSRAM
@@ -94,6 +95,7 @@ SDK_INLINE uint8_t ep_num(endpoint_t *ep) {
 
 SDK_INLINE void clear_endpoint(endpoint_t *ep) {
     ep->active     = false;
+    ep->setup      = false;
     ep->user_buf   = temp_buf; // TODO: Add something like a ring buffer here?
     ep->bytes_left = 0;
     ep->bytes_done = 0;
@@ -406,7 +408,7 @@ void transfer(endpoint_t *ep, uint8_t buf_id) {
     uint8_t pid = ep->data_pid;
     bool in     = ep_in(ep);
     bool mas    = ep->bytes_left > ep->maxsize; // Are there more packets?
-    bool su     = ep->bytes_left > 0; // FIXME: This is stupid - FIX!
+    bool su     = ep->setup && !ep->bytes_done; // Start of a SETUP packet
 
     // If there's no data phase, flip the endpoint direction
     if (!ep->bytes_left) {
@@ -500,6 +502,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *setup) {
 
     // Transfer is now active
     ep->active     = true;
+    ep->setup      = true;
     ep->data_pid   = 1;
     ep->ep_addr    = setup->bmRequestType & USB_DIR_IN;
     ep->bytes_left = setup->wLength;
@@ -517,6 +520,7 @@ void transfer_zlp(void *arg) {
 
     // Transfer is now active
     ep->active     = true;
+    ep->setup      = false;
     ep->data_pid   = 1;
     ep->ep_addr    = ep->ep_addr;
     ep->bytes_left = 0;
