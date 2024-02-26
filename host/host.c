@@ -222,7 +222,7 @@ void handle_buffer(endpoint_t *ep) {
     bool    full = bcr & USB_BUF_CTRL_FULL;       // Is buffer marked as full?
     bool      in = ep_in(ep);                     // IN or OUT endpoint?
 
-    // Inbound buffers must be full and outbound buffer must be empty
+    // Inbound buffers must be full and outbound buffers must be empty
     assert(in == full);
 
     // Copy the inbound data buffer to the user buffer
