@@ -401,6 +401,86 @@ enum {
 // TODO: Clear a stall and toggle data PID back to DATA0
 // TODO: Abort a transfer if not yet started and return true on success
 
+void transfer(endpoint_t *ep, uint8_t buf_id) {
+    uint32_t dar, scr, bcr;
+    uint8_t pid = ep->data_pid;
+    bool in     = ep_in(ep);
+    bool mas    = ep->bytes_left > ep->maxsize; // Are there more packets?
+    bool su     = ep->bytes_left > 0; // FIXME: This is a stupid trick - FIX!
+
+    // If there's no data phase, flip the endpoint direction
+    if (!ep->bytes_left) {
+        in = !in;
+        ep->ep_addr ^= USB_DIR_IN;
+    }
+
+    // Calculate USB registers
+    dar = ep->dev_addr | ep_num(ep)                 // Device address
+                  << USB_ADDR_ENDP_ENDPOINT_LSB;    // EP number
+    scr =            USB_SIE_CTRL_BASE              // SIE_CTRL defaults
+     // | (ls  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS) // Preamble (LS on FS hub)
+        | (!su ? 0 : USB_SIE_CTRL_SEND_SETUP_BITS)  // Toggle SETUP packet
+        | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS // Receive bit means IN
+                   : USB_SIE_CTRL_SEND_DATA_BITS)   // Send bit means OUT
+        |            USB_SIE_CTRL_START_TRANS_BITS; // Start the transfer now
+    bcr = (in  ? 0 : USB_BUF_CTRL_FULL)             // IN/Recv=0, OUT/Send=1
+        | (mas ? 0 : USB_BUF_CTRL_LAST)             // Trigger TRANS_COMPLETE
+        | (pid ?     USB_BUF_CTRL_DATA1_PID         // Use DATA1 if needed
+                   : USB_BUF_CTRL_DATA0_PID)        // Use DATA0 if needed
+        |            USB_BUF_CTRL_AVAIL             // Buffer available now
+        | MIN(ep->maxsize, ep->bytes_left);         // Length of next buffer
+
+    // Debug output
+    bindump(" INTR", usb_hw->intr);
+    bindump(" INTS", usb_hw->intr);
+    bindump(" DAR" , dar);                  // Device address register
+    bindump(" SSR" , usb_hw->sie_status);   // SIE status register
+    bindump(" SCR" , scr);                  // SIE control register
+    bindump(" ECR" , usbh_dpram->epx_ctrl); // EPX control register
+    bindump(" BCR" , bcr);                  // EPX buffer control register
+
+    // TODO: Come up with a way to show a SETUP, ZLP, or DATA transfers here
+    if (su) {
+        uint32_t *packet = (uint32_t *) usbh_dpram->setup_packet;
+        hexdump("<Setup", packet, sizeof(usb_setup_packet_t), 1);
+    } else {
+        printf("%cZLP\n", in ? '>' : '<');
+    }
+
+    // NOTE: When clk_sys (usually 133Mhz) and clk_usb (usually 48MHz) are not
+    // the same, the processor and the USB controller run at different speeds.
+    // To properly coordinate them, we must sometimes waste clk_sys cycles to
+    // allow time for clk_usb to catch up. Each clk_sys cycle is 133/48 times
+    // faster than a clk_usb cycle, which is 2.77 (roughly 3) times as fast.
+    // So, for each 1 clk_usb cycle, we should waste 3 clk_sys cycles.
+    //
+    // For the USB controller, the START_TRANS bit in SCR and the AVAILABLE bit
+    // in BCR need special care. These bits trigger processor actions when they
+    // are set, but they will execute too soon since the USB controller needs
+    // more time to perform the actions specified in the other bits. Thus, we
+    // need to set the USB specific bits first, delay a few cycles, and then
+    // set the bits for the processor. The datasheet shows how long to wait:
+    //
+    // For SCR, Datasheet § 4.1.2.7 (p. 390) says START_TRANS needs two clk_usb
+    // For BCR, Datasheet § 4.1.2.5.1 (p. 383) says AVAILABLE needs one clk_usb
+    //
+    // We have several values to set, so we order them as shown below. Notice
+    // that this sets SCR without START_TRANS and then, in 6 cycles, it sets it
+    // again but this time including START_TRANS. BCR is similar, but will be
+    // set again after 3 cycles. The setting of DAR and two NOP's are inserted
+    // to make everything line up correctly.
+
+    // Set registers optimally
+    usb_hw->sie_ctrl         = scr & ~USB_SIE_CTRL_START_TRANS_BITS;
+    usbh_dpram->epx_buf_ctrl = bcr & ~USB_BUF_CTRL_AVAIL;
+    usb_hw->dev_addr_ctrl    = dar;
+    nop();
+    nop();
+    usbh_dpram->epx_buf_ctrl = bcr;
+    nop(); // TODO: Might not need this one
+    usb_hw->sie_ctrl         = scr;
+}
+
 void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *setup) {
     if ( ep_num(ep))     panic("Control transfers must use EP0");
     if (!ep->configured) panic("Endpoint not configured");
