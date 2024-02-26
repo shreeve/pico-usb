@@ -176,12 +176,12 @@ void reset_endpoints() {
 }
 
 endpoint_t *find_endpoint(uint8_t dev_addr, uint8_t ep_addr) {
-    bool want_ep0 = !ep_num(ep_addr);
+    bool want_ep0 = !(ep_addr & ~USB_DIR_IN);
 
     for (uint8_t i = 0; i < MAX_ENDPOINTS; i++) {
         endpoint_t *ep = &eps[i];
         if (ep->configured && ep->dev_addr == dev_addr) {
-            if (want_ep0 && !ep_num(ep->ep_addr)) return ep;
+            if (want_ep0 && !(ep->ep_addr & ~USB_DIR_IN)) return ep;
             if (ep->ep_addr == ep_addr) return ep;
         }
     }
