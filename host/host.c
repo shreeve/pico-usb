@@ -781,7 +781,7 @@ typedef struct {
     };
 } task_t;
 
-static uint32_t guid = 1; // TODO: Remove this little debug helper variable
+static uint32_t guid = 1;
 
 static queue_t *queue = &((queue_t) { 0 });
 
