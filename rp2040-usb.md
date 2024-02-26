@@ -243,6 +243,21 @@ used in the status stage of a transaction, when required.
 
 ### Transactions
 
+A transaction represents one complete operation and consists of one token packet
+(SETUP, IN, or OUT), one optional data packet (DATA0 or DATA1), and one
+handshake packet (ACK, NAK, or STALL), in that order.
+
+Each token packet contains the device address and endpoint address. An IN token
+means the transaction flows IN to the host from the device. An OUT token means
+the transaction flows OUT from the host to the device. A SETUP token is like an
+OUT token, but is always followed by a specially formatted 8 byte DATA0 packet
+used during a process known as enumeration (defined below). After the token
+packet, the optional DATA0 or DATA1 packet may contain the data payload for the
+transaction. The handshake packet will be an ACK to indicate successful receipt
+of the transaction, a NAK to indicate that the receiver is currently unable to
+handle this transaction but the sender should try again, or a STALL to indicate
+that an error has occured and the sender should not retry the transaction.
+
 ### Transfers
 
 ### Endpoints
