@@ -527,8 +527,8 @@ void transfer_zlp(void *arg) {
     ep->bytes_done = 0;
     ep->user_buf   = temp_buf;
 
-    // Debug output
-    show_endpoint(ep, "ZLP");
+    // // Debug output
+    // show_endpoint(ep, "ZLP");
 
     transfer(ep, 0);
 }
