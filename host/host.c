@@ -406,7 +406,7 @@ void transfer(endpoint_t *ep, uint8_t buf_id) {
     uint8_t pid = ep->data_pid;
     bool in     = ep_in(ep);
     bool mas    = ep->bytes_left > ep->maxsize; // Are there more packets?
-    bool su     = ep->bytes_left > 0; // FIXME: This is a stupid trick - FIX!
+    bool su     = ep->bytes_left > 0; // FIXME: This is stupid - FIX!
 
     // If there's no data phase, flip the endpoint direction
     if (!ep->bytes_left) {
