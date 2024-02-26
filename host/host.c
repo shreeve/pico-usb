@@ -1023,9 +1023,9 @@ void isr_usbctrl() {
 
         // NOTE: TRANS_COMPLETE triggers when (see datasheet, p. 401):
         //
-        // 1. SETUP packet is sent without {RECEIVE,SEND}_DATA_BITS in SCR
-        // 2. IN or OUT packet is transferred with BUF_CTRL_LAST set in BCR
-        // 3. An IN packet is received with a zero length status packet (ZLP)
+        // 1. SETUP packet sent without {RECEIVE,SEND}_DATA_BITS in SCR
+        // 2. IN or OUT packet transferred with LAST set in BCR
+        // 3. IN short packet (less than maxsize) transferred
 
         // Lookup the endpoint
         endpoint_t *ep = find_endpoint(dev_addr, ep_addr);
