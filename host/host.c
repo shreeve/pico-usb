@@ -965,7 +965,7 @@ void isr_usbctrl() {
         // Lookup the endpoint
         handle_buffer(ep); usb_hw_clear->buf_status = ~0; bits ^= 0x01; // TODO: TOTAL HACK!
 
-//         // Check the interrupt/asynchronous endpoints (IN and OUT)
+//         // Check the polled endpoints (IN and OUT)
 //         for (uint8_t i = 0; i <= MAX_ENDPOINTS && bits; i++) {
 //             for (uint8_t j = 0; j < 2; j++) {
 //                 mask = 1 << (i * 2 + j);
