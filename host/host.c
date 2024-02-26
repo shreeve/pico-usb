@@ -249,15 +249,15 @@ void handle_buffer(endpoint_t *ep) {
         bindump(str, 0);
     }
 
+    // Toggle DATA0/DATA1 each packet
+    ep->data_pid ^= 1;
+
     // -- Load the buffer -----------------------------------------------------
 
     if (ep->bytes_left) {
 
         // Update byte counts
         len = MIN(ep->maxsize, ep->bytes_left);
-
-        // Toggle DATA0/DATA1 each packet
-        ep->data_pid ^= 1;
 
         // Calculate new BCR
         uint8_t pid = ep->data_pid;
