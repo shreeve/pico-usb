@@ -208,6 +208,68 @@ endpoint_t *next_ep(uint8_t dev_addr, usb_endpoint_descriptor_t *usb) {
 
 // ==[ Buffers ]===============================================================
 
+// // Sync current buffer by checking its half of the BCR and return its length
+// uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
+//     if (buf_id) bcr >>= 16u;                     // Use the correct BCR half
+//     uint16_t len  = bcr & USB_BUF_CTRL_LEN_MASK; // Buffer length
+//     bool     full = bcr & USB_BUF_CTRL_FULL;     // Buffer is full (populated)
+//     bool     in   = ep_in(ep);                   // Buffer is inbound
+//
+//     // Inbound buffers must be full and outbound buffers must be empty
+//     assert(in == full);
+//
+//     // Copy the inbound data buffer to the user buffer
+//     if (in) {
+//         memcpy(ep->user_buf, (void *) (ep->data_buf + buf_id * 64), len);
+//         ep->user_buf += len;
+//     }
+//
+//     // Update byte counts
+//     ep->bytes_done += len;
+//     ep->bytes_left -= len;
+//
+//     // Short packet (below maxsize) means the transfer is done
+//     if (len < ep->maxsize) {
+//         ep->bytes_left = 0;
+//     }
+//
+//     return len;
+// }
+//
+// // Prepare next buffer and return its half of the BCR
+// uint32_t next_buffer(endpoint_t *ep, uint8_t buf_id) {
+//
+//     // Calculate BCR
+//     bool     mas = ep->bytes_left > ep->maxsize;      // Any more packets?
+//     uint8_t  pid = ep->data_pid;                      // DATA0/DATA1 toggle
+//     uint16_t len = MIN(ep->maxsize, ep->bytes_left);  // Buffer length
+//     uint32_t bcr = (mas ? 0 : USB_BUF_CTRL_LAST)      // Trigger TRANS_COMPLETE
+//                  | (pid ?     USB_BUF_CTRL_DATA1_PID  // Use DATA1 if needed
+//                             : USB_BUF_CTRL_DATA0_PID) // Use DATA0 if needed
+//                  |            USB_BUF_CTRL_AVAIL      // Buffer available now
+//                  | len;                               // Length of next buffer
+//
+//     // Update byte counts
+//     ep->bytes_left -= len;
+//
+//     // Toggle DATA0/DATA1 each packet
+//     ep->data_pid ^= 1u;
+//
+//     // Copy the user buffer to the outbound data buffer
+//     if (!ep_in(ep)) {
+//         memcpy((void *) (ep->data_buf + buf_id * 64), ep->user_buf, len);
+//         ep->user_buf += len;
+//         bcr |= USB_BUF_CTRL_FULL;
+//     }
+//
+//     // If this is the last buffer, trigger TRANS_COMPLETE
+//     if (!ep->bytes_left) {
+//         bcr |= USB_BUF_CTRL_LAST;
+//     }
+//
+//     return buf_id ? bcr << 16u : bcr;
+// }
+
 void handle_buffer(endpoint_t *ep) {
     if (!ep->active) show_endpoint(ep, "Inactive"), panic("Halted");
 
