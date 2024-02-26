@@ -302,10 +302,6 @@ void handle_buffer(endpoint_t *ep) {
 
 // if (bcr == 0x00000408) bcr = 0x00000409; // Sloppy, but fires TRANS_COMPLETE
 
-        // Debug output
-        bindump("~ecr~", ecr);
-        bindump("~bcr~", bcr);
-
         // Update ECR and BCR
         bindump("│BCR •", bcr);
         usbh_dpram->epx_ctrl     = ecr;
