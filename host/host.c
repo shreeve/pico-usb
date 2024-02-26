@@ -294,12 +294,12 @@ void handle_buffer(endpoint_t *ep) {
     // -- Prepare next buffer(s) -----------------------------------------------
 
     if (ep->bytes_left) {
-        bcr = next_buffer(ep, 0);                         bindump("•BCR1", bcr);
+        bcr = next_buffer(ep, 0);                        bindump("│BCR1•", bcr);
         if (~bcr & USB_BUF_CTRL_LAST) {
-            ecr |= EP_CTRL_DOUBLE_BUFFERED_BITS;          bindump("•ECR2", ecr);
-            bcr |= next_buffer(ep, 1) << 16;              bindump("•BCR3", bcr);
+            ecr |= EP_CTRL_DOUBLE_BUFFERED_BITS;         bindump("│ECR2•", ecr);
+            bcr |= next_buffer(ep, 1) << 16;             bindump("│BCR3•", bcr);
         } else {
-            ecr &= ~EP_CTRL_DOUBLE_BUFFERED_BITS;         bindump("•ECR4", ecr);
+            ecr &= ~EP_CTRL_DOUBLE_BUFFERED_BITS;        bindump("│ECR4•", ecr);
         }
 
 // if (bcr == 0x00000408) bcr = 0x00000409; // Sloppy, but fires TRANS_COMPLETE
