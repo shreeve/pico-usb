@@ -919,10 +919,11 @@ void isr_usbctrl() {
     // Workaround for RP2040-E4, by shifting BCR right 16 bits if needed
     if (!(ecr & EP_CTRL_DOUBLE_BUFFERED_BITS) && (bch & 1u)) bcr >>= 16;
 
-    // Extract for dev_addr and ep_addr for later use
+    // Get device address and endpoint information
     uint8_t dev_addr =  dar & USB_ADDR_ENDP_ADDRESS_BITS;
     uint8_t ep_addr  = (dar & USB_ADDR_ENDP_ENDPOINT_BITS) >>
                               USB_ADDR_ENDP_ENDPOINT_LSB;
+    endpoint_t *ep = find_endpoint(dev_addr, ep_addr);
 
     // Show system state
     printf( "\n=> New ISR #%u", guid++);
@@ -993,7 +994,6 @@ void isr_usbctrl() {
         bindump(dubs ? "│BUF/2" : "│BUF/1", bits);
 
         // Lookup the endpoint
-        endpoint_t *ep = find_endpoint(dev_addr, ep_addr);
         handle_buffer(ep); usb_hw_clear->buf_status = ~0; bits ^= 0x01; // TODO: TOTAL HACK!
 
 //         // Check the interrupt/asynchronous endpoints (IN and OUT)
@@ -1023,10 +1023,7 @@ void isr_usbctrl() {
         // 2. IN or OUT packet transferred with LAST set in BCR
         // 3. IN short packet (less than maxsize) transferred
 
-        // Lookup the endpoint
-        endpoint_t *ep = find_endpoint(dev_addr, ep_addr);
         uint16_t len = ep->bytes_done;
-
         // Panic if the endpoint is not active
         if (!ep->active) panic("EP should still be active in TRANS_COMPLETE");
 
