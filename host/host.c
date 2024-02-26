@@ -826,15 +826,7 @@ void usb_task() {
                 char *str = dev0->speed == LOW_SPEED ? "low" : "full";
                 printf("Device connected (%s speed)\n", str);
 
-                // // Queue the enumeration process
-                // queue_add_blocking(queue, &((task_t) {
-                //     .type          = TASK_CALLBACK,
-                //     .guid          = guid++,
-                //     .callback.fn   = enumerate,
-                //     .callback.arg  = NULL,
-                // })); // enumerate(NULL);
-
-                // Let's just call enumerate directly?
+                // Start enumeration
                 enumerate(NULL);
 
                 break;
