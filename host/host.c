@@ -782,7 +782,7 @@ void reset_usb_host() {
 enum {
     TASK_CONNECT,
     TASK_TRANSFER,
-    TASK_FUNCTION,
+    TASK_CALLBACK,
 };
 
 typedef struct {
@@ -804,7 +804,7 @@ typedef struct {
         struct {
             void (*fn) (void *);
             void *arg;
-        } function;
+        } callback;
     };
 } task_t;
 
@@ -816,16 +816,16 @@ const char *task_name(uint8_t type) {
     switch (type) {
         case TASK_CONNECT:  return "TASK_CONNECT";
         case TASK_TRANSFER: return "TASK_TRANSFER";
-        case TASK_FUNCTION: return "TASK_FUNCTION";
+        case TASK_CALLBACK: return "TASK_CALLBACK";
         default:            return "UNKNOWN";
     }
     panic("Unknown task queued");
 }
 
-const char *function_name(void (*fn) (void *)) {
+const char *callback_name(void (*fn) (void *)) {
     if (fn == enumerate   ) return "enumerate";
     if (fn == transfer_zlp) return "transfer_zlp";
-    panic("Unknown function queued");
+    panic("Unknown callback queued");
 }
 
 void usb_task() {
@@ -855,10 +855,10 @@ void usb_task() {
 
                 // // Queue the enumeration process
                 // queue_add_blocking(queue, &((task_t) {
-                //     .type          = TASK_FUNCTION,
+                //     .type          = TASK_CALLBACK,
                 //     .guid          = guid++,
-                //     .function.fn   = enumerate,
-                //     .function.arg  = NULL,
+                //     .callback.fn   = enumerate,
+                //     .callback.arg  = NULL,
                 // })); // enumerate(NULL);
 
                 // Let's just call enumerate directly?
@@ -884,9 +884,9 @@ void usb_task() {
 //
 //             }   break;
 
-            case TASK_FUNCTION: {
-                printf("Calling %s\n", function_name(task.function.fn));
-                task.function.fn(task.function.arg);
+            case TASK_CALLBACK: {
+                printf("Calling %s\n", callback_name(task.callback.fn));
+                task.callback.fn(task.callback.arg);
             }   break;
 
             default:
@@ -1055,10 +1055,10 @@ void isr_usbctrl() {
 
         // Queue a ZLP or advance the enumeration
         queue_add_blocking(queue, &((task_t) {
-            .type         = TASK_FUNCTION,
+            .type         = TASK_CALLBACK,
             .guid         = guid++,
-            .function.fn  = len ? transfer_zlp : enumerate,
-            .function.arg = ep,
+            .callback.fn  = len ? transfer_zlp : enumerate,
+            .callback.arg = ep,
         }));
     }
 
