@@ -926,7 +926,7 @@ void isr_usbctrl() {
     // Extract for dev_addr and ep_addr for later use
     uint8_t dev_addr =  dar & USB_ADDR_ENDP_ADDRESS_BITS;
     uint8_t ep_addr  = (dar & USB_ADDR_ENDP_ENDPOINT_BITS) >>
-                                USB_ADDR_ENDP_ENDPOINT_LSB;
+                              USB_ADDR_ENDP_ENDPOINT_LSB;
 
     // Show system state
     printf( "\n=> New ISR #%u", guid++);
