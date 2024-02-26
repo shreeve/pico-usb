@@ -429,6 +429,7 @@ enum {
     USB_SIE_CTRL_BASE = USB_SIE_CTRL_EP0_INT_STALL_BITS  // INT on EP0 STALL
                       | USB_SIE_CTRL_EP0_INT_NAK_BITS    // INT on EP0 NAK
                       | USB_SIE_CTRL_EP0_INT_1BUF_BITS   // INT every 1 EP0 buf
+                 //   | USB_SIE_CTRL_EP0_INT_2BUF_BITS   // INT every 2 EP0 bufs
                       | USB_SIE_CTRL_PULLDOWN_EN_BITS    // Ready for devices
                       | USB_SIE_CTRL_VBUS_EN_BITS        // Supply VBUS
                       | USB_SIE_CTRL_KEEP_ALIVE_EN_BITS  // Enable low speed
