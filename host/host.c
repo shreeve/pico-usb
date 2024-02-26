@@ -47,17 +47,13 @@
 
 SDK_INLINE uint8_t get_speed() {
     return (usb_hw->sie_status & USB_SIE_STATUS_SPEED_BITS) \
-                              >> USB_SIE_STATUS_SPEED_LSB;
-}
-
+                              >> USB_SIE_STATUS_SPEED_LSB; }
 SDK_INLINE bool is_host_mode() {
-    return (usb_hw->main_ctrl & USB_MAIN_CTRL_HOST_NDEVICE_BITS);
-}
+    return (usb_hw->main_ctrl  & USB_MAIN_CTRL_HOST_NDEVICE_BITS); }
 
 SDK_INLINE uint8_t line_state() {
     return (usb_hw->sie_status & USB_SIE_STATUS_LINE_STATE_BITS) \
-                              >> USB_SIE_STATUS_LINE_STATE_LSB;
-}
+                              >> USB_SIE_STATUS_LINE_STATE_LSB; }
 
 // ==[ Endpoints ]==============================================================
 
