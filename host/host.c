@@ -204,7 +204,7 @@ endpoint_t *next_ep(uint8_t dev_addr, usb_endpoint_descriptor_t *usb) {
 
 // ==[ Buffers ]================================================================
 
-// Sync current buffer by checking its half of the BCR and return its length
+// Sync current buffer by checking its BCR half and returning the buffer length
 uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
     if (buf_id) bcr >>= 16u;                     // Use the correct BCR half
     uint16_t len  = bcr & USB_BUF_CTRL_LEN_MASK; // Buffer length
@@ -232,7 +232,7 @@ uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
     return len;
 }
 
-// Prepare next buffer and return its half of the BCR
+// Prepare next buffer and return its BCR half
 uint32_t next_buffer(endpoint_t *ep, uint8_t buf_id) {
 
     // Calculate BCR
