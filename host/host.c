@@ -258,7 +258,7 @@ uint32_t next_buffer(endpoint_t *ep, uint8_t buf_id) {
         bcr |= USB_BUF_CTRL_FULL;
     }
 
-    // If this is the last buffer, trigger TRANS_COMPLETE
+    // If this is the last buffer, trigger TRANS_COMPLETE // TODO: Maybe this isn't needed?
     if (!ep->bytes_left) {
         bcr |= USB_BUF_CTRL_LAST;
     }
