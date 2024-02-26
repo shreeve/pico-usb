@@ -236,7 +236,7 @@ void handle_buffer(endpoint_t *ep) {
     ep->bytes_left -= len;
 
     // Short packet (below maxsize) means the transfer is done
-    if (len < ep->maxsize) { // TODO: This may be anything smaller than what was requested?!
+    if (len < ep->maxsize) {
         ep->bytes_left = 0;
     }
 
