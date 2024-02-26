@@ -714,7 +714,7 @@ void enumerate(void *arg) {
 
 // ==[ Resets ]=================================================================
 
-void reset_usb_host() {
+void setup_usb_host() {
     printf("USB host reset\n\n");
 
     // Reset controller
@@ -1066,7 +1066,7 @@ void isr_usbctrl() {
 int main() {
     stdio_init_all();
     printf("\033[2J\033[H\n==[ USB host example]==\n\n");
-    reset_usb_host();
+    setup_usb_host();
 
     queue_init(queue, sizeof(task_t), 64);
 
