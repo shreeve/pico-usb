@@ -150,7 +150,7 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
     usbh_dpram->epx_ctrl = ecr;
 }
 
-SDK_INLINE void setup_epx() {
+SDK_INLINE void reset_epx() {
     setup_endpoint(epx, &((usb_endpoint_descriptor_t) {
         .bLength          = sizeof(usb_endpoint_descriptor_t),
         .bDescriptorType  = USB_DT_ENDPOINT,
@@ -168,7 +168,7 @@ void reset_endpoints() {
     memclr(eps, sizeof(eps));
 
     // Allocate the endpoints
-    setup_epx();
+    reset_epx();
 }
 
 endpoint_t *find_endpoint(uint8_t dev_addr, uint8_t ep_addr) {
@@ -935,7 +935,7 @@ void isr_usbctrl() {
                 .connect.speed = speed,
             }));
         } else {
-            setup_epx(); // TODO: There's a lot more to do here
+            reset_epx(); // TODO: There's a lot more to do here
         }
     }
 
