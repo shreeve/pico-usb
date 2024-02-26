@@ -260,6 +260,48 @@ that an error has occured and the sender should not retry the transaction.
 
 ### Transfers
 
+A transfer refers to a higher-level operation that consists of one or more
+transactions. A transfer is a complete sequence of actions that achieves a
+particular communication goal between the USB host and the USB device. Different
+types of USB transfers cater to different communication needs, such as control
+transfers, bulk transfers, interrupt transfers, and isochronous transfers.
+
+Here's a summary of what each type of transfer entails:
+
+1. **Control Transfers:** These are used to configure or send commands to a USB
+   device. A control transfer starts with a setup transaction (which has a
+   specific request or command for the device), followed by zero or more data
+   transactions (to transfer requisite data), and concludes with a status
+   transaction (to acknowledge completion). This type of transfer is essential
+   for initializing and configuring devices.
+
+1. **Bulk Transfers:** These are used for large, non-time-critical data
+   transfers, such as file transfers. Bulk transfers can ensure reliable data
+   delivery but do not guarantee timing; they use available bandwidth after
+   other higher-priority transfers (like interrupt or isochronous) are
+   completed. They are typically used for devices like printers or external hard
+   drives.
+
+1. **Interrupt Transfers:** These are used for devices that need immediate
+   attention, like a mouse or keyboard. Interrupt transfers allow a device to
+   signal the host that it needs to send or receive a small amount of data
+   immediately. These transfers are periodic and reserved, ensuring timely
+   delivery but typically involve small amounts of data.
+
+1. **Isochronous Transfers:** These are used for time-sensitive data, such as
+   audio or video streams, where a constant data rate and timely delivery are
+   more critical than perfect accuracy. Isochronous transfers can send or
+   receive data in real-time but do not have error correction; lost data is not
+   retransmitted.
+
+A transfer, therefore, represents a complete communication process in USB terms,
+consisting of multiple transactions to perform a significant function or data
+exchange between the host and the device, according to the specific requirements
+of the communication type (control, bulk, interrupt, or isochronous). Each
+transfer type is optimized for different kinds of data and service requirements,
+ensuring the versatile applicability of USB for various devices and
+applications.
+
 ### Endpoints
 
 ### Devices
@@ -512,3 +554,4 @@ packet to the device to begin the enumeration process.
 * https://www.youtube.com/watch?v=wdgULBpRoXk
 * https://www.youtube.com/watch?v=N0O5Uwc3C0o
 * https://www.youtube.com/watch?v=2lPzTU-3ONI
+* https://chat.openai.com/
