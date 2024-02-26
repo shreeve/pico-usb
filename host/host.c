@@ -1023,14 +1023,16 @@ void isr_usbctrl() {
         // 2. IN or OUT packet transferred with LAST set in BCR
         // 3. IN short packet (less than maxsize) transferred
 
-        uint16_t len = ep->bytes_done;
         // Panic if the endpoint is not active
         if (!ep->active) panic("EP should still be active in TRANS_COMPLETE");
 
+        // Get the length of the transfer
+        uint16_t len = ep->bytes_done;
+
         // Debug output
         printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
-        printf( "│Trans\t│ %4u │ Device %-28u │ Task #%-4u │\n", ep->bytes_done, ep->dev_addr, guid);
-        if (ep->bytes_done) hexdump("│Data", usbh_dpram->epx_data, ep->bytes_done, 1);
+        printf( "│Trans\t│ %4u │ Device %-28u │ Task #%-4u │\n", len, ep->dev_addr, guid);
+        if (len) hexdump("│Data", usbh_dpram->epx_data, len, 1);
 
         // Clear the endpoint (since its complete)
         clear_endpoint(ep);
