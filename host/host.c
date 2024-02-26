@@ -267,33 +267,17 @@ uint32_t next_buffer(endpoint_t *ep, uint8_t buf_id) {
 void handle_buffer(endpoint_t *ep) {
     if (!ep->active) show_endpoint(ep, "Inactive"), panic("Halted");
 
-
-    // Workaround for RP2040-E4
-    uint32_t bcr = usbh_dpram->epx_buf_ctrl;      // Buffer control register
-    uint32_t bch = usb_hw->buf_cpu_should_handle; // Check for CPU handle bits
-    if (bch & 1u) bcr >>= 16;                     // Perform bitshift correction // TODO: Process all affected buffers
-
-    uint16_t len = bcr & USB_BUF_CTRL_LEN_MASK;   // Buffer length
-    bool    full = bcr & USB_BUF_CTRL_FULL;       // Is buffer marked as full?
-    bool      in = ep_in(ep);                     // IN or OUT endpoint?
-
-    // Inbound buffers must be full and outbound buffers must be empty
-    assert(in == full);
-
-    // Copy the inbound data buffer to the user buffer
-    if (in) {
-        memcpy(ep->user_buf, (void *) ep->data_buf, len);
-        ep->user_buf += len;
-    }
-
-    // Update byte counts
-    ep->bytes_done += len;
-    ep->bytes_left -= len;
-
-    // Short packet (below maxsize) means the transfer is done
-    if (len < ep->maxsize) {
-        ep->bytes_left = 0;
     // -- Sync current buffer(s) -----------------------------------------------
+
+    uint32_t ecr = usbh_dpram->epx_ctrl;              // ECR is single or double
+    uint32_t bcr = usbh_dpram->epx_buf_ctrl;          // Buffer control register
+    if (ecr & EP_CTRL_DOUBLE_BUFFERED_BITS) {         // When double buffered...
+        uint16_t len = sync_buffer(ep, 0, bcr);       // Sync first buffer
+        if (len == ep->maxsize) sync_buffer(ep, 1, bcr >> 16); // Maybe second?
+    } else {                                          // When single buffered...
+        uint32_t bch = usb_hw->buf_cpu_should_handle; // Check CPU handling bits
+        if (bch & 1u) bcr >>= 16;                     // Do RP2040-E4 workaround
+        sync_buffer(ep, 0, bcr);
     }
 
     // -- Debug output ---------------------------------------------------------
