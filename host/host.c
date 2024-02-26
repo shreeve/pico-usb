@@ -1,4 +1,4 @@
-// ============================================================================
+// =============================================================================
 // PicoUSB - A USB host and device library for the Raspberry Pi Pico/W
 //
 // Author: Steve Shreeve <steve.shreeve@gmail.com>
@@ -6,9 +6,9 @@
 //   Note: This is a work in progress. It is not yet functional.
 //  Legal: Same license as the Raspberry Pi Pico SDK
 //
-// ============================================================================
 // Thanks to Ha Thach for TinyUSB and https://github.com/hathach/tinyusb
 // Thanks to Miroslav Nemecek for his https://github.com/Panda381/PicoLibSDK
+// =============================================================================
 
 #include <stdio.h>                // For printf
 #include <string.h>               // For memcpy
@@ -23,7 +23,7 @@
 #include "usb_common.h"           // USB 2.0 definitions
 #include "helpers.h"              // Helper functions
 
-// ==[ PicoUSB ]===============================================================
+// ==[ PicoUSB ]================================================================
 
 #define MAX_HUBS      0
 #define MAX_DEVICES   2
@@ -59,7 +59,7 @@ SDK_INLINE uint8_t line_state() {
                               >> USB_SIE_STATUS_LINE_STATE_LSB;
 }
 
-// ==[ Endpoints ]=============================================================
+// ==[ Endpoints ]==============================================================
 
 typedef void (*endpoint_c)(uint8_t *buf, uint16_t len);
 
@@ -206,7 +206,7 @@ endpoint_t *next_ep(uint8_t dev_addr, usb_endpoint_descriptor_t *usb) {
     return NULL;
 }
 
-// ==[ Buffers ]===============================================================
+// ==[ Buffers ]================================================================
 
 // Sync current buffer by checking its half of the BCR and return its length
 uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
@@ -273,7 +273,6 @@ uint32_t next_buffer(endpoint_t *ep, uint8_t buf_id) {
 void handle_buffer(endpoint_t *ep) {
     if (!ep->active) show_endpoint(ep, "Inactive"), panic("Halted");
 
-    // -- Sync current buffer ---------------------------------------------------
 
     // Workaround for RP2040-E4
     uint32_t bcr = usbh_dpram->epx_buf_ctrl;      // Buffer control register
@@ -300,9 +299,10 @@ void handle_buffer(endpoint_t *ep) {
     // Short packet (below maxsize) means the transfer is done
     if (len < ep->maxsize) {
         ep->bytes_left = 0;
+    // -- Sync current buffer(s) -----------------------------------------------
     }
 
-    // -- Debug output --------------------------------------------------------
+    // -- Debug output ---------------------------------------------------------
 
     if (ep->bytes_done) {
         hexdump("│Data", usbh_dpram->epx_data, ep->bytes_done, 1);
@@ -311,10 +311,10 @@ void handle_buffer(endpoint_t *ep) {
         bindump(str, 0);
     }
 
+    // -- Prepare next buffer(s) -----------------------------------------------
+
     // Toggle DATA0/DATA1 each packet
     ep->data_pid ^= 1;
-
-    // -- Prepare next buffer ---------------------------------------------------
 
     if (ep->bytes_left) {
 
@@ -347,7 +347,7 @@ void handle_buffer(endpoint_t *ep) {
     }
 }
 
-// ==[ Devices ]===============================================================
+// ==[ Devices ]================================================================
 
 enum {
     DISCONNECTED,
@@ -415,7 +415,7 @@ void reset_devices() {
     memclr(devices, sizeof(devices));
 }
 
-// ==[ Transfers ]=============================================================
+// ==[ Transfers ]==============================================================
 
 enum {
     TRANSFER_SUCCESS, // used
@@ -588,7 +588,7 @@ void transfer_zlp(void *arg) {
     usb_hw->sie_ctrl         = scr;
 }
 
-// ==[ Enumeration ]===========================================================
+// ==[ Enumeration ]============================================================
 
 enum {
     ENUMERATION_START,
@@ -773,7 +773,7 @@ void enumerate(void *arg) {
     }
 }
 
-// ==[ Resets ]================================================================
+// ==[ Resets ]=================================================================
 
 void reset_usb_host() {
     printf("USB host reset\n\n");
@@ -811,7 +811,7 @@ void reset_usb_host() {
     bindump(" INT", usb_hw->inte);
 }
 
-// ==[ Tasks ]=================================================================
+// ==[ Tasks ]==================================================================
 
 enum {
     TASK_CONNECT,
@@ -931,7 +931,7 @@ void usb_task() {
     }
 }
 
-// ==[ Interrupts ]============================================================
+// ==[ Interrupts ]=============================================================
 
 void printf_interrupts(uint32_t ints) {
     if (ints & USB_INTS_HOST_CONN_DIS_BITS   ) printf(", device"  );
@@ -1131,7 +1131,7 @@ void isr_usbctrl() {
     printf("└───────┴──────┴─────────────────────────────────────┴────────────┘\n");
 }
 
-// ==[ Main ]==================================================================
+// ==[ Main ]===================================================================
 
 int main() {
     stdio_init_all();
