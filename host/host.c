@@ -59,7 +59,7 @@ SDK_INLINE uint8_t line_state() {
 
 typedef void (*endpoint_c)(uint8_t *buf, uint16_t len);
 
-typedef struct endpoint {
+typedef struct {
     uint8_t    dev_addr  ; // Device address // HOST ONLY
     uint8_t    ep_addr   ; // Endpoint address
     uint8_t    type      ; // Transfer type: control/bulk/interrupt/isochronous
@@ -333,7 +333,7 @@ enum {
     DEVICE_SUSPENDED,
 };
 
-typedef struct device {
+typedef struct {
     uint8_t  speed       ; // Device speed (0:disconnected, 1:full, 2:high)
     uint8_t  state       ; // Current device state
  // uint8_t  class       ; // Device class
