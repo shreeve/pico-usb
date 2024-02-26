@@ -182,8 +182,8 @@ sequence sent is `10110100` (notice the second four bits are the opposite of the
 first four, thus confirming proper transmission). Review the image of the ACK
 packet to ensure that you understand each bit in the entire packet.
 
-1. **Token Packets** are used for SETUP, IN, and OUT packets. They are always the
-first packet in a transaction, identifying the targeted endpoint, and the
+1. **Token Packets** are used for SETUP, IN, and OUT packets. They are always
+the first packet in a transaction, identifying the targeted endpoint, and the
 purpose of the transaction. The SOF packet is also defined as a Token packet,
 but has a slightly different format and purpose, which is described below.
 
