@@ -915,12 +915,18 @@ void isr_usbctrl() {
 
     // Load some registers into local variables
     uint32_t ints = usb_hw->ints;
+    uint32_t dar  = usb_hw->dev_addr_ctrl;         // Device/endpoint address
     uint32_t ecr  = usbh_dpram->epx_ctrl;          // Endpoint control register
     uint32_t bcr  = usbh_dpram->epx_buf_ctrl;      // Buffer control register
     uint32_t bch  = usb_hw->buf_cpu_should_handle; // Check for CPU handle bits
 
     // Workaround for RP2040-E4, by shifting BCR right 16 bits if needed
     if (!(ecr & EP_CTRL_DOUBLE_BUFFERED_BITS) && (bch & 1u)) bcr >>= 16;
+
+    // Extract for dev_addr and ep_addr for later use
+    uint8_t dev_addr =  dar & USB_ADDR_ENDP_ADDRESS_BITS;
+    uint8_t ep_addr  = (dar & USB_ADDR_ENDP_ENDPOINT_BITS) >>
+                                USB_ADDR_ENDP_ENDPOINT_LSB;
 
     // Show system state
     printf( "\n=> New ISR #%u", guid++);
@@ -986,20 +992,9 @@ void isr_usbctrl() {
         uint32_t mask = 1u;
 
         // See if EPX is single or double buffered
-        uint32_t ecr = usbh_dpram->epx_ctrl;
         bool dubs = (bits & mask) && (ecr & EP_CTRL_DOUBLE_BUFFERED_BITS);
         printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
         bindump(dubs ? "│BUF/2" : "│BUF/1", bits);
-
-        // NOTE: Miroslav says we should handle these in pairs of IN/OUT
-        // endpoints, since they "come in pairs". So, we would deal with
-        // EP3IN/EP3OUT at the same time and mask with 0b11, etc.
-
-        // Use the DAR to determine dev_addr and ep_addr
-        volatile uint32_t dar = usb_hw->dev_addr_ctrl;
-        uint8_t dev_addr =  dar & USB_ADDR_ENDP_ADDRESS_BITS;
-        uint8_t ep_addr  = (dar & USB_ADDR_ENDP_ENDPOINT_BITS) >>
-                                  USB_ADDR_ENDP_ENDPOINT_LSB;
 
         // Lookup the endpoint
         endpoint_t *ep = find_endpoint(dev_addr, ep_addr);
@@ -1031,12 +1026,6 @@ void isr_usbctrl() {
         // 1. SETUP packet is sent without {RECEIVE,SEND}_DATA_BITS in SCR
         // 2. IN or OUT packet is transferred with BUF_CTRL_LAST set in BCR
         // 3. An IN packet is received with a zero length status packet (ZLP)
-
-        // Use the DAR to determine dev_addr and ep_addr
-        volatile uint32_t dar = usb_hw->dev_addr_ctrl;
-        uint8_t dev_addr =  dar & USB_ADDR_ENDP_ADDRESS_BITS;
-        uint8_t ep_addr  = (dar & USB_ADDR_ENDP_ENDPOINT_BITS) >>
-                                  USB_ADDR_ENDP_ENDPOINT_LSB;
 
         // Lookup the endpoint
         endpoint_t *ep = find_endpoint(dev_addr, ep_addr);
