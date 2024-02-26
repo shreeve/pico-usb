@@ -45,16 +45,6 @@
 #define usb_hw_clear ((usb_hw_t *) hw_clear_alias_untyped(usb_hw))
 #define usb_hw_set   ((usb_hw_t *) hw_set_alias_untyped  (usb_hw))
 
-SDK_INLINE uint8_t get_speed() {
-    return (usb_hw->sie_status & USB_SIE_STATUS_SPEED_BITS) \
-                              >> USB_SIE_STATUS_SPEED_LSB; }
-SDK_INLINE bool is_host_mode() {
-    return (usb_hw->main_ctrl  & USB_MAIN_CTRL_HOST_NDEVICE_BITS); }
-
-SDK_INLINE uint8_t line_state() {
-    return (usb_hw->sie_status & USB_SIE_STATUS_LINE_STATE_BITS) \
-                              >> USB_SIE_STATUS_LINE_STATE_LSB; }
-
 // ==[ Endpoints ]==============================================================
 
 typedef void (*endpoint_c)(uint8_t *buf, uint16_t len);
@@ -177,7 +167,7 @@ endpoint_t *next_ep(uint8_t dev_addr, usb_endpoint_descriptor_t *usb) {
     return NULL;
 }
 
-SDK_INLINE void reset_epx() {
+void reset_epx() {
     setup_endpoint(epx, &((usb_endpoint_descriptor_t) {
         .bLength          = sizeof(usb_endpoint_descriptor_t),
         .bDescriptorType  = USB_DT_ENDPOINT,
@@ -914,7 +904,8 @@ void isr_usbctrl() {
         ints ^= USB_INTS_HOST_CONN_DIS_BITS;
 
         // Get the device speed
-        uint8_t speed = get_speed();
+        uint8_t speed = (usb_hw->sie_status & USB_SIE_STATUS_SPEED_BITS)
+                                           >> USB_SIE_STATUS_SPEED_LSB;
 
         // Clear the interrupt
         usb_hw_clear->sie_status = USB_SIE_STATUS_SPEED_BITS;
