@@ -911,13 +911,16 @@ void printf_interrupts(uint32_t ints) {
 
 // Interrupt handler
 void isr_usbctrl() {
-    uint32_t ints = usb_hw->ints;
     task_t task;
 
-    // Workaround for RP2040-E4
-    uint32_t bcr = usbh_dpram->epx_buf_ctrl;      // Buffer control register
-    uint32_t bch = usb_hw->buf_cpu_should_handle; // Check for CPU handle bits
-    if (bch & 1u) bcr >>= 16;                     // Perform bitshift correction // TODO: Process all affected buffers
+    // Load some registers into local variables
+    uint32_t ints = usb_hw->ints;
+    uint32_t ecr  = usbh_dpram->epx_ctrl;          // Endpoint control register
+    uint32_t bcr  = usbh_dpram->epx_buf_ctrl;      // Buffer control register
+    uint32_t bch  = usb_hw->buf_cpu_should_handle; // Check for CPU handle bits
+
+    // Workaround for RP2040-E4, by shifting BCR right 16 bits if needed
+    if (!(ecr & EP_CTRL_DOUBLE_BUFFERED_BITS) && (bch & 1u)) bcr >>= 16;
 
     // Show system state
     printf( "\n=> New ISR #%u", guid++);
@@ -930,7 +933,7 @@ void isr_usbctrl() {
     bindump("│SSR", usb_hw->sie_status);
     bindump("│SCR", usb_hw->sie_ctrl);
     bindump("│DAR", usb_hw->dev_addr_ctrl);
-    bindump("│ECR", usbh_dpram->epx_ctrl);
+    bindump("│ECR", ecr);
     bindump("│BCR", bcr);
     bindump("│BCH", bch);
 
