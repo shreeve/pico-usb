@@ -712,7 +712,7 @@ void enumerate(void *arg) {
     }
 }
 
-// ==[ Resets ]=================================================================
+// ==[ Setup USB Host ]=========================================================
 
 void setup_usb_host() {
     printf("USB host reset\n\n");
