@@ -93,14 +93,6 @@ SDK_INLINE uint8_t ep_num(endpoint_t *ep) {
     return ep->ep_addr & ~USB_DIR_IN;
 }
 
-SDK_INLINE void clear_endpoint(endpoint_t *ep) {
-    ep->active     = false;
-    ep->setup      = false;
-    ep->user_buf   = temp_buf; // TODO: Add something like a ring buffer here?
-    ep->bytes_left = 0;
-    ep->bytes_done = 0;
-}
-
 void show_endpoint(endpoint_t *ep, const char *str) {
     printf(" EP%d_%-3s│ 0x%02x │ Device %u (%s)\n",
              ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr, str);
@@ -150,25 +142,12 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
     usbh_dpram->epx_ctrl = ecr;
 }
 
-SDK_INLINE void reset_epx() {
-    setup_endpoint(epx, &((usb_endpoint_descriptor_t) {
-        .bLength          = sizeof(usb_endpoint_descriptor_t),
-        .bDescriptorType  = USB_DT_ENDPOINT,
-        .bEndpointAddress = 0,
-        .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
-        .wMaxPacketSize   = 8, // Default per USB 2.0 spec
-     // .wMaxPacketSize   = 64,
-        .bInterval        = 0,
-    }));
-}
-
-void reset_endpoints() {
-
-    // Clear out all endpoints
-    memclr(eps, sizeof(eps));
-
-    // Allocate the endpoints
-    reset_epx();
+SDK_INLINE void clear_endpoint(endpoint_t *ep) {
+    ep->active     = false;
+    ep->setup      = false;
+    ep->user_buf   = temp_buf; // TODO: Add something like a ring buffer here?
+    ep->bytes_left = 0;
+    ep->bytes_done = 0;
 }
 
 endpoint_t *find_endpoint(uint8_t dev_addr, uint8_t ep_addr) {
@@ -196,6 +175,27 @@ endpoint_t *next_ep(uint8_t dev_addr, usb_endpoint_descriptor_t *usb) {
     }
     panic("No free endpoints remaining"); // TODO: Handle this properly
     return NULL;
+}
+
+SDK_INLINE void reset_epx() {
+    setup_endpoint(epx, &((usb_endpoint_descriptor_t) {
+        .bLength          = sizeof(usb_endpoint_descriptor_t),
+        .bDescriptorType  = USB_DT_ENDPOINT,
+        .bEndpointAddress = 0,
+        .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
+        .wMaxPacketSize   = 8, // Default per USB 2.0 spec
+     // .wMaxPacketSize   = 64,
+        .bInterval        = 0,
+    }));
+}
+
+void reset_endpoints() {
+
+    // Clear out all endpoints
+    memclr(eps, sizeof(eps));
+
+    // Allocate the endpoints
+    reset_epx();
 }
 
 // ==[ Buffers ]================================================================
