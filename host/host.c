@@ -912,9 +912,9 @@ void isr_usbctrl() {
     printf( "│Frame\t│ %4u │ %-35s │%12s│\n", usb_hw->sof_rd, "Interrupt Handler", "");
     bindump("│INTR", usb_hw->intr);
     bindump("│INTS", ints);
+    bindump("│DAR", usb_hw->dev_addr_ctrl);
     bindump("│SSR", usb_hw->sie_status);
     bindump("│SCR", usb_hw->sie_ctrl);
-    bindump("│DAR", usb_hw->dev_addr_ctrl);
     bindump("│ECR", ecr);
     bindump("│BCR", bcr);
     bindump("│BCH", bch);
