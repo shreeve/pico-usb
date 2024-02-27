@@ -870,12 +870,14 @@ void isr_usbctrl() {
 
     // Load some registers into local variables
     uint32_t ints = usb_hw->ints;
-    uint32_t dar  = usb_hw->dev_addr_ctrl;         // Device/endpoint address
-    uint32_t ecr  = usbh_dpram->epx_ctrl;          // Endpoint control register
-    uint32_t bcr  = usbh_dpram->epx_buf_ctrl;      // Buffer control register
+    uint32_t dar  = usb_hw->dev_addr_ctrl;              // dev_addr/ep_num
+    uint32_t ecr  = usbh_dpram->epx_ctrl;               // Endpoint control
+    uint32_t bcr  = usbh_dpram->epx_buf_ctrl;           // Buffer control
+    bool     dub  = ecr & EP_CTRL_DOUBLE_BUFFERED_BITS; // EPX double buffered
 
-    // Workaround for RP2040-E4, by shifting BCR right 16 bits if needed
-    if (!(ecr & EP_CTRL_DOUBLE_BUFFERED_BITS) && (bch & 1u)) bcr >>= 16;
+    // Fix RP2040-E4 by shifting buffer control registers for affected buffers
+    if (!dub && (usb_hw->buf_cpu_should_handle & 1u)) bcr >>= 16; // Fix EPX
+    // TODO: Add a similar fix for all polled endpoints
 
     // Get device address and endpoint information
     uint8_t dev_addr =  dar & USB_ADDR_ENDP_ADDRESS_BITS;
@@ -947,10 +949,9 @@ void isr_usbctrl() {
         uint32_t bits = usb_hw->buf_status;
         uint32_t mask = 1u;
 
-        // See if EPX is single or double buffered
-        bool dubs = (bits & mask) && (ecr & EP_CTRL_DOUBLE_BUFFERED_BITS);
+        // Show single/double buffer status of EPX and which buffers are ready
         printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
-        bindump(dubs ? "│BUF/2" : "│BUF/1", bits);
+        bindump(dub ? "│BUF/2" : "│BUF/1", bits);
 
         // Lookup the endpoint
         handle_buffer(ep); usb_hw_clear->buf_status = ~0; bits ^= 0x01; // TODO: TOTAL HACK!
