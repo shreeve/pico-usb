@@ -201,8 +201,8 @@ uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
     // Inbound buffers must be full and outbound buffers must be empty
     assert(in == full);
 
-    // Copy the inbound data buffer to the user buffer
-    if (in) {
+    // Copy inbound data from the data buffer to the user buffer
+    if (in && len) {
         memcpy(ep->user_buf, (void *) (ep->data_buf + buf_id * 64), len);
         ep->user_buf += len;
     }
@@ -237,8 +237,8 @@ uint32_t next_buffer(endpoint_t *ep, uint8_t buf_id) {
     // Update DATA0/DATA1 pid
     ep->data_pid = pid;
 
-    // Copy the user buffer to the outbound data buffer
-    if (!in) {
+    // Copy outbound data from the user buffer to the data buffer
+    if (!in && len) {
         memcpy((void *) (ep->data_buf + buf_id * 64), ep->user_buf, len);
         ep->user_buf += len;
         bcr |= USB_BUF_CTRL_FULL;
