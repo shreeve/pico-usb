@@ -251,7 +251,7 @@ uint32_t next_buffer(endpoint_t *ep, uint8_t buf_id) {
 void next_buffers(endpoint_t *ep) {
     uint32_t ecr = usbh_dpram->epx_ctrl; // TODO: Allow ep->ecr to work?
     uint32_t bcr = next_buffer(ep, 0);
-    if (bcr & ~USB_BUF_CTRL_LAST) {
+    if (~bcr & USB_BUF_CTRL_LAST) {
         ecr |= EP_CTRL_DOUBLE_BUFFERED_BITS;
         bcr |= next_buffer(ep, 1) << 16;
     } else {
