@@ -42,18 +42,18 @@ They work in VScode when opening these two directories. There is probably
 a way to create a top-level CMakeLists.txt file so that each directory
 doesn't need one, if someone can submit a way to open the top-level
 directory and build either directory that would be great. The code
-in `host` is being put together now, based on trying to read the spec
-from the datasheet. If anyone has some minimal code for USB Host, it
-would be great to add it to build out the USB Host example.
+in `host` now can enumerate a device and supports double buffering.
+Work is being done now to add support for hubs and then a CDC class
+driver.
 
 ## TODO
 
 - [x] Initial version of [`device.c`](https://github.com/shreeve/pico-usb/blob/f6c648e3a4bfbfedd53296ae70b41596cf719e3e/device/device.c) (a simpler [`dev_lowlevel.c`](https://github.com/raspberrypi/pico-examples/tree/master/usb/device/dev_lowlevel) from `pico-examples`).
 - [x] Initial version of `host.c` that just gets something/anything from a device.
-- [ ] Second version of `host.c` that at least can fully enumerate a device.
+- [x] Second version of `host.c` that at least can fully enumerate a device.
+- [x] Add double-buffering support to `host.c`
 - [ ] Improved `device.c` with larger transfer size (more than 1 packet of 64 bytes).
 - [ ] Add double-buffering support to `device.c`
-- [ ] Add double-buffering support to `host.c`
 
 ## Disable TinyUSB
 
@@ -114,186 +114,7 @@ sudo ifconfig XHC2 up
 
 ## Host Example
 
-The current status, as of the end of January 2024, with the USB Host side:
-
-```
-==[ USB host example]==
-
-USB host reset
-┌───────┬──────────────────────────────────────────────────────────────────────┐
-│Frame  │ 18
-│IRQ    │ 00000000000000000000000000000001 0x00000001
-│SIE    │ 00000000000000000000001000000101 0x00000205
-│DEV    │ 00000000000000000000000000000000 0x00000000
-│ECR    │ 00000000000000000000000000000000 0x00000000
-│BCR    │ 00000000000000000000000000000000 0x00000000
-│ISR    │ Device connected
-└───────┴──────────────────────────────────────────────────────────────────────┘
-Device connected
-Speed: 2
-Start enumeration
-< Setup │ 00000000 │ 80 06 00 01 00 00 08 00                          │ ........
- BCR    │ 00000000000000000111000000000000 0x00007000
- SCR    │ 00100000000000001000111000001010 0x20008e0a
-┌───────┬──────────────────────────────────────────────────────────────────────┐
-│Frame  │ 109
-│IRQ    │ 00000000000000000000000000011000 0x00000018
-│SIE    │ 01010000000001000000001000000101 0x50040205
-│DEV    │ 00000000000000000000000000000000 0x00000000
-│ECR    │ 10100000000000000000000110000000 0xa0000180
-│BCR    │ 00000000000000001110000000000000 0x0000e000
-│BUF    | 00000000000000000000000000000001 0x00000001
-│> ZLP
-│ISR    │ Transfer complete
-└───────┴──────────────────────────────────────────────────────────────────────┘
-┌───────┬──────────────────────────────────────────────────────────────────────┐
-│Frame  │ 782
-│IRQ    │ 00000000000000000000000000000001 0x00000001
-│SIE    │ 01010000000000000000000000000001 0x50000001
-│DEV    │ 00000000000000000000000000000000 0x00000000
-│ECR    │ 10100000000000000000000110000000 0xa0000180
-│BCR    │ 00000000000000001110000000000000 0x0000e000
-│ISR    │ Device disconnected
-└───────┴──────────────────────────────────────────────────────────────────────┘
-┌───────┬──────────────────────────────────────────────────────────────────────┐
-│Frame  │ 800
-│IRQ    │ 00000000000000000000000000000001 0x00000001
-│SIE    │ 01010000000000000000001000000101 0x50000205
-│DEV    │ 00000000000000000000000000000000 0x00000000
-│ECR    │ 10100000000000000000000110000000 0xa0000180
-│BCR    │ 00000000000000001110000000000000 0x0000e000
-│ISR    │ Device connected
-└───────┴──────────────────────────────────────────────────────────────────────┘
-Device connected
-Speed: 2
-Start enumeration
-< Setup │ 00000000 │ 80 06 00 01 00 00 08 00                          │ ........
- BCR    │ 00000000000000000111000000000000 0x00007000
- SCR    │ 00100000000000001000111000001010 0x20008e0a
-┌───────┬──────────────────────────────────────────────────────────────────────┐
-│Frame  │ 891
-│IRQ    │ 00000000000000000000000000011000 0x00000018
-│SIE    │ 01010000000001000000001000000101 0x50040205
-│DEV    │ 00000000000000000000000000000000 0x00000000
-│ECR    │ 10100000000000000000000110000000 0xa0000180
-│BCR    │ 00000000000000001110000000000000 0x0000e000
-│BUF    | 00000000000000000000000000000001 0x00000001
-│> ZLP
-│ISR    │ Transfer complete
-└───────┴──────────────────────────────────────────────────────────────────────┘
-```
-
-## Device Example
-
-With a picodebug unit to flash the code to the device and also communicate
-with the UART, I build the code and then deploy and test it like this:
-
-```
-$ openocd -f interface/cmsis-dap.cfg -f target/rp2040.cfg -c "adapter speed 5000" -c "program build/device.elf verify reset exit"
-
-==[ USB device example]==
-
-Initialized EP0_OUT (0x00) with buffer address 0x50100100
-Initialized EP0_IN  (0x80) with buffer address 0x50100100
-Initialized EP1_OUT (0x01) with buffer address 0x50100180
-Initialized EP2_IN  (0x82) with buffer address 0x501001C0
-
-USB device reset
-
-< Reset
-< Setup | 00000000 | 00 05 03 00 00 00 00 00                          | Set address to 3
-> ZLP
-< Setup | 00000000 | 80 06 00 01 00 00 08 00                          | Get device descriptor 0
-> 0x80  | 00000000 | 12 01 00 02 00 00 00 40                          | .......@
-< Setup | 00000000 | 80 06 00 01 00 00 12 00                          | Get device descriptor 0
-> 0x80  | 00000000 | 12 01 00 02 00 00 00 40 00 00 01 00 01 00 01 02  | .......@........
-        | 00000010 | 03 01                                            | ..
-< Setup | 00000000 | 80 06 02 03 09 04 02 00                          | Get string descriptor 2
-> 0x80  | 00000000 | 0a 03                                            | ..
-< Setup | 00000000 | 80 06 02 03 09 04 0a 00                          | Get string descriptor 2
-> 0x80  | 00000000 | 0a 03 44 00 65 00 6d 00 6f 00                    | ..D.e.m.o.
-< Setup | 00000000 | 80 06 01 03 09 04 02 00                          | Get string descriptor 1
-> 0x80  | 00000000 | 10 03                                            | ..
-< Setup | 00000000 | 80 06 01 03 09 04 10 00                          | Get string descriptor 1
-> 0x80  | 00000000 | 10 03 50 00 69 00 63 00 6f 00 55 00 53 00 42 00  | ..P.i.c.o.U.S.B.
-< Setup | 00000000 | 80 06 03 03 09 04 02 00                          | Get string descriptor 3
-> 0x80  | 00000000 | 0c 03                                            | ..
-< Setup | 00000000 | 80 06 03 03 09 04 0c 00                          | Get string descriptor 3
-> 0x80  | 00000000 | 0c 03 31 00 32 00 33 00 34 00 35 00              | ..1.2.3.4.5.
-< Setup | 00000000 | 80 06 00 02 00 00 09 00                          | Get config descriptor 0
-> 0x80  | 00000000 | 09 02 20 00 01 01 04 c0 32                       | .. .....2
-< Setup | 00000000 | 80 06 00 02 00 00 20 00                          | Get config descriptor 0
-> 0x80  | 00000000 | 09 02 20 00 01 01 04 c0 32 09 04 00 00 02 ff 00  | .. .....2.......
-        | 00000010 | 00 05 07 05 01 02 40 00 00 07 05 82 02 40 00 00  | ......@......@..
-< Setup | 00000000 | 00 09 01 00 00 00 00 00                          | Set configuration to 1
-> ZLP
-< Setup | 00000000 | 80 06 05 03 09 04 02 00                          | Get string descriptor 5
-> 0x80  | 00000000 | 0e 03                                            | ..
-< Setup | 00000000 | 80 06 05 03 09 04 0e 00                          | Get string descriptor 5
-> 0x80  | 00000000 | 0e 03 53 00 69 00 6d 00 70 00 6c 00 65 00        | ..S.i.m.p.l.e.
-< Setup | 00000000 | 80 06 00 03 00 00 ff 00                          | Get string descriptor 0
-> 0x80  | 00000000 | 04 03 09 04                                      | ....
-
-USB device configured
-
-$ verify.py
-
-< Setup | 00000000 | 80 06 00 03 00 00 fe 00                          | Get string descriptor 0
-> 0x80  | 00000000 | 04 03 09 04                                      | ....
-< Setup | 00000000 | 80 06 04 03 09 04 fe 00                          | Get string descriptor 4
-> 0x80  | 00000000 | 0a 03 45 00 61 00 73 00 79 00                    | ..E.a.s.y.
-< 0x01  | 00000000 | 48 65 6c 6c 6f 2c 20 77 6f 72 6c 64 21 0a        | Hello, world!.
-> 0x82  | 00000000 | 48 65 6c 6c 6f 2c 20 77 6f 72 6c 64 21 0a        | Hello, world!.
-
-$ usbdiagnose
-
-Full Speed device @ 118 (0x02400000): .............................................   Composite device: "Demo"
-    Port Information:   0x001a
-           Not Captive
-           Attached to Root Hub
-           External Device
-           Connected
-           Enabled
-    Number Of Endpoints (includes EP0):
-        Total Endpoints for Configuration 1 (current):   3
-    Device Descriptor
-        Descriptor Version Number:   0x0200
-        Device Class:   0   (Composite)
-        Device Subclass:   0
-        Device Protocol:   0
-        Device MaxPacketSize:   64
-        Device VendorID/ProductID:   0x0000/0x0001   (unknown vendor)
-        Device Version Number:   0x0001
-        Number of Configurations:   1
-        Manufacturer String:   1 "PicoUSB"
-        Product String:   2 "Demo"
-        Serial Number String:   3 "12345"
-    Configuration Descriptor (current config): ......................   "Easy"
-        Length (and contents):   32
-            Raw Descriptor (hex)    0000: 09 02 20 00 01 01 04 C0  32 09 04 00 00 02 FF 00
-            Raw Descriptor (hex)    0010: 00 05 07 05 01 02 40 00  00 07 05 82 02 40 00 00
-            Unknown Descriptor   0020:
-        Number of Interfaces:   1
-        Configuration Value:   1
-        Attributes:   0xC0 (self-powered)
-        MaxPower:   100 mA
-        Interface #0 - Vendor-specific ..............................................   "Simple"
-            Alternate Setting   0
-            Number of Endpoints   2
-            Interface Class:   255   (Vendor-specific)
-            Interface Subclass;   0   (Vendor-specific)
-            Interface Protocol:   0
-            Endpoint 0x01 - Bulk Output
-                Address:   0x01  (OUT)
-                Attributes:   0x02  (Bulk)
-                Max Packet Size:   64
-                Polling Interval:   0 ms
-            Endpoint 0x82 - Bulk Input
-                Address:   0x82  (IN)
-                Attributes:   0x02  (Bulk)
-                Max Packet Size:   64
-                Polling Interval:   0 ms
-```
+The current status, as of the end of February 2024, showing the output from [enumeration of a Pico Debug probe](https://github.com/shreeve/pico-usb/blob/main/host-enumeration.md).
 
 ## License
 
