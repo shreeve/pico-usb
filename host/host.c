@@ -210,11 +210,10 @@ uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
     // Update byte counts
     ep->bytes_done += len;
 
-    // TODO: This looks a little weird... let's figure this out better
-    // // Short packet (below maxsize) means the transfer is done
-    // if (len < ep->maxsize) {
-    //     ep->bytes_left = 0;
-    // }
+    // Short packet (below maxsize) means the transfer is done
+    if (len < ep->maxsize) {
+        ep->bytes_left = 0;
+    }
 
     return len;
 }
