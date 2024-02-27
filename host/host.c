@@ -257,14 +257,16 @@ void next_buffers(endpoint_t *ep) {
     }
 
     // Debug output
-    printf( "╔═══════╦══════╦═════════════════════════════════════╦════════════╗\n");
-    printf( "║Buff\t│ %4u │ %-35s │%12s│\n", ep->bytes_left + ep->bytes_done, "Buffer Handler", "");
-    bindump("║DAR", usb_hw->dev_addr_ctrl); // Device address register
-    bindump("║SSR", usb_hw->sie_status);    // SIE status register
-    bindump("║SCR", usb_hw->sie_ctrl);      // SIE control register
-    bindump("║ECR", ecr);                   // EPX control register
-    bindump("║BCR", bcr);                   // EPX buffer control register
-    printf( "╚═══════╩══════╩═════════════════════════════════════╩════════════╝\n");
+    if (ep->bytes_left + ep->bytes_done) {
+        printf( "┌───────┬──────┬─────────────────────────────────────┬────────────┐\n");
+        printf( "│Buff\t│ %4u │ %-35s │%12s│\n", ep->bytes_left + ep->bytes_done, "Buffer Handler", "");
+        bindump("│DAR", usb_hw->dev_addr_ctrl); // Device address register
+        bindump("│SSR", usb_hw->sie_status);    // SIE status register
+        bindump("│SCR", usb_hw->sie_ctrl);      // SIE control register
+        bindump("│ECR", ecr);                   // EPX control register
+        bindump("│BCR", bcr);                   // EPX buffer control register
+        printf( "└───────┴──────┴─────────────────────────────────────┴────────────┘\n");
+    }
 
     // Available bits for the buffer control register
     uint32_t available = USB_BUF_CTRL_AVAIL << 16 | USB_BUF_CTRL_AVAIL;
@@ -956,9 +958,11 @@ void isr_usbctrl() {
         uint16_t len = ep->bytes_done;
 
         // Debug output
-        printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
-        printf( "│XFER\t│ %4u │ Device %-28u │ Task #%-4u │\n", len, ep->dev_addr, guid);
-        if (len) hexdump("│Data", temp_buf, len, 1);
+        if (len) {
+            printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
+            printf( "│XFER\t│ %4u │ Device %-28u │ Task #%-4u │\n", len, ep->dev_addr, guid);
+            hexdump("│Data", temp_buf, len, 1);
+        }
 
         // Clear the endpoint (since its complete)
         clear_endpoint(ep);
