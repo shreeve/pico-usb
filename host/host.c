@@ -613,7 +613,7 @@ void enumerate(void *arg) {
 
         case ENUMERATION_GET_DEVICE: {
             usb_device_descriptor_t *desc;
-            desc = (usb_device_descriptor_t *) ep->data_buf; // TODO: We should have a different buffer here...
+            desc = (usb_device_descriptor_t *) temp_buf; // TODO: We should have a different buffer here...
 
             printf("\nConnected device:\n");
             printb("  USB version:\t"        , desc->bcdUSB);
@@ -957,8 +957,8 @@ void isr_usbctrl() {
 
         // Debug output
         printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
-        printf( "│Trans\t│ %4u │ Device %-28u │ Task #%-4u │\n", len, ep->dev_addr, guid);
-        if (len) hexdump("│Data", usbh_dpram->epx_data, len, 1);
+        printf( "│XFER\t│ %4u │ Device %-28u │ Task #%-4u │\n", len, ep->dev_addr, guid);
+        if (len) hexdump("│Data", temp_buf, len, 1);
 
         // Clear the endpoint (since its complete)
         clear_endpoint(ep);
