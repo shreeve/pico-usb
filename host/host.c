@@ -407,9 +407,7 @@ void transfer(endpoint_t *ep) {
     // TODO: Come up with a way to show a SETUP, ZLP, or DATA transfers here
     if (su) {
         uint32_t *packet = (uint32_t *) usbh_dpram->setup_packet;
-        hexdump("<Setup", packet, sizeof(usb_setup_packet_t), 1);
-    } else {
-        printf("%cZLP\n", in ? '>' : '<');
+        hexdump(" SETUP", packet, sizeof(usb_setup_packet_t), 1);
     }
 
     // If there's no data phase, flip the endpoint direction
