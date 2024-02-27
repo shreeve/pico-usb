@@ -263,7 +263,7 @@ void handle_buffer(endpoint_t *ep) {
     } else {                                          // When single buffered...
         uint32_t bch = usb_hw->buf_cpu_should_handle; // Check CPU handling bits
         if (bch & 1u) bcr >>= 16;                     // Do RP2040-E4 workaround
-        sync_buffer(ep, 0, bcr);
+        sync_buffer(ep, 0, bcr);                      // And sync the one buffer
     }
 
     // -- Debug output ---------------------------------------------------------
