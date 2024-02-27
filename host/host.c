@@ -257,12 +257,12 @@ void next_buffers(endpoint_t *ep) {
 
     // Debug output
     printf( "╔═══════╦══════╦═════════════════════════════════════╦════════════╗\n");
-    printf( "|Buff\t│ %4u │ %-35s │%12s│\n", ep->bytes_left + ep->bytes_done, "Buffer Handler", "");
-    bindump("|DAR", usb_hw->dev_addr_ctrl); // Device address register
-    bindump("|SSR", usb_hw->sie_status);    // SIE status register
-    bindump("|SCR", usb_hw->sie_ctrl);      // SIE control register
-    bindump("|ECR", ecr);                   // EPX control register
-    bindump("|BCR", bcr);                   // EPX buffer control register
+    printf( "║Buff\t│ %4u │ %-35s │%12s│\n", ep->bytes_left + ep->bytes_done, "Buffer Handler", "");
+    bindump("║DAR", usb_hw->dev_addr_ctrl); // Device address register
+    bindump("║SSR", usb_hw->sie_status);    // SIE status register
+    bindump("║SCR", usb_hw->sie_ctrl);      // SIE control register
+    bindump("║ECR", ecr);                   // EPX control register
+    bindump("║BCR", bcr);                   // EPX buffer control register
     printf( "╚═══════╩══════╩═════════════════════════════════════╩════════════╝\n");
 
     // Available bits for the buffer control register
