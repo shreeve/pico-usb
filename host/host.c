@@ -258,8 +258,8 @@ void handle_buffer(endpoint_t *ep) {
     uint32_t ecr = usbh_dpram->epx_ctrl;              // ECR is single or double
     uint32_t bcr = usbh_dpram->epx_buf_ctrl;          // Buffer control register
     if (ecr & EP_CTRL_DOUBLE_BUFFERED_BITS) {         // When double buffered...
-        uint16_t len = sync_buffer(ep, 0, bcr);       // Sync first buffer
-        if (len == ep->maxsize) sync_buffer(ep, 1, bcr >> 16); // Maybe second?
+        if (sync_buffer(ep, 0, bcr) == ep->maxsize) { // If first buffer is full
+            sync_buffer(ep, 1, bcr >> 16);            // Then, sync second also
     } else {                                          // When single buffered...
         uint32_t bch = usb_hw->buf_cpu_should_handle; // Check CPU handling bits
         if (bch & 1u) bcr >>= 16;                     // Do RP2040-E4 workaround
