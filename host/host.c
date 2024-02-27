@@ -270,7 +270,7 @@ void handle_buffer(endpoint_t *ep) {
 
     if (ep->bytes_done) {
         hexdump("│Data", usbh_dpram->epx_data, ep->bytes_done, 1);
-    } else {
+    } else { // TODO: If bytes transferred were an exact multiple, this is wrong
         char *str = ep_in(ep) ? "│ZLP/I" : "│ZLP/O";
         bindump(str, 0);
     }
