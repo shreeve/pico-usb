@@ -204,6 +204,7 @@ uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
     // Copy inbound data from the data buffer to the user buffer
     if (in && len) {
         memcpy(ep->user_buf, (void *) (ep->data_buf + buf_id * 64), len);
+        hexdump(buf_id ? "│IN/2" : "│IN/1", ep->user_buf, len, 1);
         ep->user_buf += len;
     }
 
@@ -237,6 +238,7 @@ uint32_t next_buffer(endpoint_t *ep, uint8_t buf_id) {
     // Copy outbound data from the user buffer to the data buffer
     if (!in && len) {
         memcpy((void *) (ep->data_buf + buf_id * 64), ep->user_buf, len);
+        hexdump(buf_id ? "│OUT/2" : "│OUT/1", ep->user_buf, len, 1);
         ep->user_buf += len;
     }
 
@@ -300,9 +302,7 @@ void handle_buffer(endpoint_t *ep) {
 
     // -- Debug output ---------------------------------------------------------
 
-    if (ep->bytes_done) {
-        hexdump("│Data", usbh_dpram->epx_data, ep->bytes_done, 1);
-    } else { // TODO: If bytes transferred were an exact multiple, this is wrong
+    if (!ep->bytes_done) {
         char *str = ep_in(ep) ? "│ZLP/I" : "│ZLP/O";
         bindump(str, 0);
     }
@@ -859,11 +859,11 @@ void isr_usbctrl() {
     printf( "│Frame\t│ %4u │ %-35s │%12s│\n", usb_hw->sof_rd, "Interrupt Handler", "");
     bindump("│INTR", usb_hw->intr);
     bindump("│INTS", ints);
-    bindump("│DAR", usb_hw->dev_addr_ctrl);
-    bindump("│SSR", usb_hw->sie_status);
-    bindump("│SCR", usb_hw->sie_ctrl);
-    bindump("│ECR", ecr);
-    bindump("│BCR", bcr);
+    bindump("│DAR" , dar);
+    bindump("│SSR" , usb_hw->sie_status);
+    bindump("│SCR" , usb_hw->sie_ctrl);
+    bindump("│ECR" , ecr);
+    bindump("│BCR" , bcr);
 
     // Connection (attach or detach)
     if (ints &  USB_INTS_HOST_CONN_DIS_BITS) {
