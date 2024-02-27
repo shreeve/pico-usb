@@ -433,29 +433,6 @@ void transfer(endpoint_t *ep) {
         printf("%cZLP\n", in ? '>' : '<');
     }
 
-    // NOTE: When clk_sys (usually 133Mhz) and clk_usb (usually 48MHz) are not
-    // the same, the processor and the USB controller run at different speeds.
-    // To properly coordinate them, we must sometimes waste clk_sys cycles to
-    // allow time for clk_usb to catch up. Each clk_sys cycle is 133/48 times
-    // faster than a clk_usb cycle, which is 2.77 (roughly 3) times as fast.
-    // So, for each 1 clk_usb cycle, we should waste 3 clk_sys cycles.
-    //
-    // For the USB controller, the START_TRANS bit in SCR and the AVAILABLE bit
-    // in BCR need special care. These bits trigger processor actions when they
-    // are set, but they will execute too soon since the USB controller needs
-    // more time to perform the actions specified in the other bits. Thus, we
-    // need to set the USB specific bits first, delay a few cycles, and then
-    // set the bits for the processor. The datasheet shows how long to wait:
-    //
-    // For SCR, Datasheet § 4.1.2.7 (p. 390) says START_TRANS needs two clk_usb
-    // For BCR, Datasheet § 4.1.2.5.1 (p. 383) says AVAILABLE needs one clk_usb
-    //
-    // We have several values to set, so we order them as shown below. Notice
-    // that this sets SCR without START_TRANS and then, in 6 cycles, it sets it
-    // again but this time including START_TRANS. BCR is similar, but will be
-    // set again after 3 cycles. The setting of DAR and two NOP's are inserted
-    // to make everything line up correctly.
-
     // Set registers optimally
     usb_hw->sie_ctrl         = scr & ~USB_SIE_CTRL_START_TRANS_BITS;
     usbh_dpram->epx_buf_ctrl = bcr & ~USB_BUF_CTRL_AVAIL;
