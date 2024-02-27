@@ -387,7 +387,7 @@ enum {
 // TODO: Clear a stall and toggle data PID back to DATA0
 // TODO: Abort a transfer if not yet started and return true on success
 
-void transfer(endpoint_t *ep, uint8_t buf_id) {
+void transfer(endpoint_t *ep) {
     uint32_t dar, scr, bcr;
     uint8_t pid = ep->data_pid;
     bool in     = ep_in(ep);
@@ -496,7 +496,7 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *setup) {
     // Debug output
     show_endpoint(ep, "Start");
 
-    transfer(ep, 0);
+    transfer(ep);
 }
 
 void transfer_zlp(void *arg) {
@@ -514,7 +514,7 @@ void transfer_zlp(void *arg) {
     // // Debug output
     // show_endpoint(ep, "ZLP");
 
-    transfer(ep, 0);
+    transfer(ep);
 }
 
 // ==[ Enumeration ]============================================================
