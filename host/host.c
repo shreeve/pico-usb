@@ -209,7 +209,6 @@ uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
 
     // Update byte counts
     ep->bytes_done += len;
-    ep->bytes_left -= len;
 
     // TODO: This looks a little weird... let's figure this out better
     // // Short packet (below maxsize) means the transfer is done
@@ -241,6 +240,9 @@ uint32_t next_buffer(endpoint_t *ep, uint8_t buf_id) {
         memcpy((void *) (ep->data_buf + buf_id * 64), ep->user_buf, len);
         ep->user_buf += len;
     }
+
+    // Update byte counts
+    ep->bytes_left -= len;
 
     return bcr;
 }
