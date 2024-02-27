@@ -259,7 +259,7 @@ void next_buffers(endpoint_t *ep) {
     // Debug output
     if (ep->bytes_left + ep->bytes_done) {
         printf( "┌───────┬──────┬─────────────────────────────────────┬────────────┐\n");
-        printf( "│Buff\t│ %4u │ %-35s │%12s│\n", ep->bytes_left + ep->bytes_done, "Buffer Handler", "");
+        printf( "│Buff\t│ %4s │ %-35s │%12s│\n", "", "Buffer Handler", "");
         bindump("│DAR", usb_hw->dev_addr_ctrl); // Device address register
         bindump("│SSR", usb_hw->sie_status);    // SIE status register
         bindump("│SCR", usb_hw->sie_ctrl);      // SIE control register
