@@ -873,7 +873,6 @@ void isr_usbctrl() {
     uint32_t dar  = usb_hw->dev_addr_ctrl;         // Device/endpoint address
     uint32_t ecr  = usbh_dpram->epx_ctrl;          // Endpoint control register
     uint32_t bcr  = usbh_dpram->epx_buf_ctrl;      // Buffer control register
-    uint32_t bch  = usb_hw->buf_cpu_should_handle; // Check for CPU handle bits
 
     // Workaround for RP2040-E4, by shifting BCR right 16 bits if needed
     if (!(ecr & EP_CTRL_DOUBLE_BUFFERED_BITS) && (bch & 1u)) bcr >>= 16;
@@ -897,7 +896,6 @@ void isr_usbctrl() {
     bindump("│SCR", usb_hw->sie_ctrl);
     bindump("│ECR", ecr);
     bindump("│BCR", bcr);
-    bindump("│BCH", bch);
 
     // Connection (attach or detach)
     if (ints &  USB_INTS_HOST_CONN_DIS_BITS) {
