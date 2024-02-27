@@ -211,10 +211,11 @@ uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
     ep->bytes_done += len;
     ep->bytes_left -= len;
 
-    // Short packet (below maxsize) means the transfer is done
-    if (len < ep->maxsize) {
-        ep->bytes_left = 0;
-    }
+    // TODO: This looks a little weird... let's figure this out better
+    // // Short packet (below maxsize) means the transfer is done
+    // if (len < ep->maxsize) {
+    //     ep->bytes_left = 0;
+    // }
 
     return len;
 }
@@ -223,33 +224,57 @@ uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
 uint32_t next_buffer(endpoint_t *ep, uint8_t buf_id) {
     bool     in  = ep_in(ep);                         // Buffer is inbound
     bool     mas = ep->bytes_left > ep->maxsize;      // Any more packets?
-    uint8_t  pid = ep->data_pid ^ 1u;                 // Toggle DATA0/DATA1 pid
+    uint8_t  pid = ep->data_pid;                      // Set DATA0/DATA1
     uint16_t len = MIN(ep->maxsize, ep->bytes_left);  // Buffer length
-    uint32_t bcr = (mas ? 0 : USB_BUF_CTRL_LAST)      // Trigger TRANS_COMPLETE
+    uint32_t bcr = (in  ? 0 : USB_BUF_CTRL_FULL)      // IN/Recv=0, OUT/Send=1
+                 | (mas ? 0 : USB_BUF_CTRL_LAST)      // Trigger TRANS_COMPLETE
                  | (pid ?     USB_BUF_CTRL_DATA1_PID  // Use DATA1 if needed
                             : USB_BUF_CTRL_DATA0_PID) // Use DATA0 if needed
                  |            USB_BUF_CTRL_AVAIL      // Buffer available now
                  | len;                               // Length of next buffer
 
-    // Update byte counts
-    ep->bytes_left -= len;
-
-    // Update DATA0/DATA1 pid
-    ep->data_pid = pid;
+    // Toggle DATA0/DATA1 pid
+    ep->data_pid = pid ^ 1u;
 
     // Copy outbound data from the user buffer to the data buffer
     if (!in && len) {
         memcpy((void *) (ep->data_buf + buf_id * 64), ep->user_buf, len);
         ep->user_buf += len;
-        bcr |= USB_BUF_CTRL_FULL;
-    }
-
-    // If this is the last buffer, trigger TRANS_COMPLETE // TODO: Maybe this isn't needed?
-    if (!ep->bytes_left) {
-        bcr |= USB_BUF_CTRL_LAST;
     }
 
     return bcr;
+}
+
+void next_buffers(endpoint_t *ep) {
+    uint32_t ecr = usbh_dpram->epx_ctrl; // TODO: Allow ep->ecr to work?
+    uint32_t bcr = next_buffer(ep, 0);
+    if (~bcr & USB_BUF_CTRL_LAST) {
+        ecr |= EP_CTRL_DOUBLE_BUFFERED_BITS;
+        bcr |= next_buffer(ep, 1) << 16;
+    } else {
+        ecr &= ~EP_CTRL_DOUBLE_BUFFERED_BITS;
+    }
+
+    // Debug output
+    printf( "╔═══════╦══════╦═════════════════════════════════════╦════════════╗\n");
+    printf( "|Buff\t│ %4u │ %-35s │%12s│\n", ep->bytes_left + ep->bytes_done, "Buffer Handler", "");
+    bindump("|DAR", usb_hw->dev_addr_ctrl); // Device address register
+    bindump("|SSR", usb_hw->sie_status);    // SIE status register
+    bindump("|SCR", usb_hw->sie_ctrl);      // SIE control register
+    bindump("|ECR", ecr);                   // EPX control register
+    bindump("|BCR", bcr);                   // EPX buffer control register
+    printf( "╚═══════╩══════╩═════════════════════════════════════╩════════════╝\n");
+
+    // Available bits for the buffer control register
+    uint32_t available = USB_BUF_CTRL_AVAIL << 16 | USB_BUF_CTRL_AVAIL;
+
+    // Update ECR and BCR
+    usbh_dpram->epx_ctrl     = ecr;
+    usbh_dpram->epx_buf_ctrl = bcr & ~available;
+    nop();
+    nop();
+    nop(); // TODO: Remove?
+    usbh_dpram->epx_buf_ctrl = bcr;
 }
 
 void handle_buffer(endpoint_t *ep) {
@@ -260,8 +285,11 @@ void handle_buffer(endpoint_t *ep) {
     uint32_t ecr = usbh_dpram->epx_ctrl;              // ECR is single or double
     uint32_t bcr = usbh_dpram->epx_buf_ctrl;          // Buffer control register
     if (ecr & EP_CTRL_DOUBLE_BUFFERED_BITS) {         // When double buffered...
-        if (sync_buffer(ep, 0, bcr) == ep->maxsize)   // If first buffer is full
-            sync_buffer(ep, 1, bcr >> 16);            // Then, sync second also
+        sync_buffer(ep, 0, bcr);
+        // FIXME: Re-enable an INT per double buffer and try this again
+        // if (sync_buffer(ep, 0, bcr) == ep->maxsize)   // If first buffer is full
+        //     if (ep->bytes_left)                       // And, there's more data
+        //         sync_buffer(ep, 1, bcr >> 16);        // Then, sync second also
     } else {                                          // When single buffered...
         uint32_t bch = usb_hw->buf_cpu_should_handle; // Check CPU handling bits
         if (bch & 1u) bcr >>= 16;                     // Do RP2040-E4 workaround
@@ -279,26 +307,7 @@ void handle_buffer(endpoint_t *ep) {
 
     // -- Prepare next buffer(s) -----------------------------------------------
 
-    if (ep->bytes_left) {
-        bcr = next_buffer(ep, 0);                        bindump("│BCR1•", bcr);
-        if (~bcr & USB_BUF_CTRL_LAST) {
-            ecr |= EP_CTRL_DOUBLE_BUFFERED_BITS;         bindump("│ECR2•", ecr);
-            bcr |= next_buffer(ep, 1) << 16;             bindump("│BCR3•", bcr);
-        } else {
-            ecr &= ~EP_CTRL_DOUBLE_BUFFERED_BITS;        bindump("│ECR4•", ecr);
-        }
-
-// if (bcr == 0x00000408) bcr = 0x00000409; // Sloppy, but fires TRANS_COMPLETE
-
-        // Update ECR and BCR
-        bindump("│BCR •", bcr);
-        usbh_dpram->epx_ctrl     = ecr;
-        usbh_dpram->epx_buf_ctrl = bcr & ~USB_BUF_CTRL_AVAIL;
-        nop(); // TODO: I think we can remove this one
-        nop();
-        nop();
-        usbh_dpram->epx_buf_ctrl = bcr;
-    }
+    if (ep->bytes_left) next_buffers(ep);
 }
 
 // ==[ Devices ]================================================================
@@ -390,42 +399,8 @@ enum {
 // TODO: Abort a transfer if not yet started and return true on success
 
 void transfer(endpoint_t *ep) {
-    uint32_t dar, scr, bcr;
-    uint8_t pid = ep->data_pid;
-    bool in     = ep_in(ep);
-    bool mas    = ep->bytes_left > ep->maxsize; // Are there more packets?
-    bool su     = ep->setup && !ep->bytes_done; // Start of a SETUP packet
-
-    // If there's no data phase, flip the endpoint direction
-    if (!ep->bytes_left) {
-        in = !in;
-        ep->ep_addr ^= USB_DIR_IN;
-    }
-
-    // Calculate USB registers
-    dar = ep->dev_addr | ep_num(ep)                 // Device address
-                  << USB_ADDR_ENDP_ENDPOINT_LSB;    // EP number
-    scr =            USB_SIE_CTRL_BASE              // SIE_CTRL defaults
-     // | (ls  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS) // Preamble (LS on FS hub)
-        | (!su ? 0 : USB_SIE_CTRL_SEND_SETUP_BITS)  // Toggle SETUP packet
-        | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS // Receive bit means IN
-                   : USB_SIE_CTRL_SEND_DATA_BITS)   // Send bit means OUT
-        |            USB_SIE_CTRL_START_TRANS_BITS; // Start the transfer now
-    bcr = (in  ? 0 : USB_BUF_CTRL_FULL)             // IN/Recv=0, OUT/Send=1
-        | (mas ? 0 : USB_BUF_CTRL_LAST)             // Trigger TRANS_COMPLETE
-        | (pid ?     USB_BUF_CTRL_DATA1_PID         // Use DATA1 if needed
-                   : USB_BUF_CTRL_DATA0_PID)        // Use DATA0 if needed
-        |            USB_BUF_CTRL_AVAIL             // Buffer available now
-        | MIN(ep->maxsize, ep->bytes_left);         // Length of next buffer
-
-    // Debug output
-    bindump(" INTR", usb_hw->intr);
-    bindump(" INTS", usb_hw->intr);
-    bindump(" DAR" , dar);                  // Device address register
-    bindump(" SSR" , usb_hw->sie_status);   // SIE status register
-    bindump(" SCR" , scr);                  // SIE control register
-    bindump(" ECR" , usbh_dpram->epx_ctrl); // EPX control register
-    bindump(" BCR" , bcr);                  // EPX buffer control register
+    bool in = ep_in(ep);
+    bool su = ep->setup && !ep->bytes_done; // Start of a SETUP packet
 
     // TODO: Come up with a way to show a SETUP, ZLP, or DATA transfers here
     if (su) {
@@ -435,15 +410,27 @@ void transfer(endpoint_t *ep) {
         printf("%cZLP\n", in ? '>' : '<');
     }
 
-    // Set registers optimally
-    usb_hw->sie_ctrl         = scr & ~USB_SIE_CTRL_START_TRANS_BITS;
-    usbh_dpram->epx_buf_ctrl = bcr & ~USB_BUF_CTRL_AVAIL;
-    usb_hw->dev_addr_ctrl    = dar;
-    nop();
-    nop();
-    usbh_dpram->epx_buf_ctrl = bcr;
-    nop(); // TODO: Might not need this one
-    usb_hw->sie_ctrl         = scr;
+    // If there's no data phase, flip the endpoint direction
+    if (!ep->bytes_left) {
+        in = !in;
+        ep->ep_addr ^= USB_DIR_IN;
+    }
+
+    // Calculate registers
+    uint8_t  lsb = USB_ADDR_ENDP_ENDPOINT_LSB;       // LSB for the ep_num
+    uint32_t dar = ep->dev_addr | ep_num(ep) << lsb; // Has dev_addr and ep_num
+    uint32_t scr = USB_SIE_CTRL_BASE                 // SIE_CTRL defaults
+ //   | (ls  ? 0 : USB_SIE_CTRL_PREAMBLE_EN_BITS)    // Preamble (LS on FS hub)
+      | (!su ? 0 : USB_SIE_CTRL_SEND_SETUP_BITS)     // Toggle SETUP packet
+      | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS    // Receive bit means IN
+                 : USB_SIE_CTRL_SEND_DATA_BITS)      // Send bit means OUT
+      |            USB_SIE_CTRL_START_TRANS_BITS;    // Start the transfer now
+
+    // Perform the transfer
+    usb_hw->dev_addr_ctrl = dar;
+    usb_hw->sie_ctrl      = scr & ~USB_SIE_CTRL_START_TRANS_BITS;
+    next_buffers(ep); // Queue next buffers and give SCR time to settle
+    usb_hw->sie_ctrl      = scr;
 }
 
 void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *setup) {
