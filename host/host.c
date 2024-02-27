@@ -118,11 +118,13 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
     uint32_t ms     = ep->interval;
     uint32_t lsb    = EP_CTRL_HOST_INTERRUPT_INTERVAL_LSB;
     uint32_t offset = offsetof(usb_host_dpram_t, epx_data); // TODO: Make this generic, not EPX specific
-    uint32_t ecr    = EP_CTRL_ENABLE_BITS             // Enable endpoint
-                    | EP_CTRL_INTERRUPT_PER_BUFFER    // An interrupt per buffer
-                    | type << EP_CTRL_BUFFER_TYPE_LSB // Set transfer type
-                    | (ms ? ms - 1 : 0) << lsb        // Interrupt polling in ms
-                    | offset;                         // Data buffer offset
+    uint32_t ecr    = EP_CTRL_ENABLE_BITS                 // Enable endpoint
+                    | EP_CTRL_DOUBLE_BUFFERED_BITS        // Double buffering
+                    | EP_CTRL_INTERRUPT_PER_BUFFER        // INT per buffer
+                    // | EP_CTRL_INTERRUPT_PER_DOUBLE_BUFFER // INT per double
+                    | type << EP_CTRL_BUFFER_TYPE_LSB     // Set transfer type
+                    | (ms ? ms - 1 : 0) << lsb            // Polling time in ms
+                    | offset;                             // Data buffer offset
 
     // Debug output
     show_endpoint(ep, "Reset");
