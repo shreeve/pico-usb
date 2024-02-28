@@ -1,4 +1,4 @@
-# pico-usb
+# PicoUSB
 
 A very small USB library (without TinyUSB) for the rp2040.
 
