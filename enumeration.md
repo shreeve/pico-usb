@@ -1,4 +1,4 @@
-### Example of Pico USB enumeration
+### PicoUSB enumeration
 
 #### Using a Pico W as Host and a Pico Debug Probe as Device
 
