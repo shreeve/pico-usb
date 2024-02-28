@@ -114,7 +114,7 @@ sudo ifconfig XHC2 up
 
 ## Host Example
 
-The current status, as of the end of February 2024, showing the output from [enumeration of a Pico Debug probe](https://github.com/shreeve/pico-usb/blob/main/host-enumeration.md).
+The current status, as of the end of February 2024, showing the output from [enumeration of a Pico Debug probe](https://github.com/shreeve/pico-usb/blob/main/enumeration.md).
 
 ## License
 
