@@ -567,10 +567,6 @@ void enumerate(void *arg) {
         case ENUMERATION_START:
             printf("Enumeration started\n");
 
-// TODO: Remove this testing shortcut
-// get_configuration_descriptor(epx);
-// break;
-
             printf("Starting GET_MAXSIZE\n");
             get_device_descriptor(epx);
             break;
