@@ -572,8 +572,8 @@ void enumerate(void *arg) {
             break;
 
         case ENUMERATION_GET_MAXSIZE: {
-            uint8_t maxsize0 = ((usb_device_descriptor_t *) epx->data_buf)
-                ->bMaxPacketSize0;
+            uint8_t maxsize0 =
+                ((usb_device_descriptor_t *) epx->data_buf)->bMaxPacketSize0;
 
             printf("Starting SET_ADDRESS\n");
 
