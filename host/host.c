@@ -429,7 +429,7 @@ void transfer(endpoint_t *ep) {
     usb_hw->sie_ctrl      = scr;
 }
 
-void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *setup) {
+void control_transfer(endpoint_t *ep, usb_setup_packet_t *setup) {
     if ( ep_num(ep))     panic("Control transfers must use EP0");
     if (!ep->configured) panic("Endpoint not configured");
     if ( ep->active)     panic("Only one control transfer at a time");
@@ -491,7 +491,7 @@ void get_device_descriptor(endpoint_t *ep) {
     printf("Get device descriptor\n");
 
     // If we're using device 0, only ask for 8 bytes
-    start_control_transfer(ep, &((usb_setup_packet_t) {
+    control_transfer(ep, &((usb_setup_packet_t) {
         .bmRequestType = USB_DIR_IN
                        | USB_REQ_TYPE_STANDARD
                        | USB_REQ_TYPE_RECIPIENT_DEVICE,
@@ -506,7 +506,7 @@ void set_device_address(endpoint_t *ep) {
     printf("Set device address to %u\n", ep->dev_addr);
 
     // EPX is used to set a new device address
-    start_control_transfer(epx, &((usb_setup_packet_t) {
+    control_transfer(epx, &((usb_setup_packet_t) {
         .bmRequestType = USB_DIR_OUT
                        | USB_REQ_TYPE_STANDARD
                        | USB_REQ_TYPE_RECIPIENT_DEVICE,
@@ -520,7 +520,7 @@ void set_device_address(endpoint_t *ep) {
 void get_configuration_descriptor(endpoint_t *ep) {
     printf("Get configuration descriptor\n");
 
-    start_control_transfer(ep, &((usb_setup_packet_t) {
+    control_transfer(ep, &((usb_setup_packet_t) {
         .bmRequestType = USB_DIR_IN
                        | USB_REQ_TYPE_STANDARD
                        | USB_REQ_TYPE_RECIPIENT_DEVICE,
@@ -535,7 +535,7 @@ void get_configuration_descriptor(endpoint_t *ep) {
 void set_configuration(endpoint_t *ep, uint16_t cfg) {
     printf("Set configuration to %u\n", cfg);
 
-    start_control_transfer(ep, &((usb_setup_packet_t) {
+    control_transfer(ep, &((usb_setup_packet_t) {
         .bmRequestType = USB_DIR_OUT
                        | USB_REQ_TYPE_STANDARD
                        | USB_REQ_TYPE_RECIPIENT_DEVICE,
