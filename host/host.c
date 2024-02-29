@@ -107,11 +107,7 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
         .maxsize    = usb->wMaxPacketSize,
         .interval   = usb->bInterval,
         .configured = true,
-        .active     = false,
         .data_buf   = usbh_dpram->epx_data,
-        .user_buf   = temp_buf,
-        .bytes_left = 0,
-        .bytes_done = 0,
         .cb         = NULL,
     };
 
@@ -454,8 +450,6 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *setup) {
     ep->data_pid   = 1;
     ep->ep_addr    = setup->bmRequestType & USB_DIR_IN;
     ep->bytes_left = setup->wLength;
-    ep->bytes_done = 0;
-    ep->user_buf   = temp_buf;
 
     // Debug output
     show_endpoint(ep, "Start");
@@ -468,12 +462,7 @@ void transfer_zlp(void *arg) {
 
     // Transfer is now active
     ep->active     = true;
-    ep->setup      = false;
     ep->data_pid   = 1;
-    ep->ep_addr    = ep->ep_addr;
-    ep->bytes_left = 0;
-    ep->bytes_done = 0;
-    ep->user_buf   = temp_buf;
 
     // // Debug output
     // show_endpoint(ep, "ZLP");
