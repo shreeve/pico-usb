@@ -88,6 +88,14 @@ void show_endpoint(endpoint_t *ep, const char *str) {
              ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr, str);
 }
 
+SDK_INLINE void clear_endpoint(endpoint_t *ep) {
+    ep->active     = false;
+    ep->setup      = false;
+    ep->user_buf   = temp_buf; // TODO: Add something like a ring buffer here?
+    ep->bytes_left = 0;
+    ep->bytes_done = 0;
+}
+
 void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
 
     // Populate the endpoint
@@ -131,14 +139,6 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
 
     // Set the ECR
     usbh_dpram->epx_ctrl = ecr;
-}
-
-SDK_INLINE void clear_endpoint(endpoint_t *ep) {
-    ep->active     = false;
-    ep->setup      = false;
-    ep->user_buf   = temp_buf; // TODO: Add something like a ring buffer here?
-    ep->bytes_left = 0;
-    ep->bytes_done = 0;
 }
 
 endpoint_t *find_endpoint(uint8_t dev_addr, uint8_t ep_addr) {
