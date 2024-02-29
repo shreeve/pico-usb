@@ -264,7 +264,13 @@ void send_buffers(endpoint_t *ep) {
         bindump("│SCR", usb_hw->sie_ctrl);      // SIE control register
         bindump("│ECR", ecr);                   // EPX control register
         bindump("│BCR", bcr);                   // EPX buffer control register
-        printf( "└───────┴──────┴─────────────────────────────────────┴────────────┘\n");
+        if (ep->setup) {
+            uint32_t *packet = (uint32_t *) usbh_dpram->setup_packet;
+            hexdump("│SETUP", packet, sizeof(usb_setup_packet_t), 1);
+            printf( "└───────┴──────┴──────────────────────────────────────────────────┘\n");
+        } else {
+            printf( "└───────┴──────┴─────────────────────────────────────┴────────────┘\n");
+        }
     }
 
     // Available bits for the buffer control register
@@ -390,12 +396,6 @@ enum {
 void transfer(endpoint_t *ep) {
     bool in = ep_in(ep);
     bool su = ep->setup && !ep->bytes_done; // Start of a SETUP packet
-
-    // TODO: Come up with a way to show a SETUP, ZLP, or DATA transfers here
-    if (su) {
-        uint32_t *packet = (uint32_t *) usbh_dpram->setup_packet;
-        hexdump(" SETUP", packet, sizeof(usb_setup_packet_t), 1);
-    }
 
     // If there's no data phase, flip the endpoint direction
     if (!ep->bytes_long) {
