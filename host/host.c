@@ -826,7 +826,7 @@ void isr_usbctrl() {
     printf_interrupts(ints);
     printf( "\n");
     printf( "┌───────┬──────┬─────────────────────────────────────┬────────────┐\n");
-    printf( "│Frame\t│ %4u │ %-35s │%12s│\n", usb_hw->sof_rd, "Interrupt Handler", "");
+    printf( "│Frame  │ %4u │ %-35s │%12s│\n", usb_hw->sof_rd, "Interrupt Handler", "");
     bindump("│INTR", usb_hw->intr);
     bindump("│INTS", ints);
     bindump("│DAR" , dar);
