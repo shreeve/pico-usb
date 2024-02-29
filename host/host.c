@@ -155,7 +155,7 @@ endpoint_t *find_endpoint(uint8_t dev_addr, uint8_t ep_addr) {
     return NULL;
 }
 
-endpoint_t *next_ep(uint8_t dev_addr, usb_endpoint_descriptor_t *usb) {
+endpoint_t *next_endpoint(uint8_t dev_addr, usb_endpoint_descriptor_t *usb) {
     for (uint8_t i = 1; i < MAX_ENDPOINTS; i++) {
         endpoint_t *ep = &eps[i];
         if (!ep->configured) {
@@ -584,7 +584,7 @@ void enumerate(void *arg) {
             dev->state    = DEVICE_ALLOCATED;
 
             // Allocate EP0 for the new device
-            endpoint_t *ep = next_ep(new_addr, &((usb_endpoint_descriptor_t) {
+            endpoint_t *ep = next_endpoint(new_addr, &((usb_endpoint_descriptor_t) {
                 .bLength          = sizeof(usb_endpoint_descriptor_t),
                 .bDescriptorType  = USB_DT_ENDPOINT,
                 .bEndpointAddress = 0,
