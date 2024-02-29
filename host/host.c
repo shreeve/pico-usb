@@ -446,10 +446,8 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *setup) {
     // Copy the setup packet
     memcpy((void*) usbh_dpram->setup_packet, setup, sizeof(usb_setup_packet_t));
 
-    // Clear the endpoint
+    // Prepare the control transfer
     clear_endpoint(ep);
-
-    // Prepare for a transfer
     ep->active     = true;
     ep->setup      = true;
     ep->data_pid   = 1;
@@ -466,15 +464,13 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *setup) {
 void transfer_zlp(void *arg) {
     endpoint_t *ep = (endpoint_t *) arg;
 
-    // Clear the endpoint
+    // Prepare the ZLP transfer
     clear_endpoint(ep);
-
-    //Prepare for a ZLP
     ep->active   = true;
     ep->data_pid = 1;
 
-    // // Debug output
-    // show_endpoint(ep, "ZLP");
+    // Debug output
+    show_endpoint(ep, "ZLP");
 
     transfer(ep);
 }
