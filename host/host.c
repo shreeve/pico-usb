@@ -853,6 +853,11 @@ void isr_usbctrl() {
 
         // Handle connect and disconnect
         if (speed) {
+
+            // Show connection info
+            printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
+            printf( "│CONNECT│ %-4s │ %-35s │ Task #%-4u │\n", "", "New device connected", guid);
+
             queue_add_blocking(queue, &((task_t) {
                 .type          = TASK_CONNECT,
                 .guid          = guid++,
