@@ -376,11 +376,11 @@ void reset_devices() {
 // ==[ Transfers ]==============================================================
 
 enum {
-    TRANSFER_SUCCESS, // used
-    TRANSFER_FAILED,  //
-    TRANSFER_STALLED, // used
-    TRANSFER_TIMEOUT, //
-    TRANSFER_INVALID, //
+    TRANSFER_SUCCESS, // not used yet
+    TRANSFER_FAILED,  // not used yet
+    TRANSFER_STALLED, // not used yet
+    TRANSFER_TIMEOUT, // not used yet
+    TRANSFER_INVALID, // not used yet
 };
 
 enum {
