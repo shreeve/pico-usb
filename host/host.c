@@ -528,7 +528,6 @@ void get_configuration_descriptor(endpoint_t *ep) {
         .wValue        = MAKE_U16(USB_DT_CONFIG, 0),
         .wIndex        = 0,
         .wLength       = sizeof(usb_configuration_descriptor_t),
-     // .wLength       = 98,
     }));
 }
 
