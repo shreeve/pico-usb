@@ -176,7 +176,6 @@ void reset_epx() {
         .bEndpointAddress = 0,
         .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
         .wMaxPacketSize   = 8, // Default per USB 2.0 spec
-     // .wMaxPacketSize   = 64,
         .bInterval        = 0,
     }));
 }
