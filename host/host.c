@@ -737,7 +737,7 @@ void usb_task() {
 
     while (queue_try_remove(queue, &task)) {
         uint8_t type = task.type;
-        printf("\n=> Start task #%u: %s\n", task.guid, task_name(type));
+        printf("\n=> %u) New task, %s\n\n", task.guid, task_name(type));
         switch (type) {
             case TASK_CONNECT:
 
@@ -789,7 +789,7 @@ void usb_task() {
                 printf("Unknown task queued\n");
                 break;
         }
-        printf("=> Finish task #%u: %s\n", task.guid, task_name(type));
+        // printf("=> %u) Finish task: %s\n", task.guid, task_name(type));
     }
 }
 
@@ -827,9 +827,9 @@ void isr_usbctrl() {
     endpoint_t *ep = find_endpoint(dev_addr, ep_addr);
 
     // Show system state
-    printf( "\n=> New ISR #%u", guid++);
+    printf( "\n=> %u) New ISR", guid++);
     printf_interrupts(ints);
-    printf( "\n");
+    printf( "\n\n");
     printf( "┌───────┬──────┬─────────────────────────────────────┬────────────┐\n");
     printf( "│Frame  │ %4u │ %-35s │%12s│\n", usb_hw->sof_rd, "Interrupt Handler", "");
     bindump("│INTR", usb_hw->intr);
