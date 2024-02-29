@@ -471,9 +471,6 @@ void transfer_zlp(void *arg) {
     ep->active   = true;
     ep->data_pid = 1;
 
-    // Debug output
-    show_endpoint(ep, "ZLP");
-
     transfer(ep);
 }
 
