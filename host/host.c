@@ -871,7 +871,7 @@ void isr_usbctrl() {
                 .connect.speed = speed,
             }));
         } else {
-            reset_epx(); // TODO: There's a lot more to do here
+            reset_epx(); // TODO: There's more to do here
         }
     }
 
