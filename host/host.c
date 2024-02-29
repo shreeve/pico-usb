@@ -300,7 +300,7 @@ void handle_buffers(endpoint_t *ep) {
     // Available bits for the buffer control register
     uint32_t available = USB_BUF_CTRL_AVAIL << 16 | USB_BUF_CTRL_AVAIL;
 
-    // Update ECR and BCR (do BCR first so controller has time to respond)
+    // Update ECR and BCR (set BCR first so controller has time to respond)
     usbh_dpram->epx_buf_ctrl = bcr & ~available;
     usbh_dpram->epx_ctrl     = ecr;
     nop();
