@@ -93,7 +93,7 @@ SDK_INLINE void clear_endpoint(endpoint_t *ep) {
     ep->active     = false;
     ep->setup      = false;
     ep->data_pid   = 0;
-    ep->user_buf   = temp_buf; // TODO: Add something like a ring buffer here?
+    ep->user_buf   = temp_buf;
     ep->bytes_long = 0;
     ep->bytes_left = 0;
     ep->bytes_done = 0;
