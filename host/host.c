@@ -300,12 +300,6 @@ void handle_buffers(endpoint_t *ep) {
         sync_buffer(ep, 0, bcr);                      // And sync the one buffer
     }
 
-    // Debug output
-    if (!ep->bytes_long) {
-        char *str = ep_in(ep) ? "│ZLP/I" : "│ZLP/O";
-        bindump(str, 0);
-    }
-
     // Send next buffer(s)
     if (ep->bytes_left) send_buffers(ep);
 }
@@ -942,10 +936,13 @@ void isr_usbctrl() {
         uint16_t len = ep->bytes_done;
 
         // Debug output
+        printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
         if (len) {
-            printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
             printf( "│XFER\t│ %4u │ Device %-28u │ Task #%-4u │\n", len, ep->dev_addr, guid);
             hexdump("│Data", temp_buf, len, 1);
+        } else {
+            char *str = ep_in(ep) ? "IN" : "OUT";
+            printf( "│ZLP\t│ %-4s │ Device %-28u │ Task #%-4u │\n", str, ep->dev_addr, guid);
         }
 
         // Clear the endpoint (since its complete)
