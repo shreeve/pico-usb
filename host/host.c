@@ -91,6 +91,7 @@ void show_endpoint(endpoint_t *ep, const char *str) {
 SDK_INLINE void clear_endpoint(endpoint_t *ep) {
     ep->active     = false;
     ep->setup      = false;
+    ep->data_pid   = 0;
     ep->user_buf   = temp_buf; // TODO: Add something like a ring buffer here?
     ep->bytes_left = 0;
     ep->bytes_done = 0;
@@ -107,7 +108,6 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
         .interval   = usb->bInterval,
         .configured = true,
         .active     = false,
-        .data_pid   = 0,
         .data_buf   = usbh_dpram->epx_data,
         .user_buf   = temp_buf,
         .bytes_left = 0,
