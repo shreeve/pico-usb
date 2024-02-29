@@ -935,7 +935,7 @@ void isr_usbctrl() {
         // Panic if the endpoint is not active
         if (!ep->active) panic("EP should still be active in TRANS_COMPLETE");
 
-        // Get the length of the transfer
+        // Get the transfer length (actual bytes transferred)
         uint16_t len = ep->bytes_done;
 
         // Debug output
