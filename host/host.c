@@ -84,7 +84,7 @@ SDK_INLINE uint8_t ep_num(endpoint_t *ep) {
     return ep->ep_addr & ~USB_DIR_IN;
 }
 
-void show_endpoint(endpoint_t *ep, const char *str) {
+SDK_INLINE void show_endpoint(endpoint_t *ep, const char *str) {
     printf(" EP%d_%-3s│ 0x%02x │ Device %u (%s)\n",
              ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr, str);
 }
