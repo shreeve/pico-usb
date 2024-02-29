@@ -258,7 +258,7 @@ void send_buffers(endpoint_t *ep) {
     // Debug output
     if (ep->bytes_long) {
         printf( "┌───────┬──────┬─────────────────────────────────────┬────────────┐\n");
-        printf( "│Buff\t│ %4s │ %-35s │%12s│\n", "", "Buffer Handler", "");
+        printf( "│Buffers│ %4u │ %-35s │%12s│\n", usb_hw->sof_rd, "Buffer Handler", "");
         bindump("│DAR", usb_hw->dev_addr_ctrl); // Device address register
         bindump("│SSR", usb_hw->sie_status);    // SIE status register
         bindump("│SCR", usb_hw->sie_ctrl);      // SIE control register
