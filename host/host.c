@@ -247,7 +247,7 @@ uint32_t next_buffer(endpoint_t *ep, uint8_t buf_id) {
     return bcr;
 }
 
-void handle_buffer(endpoint_t *ep) {
+void handle_buffers(endpoint_t *ep) {
     if (!ep->active) show_endpoint(ep, "Inactive"), panic("Halted");
 
     // -- Sync current buffer(s) -----------------------------------------------
@@ -914,7 +914,7 @@ void isr_usbctrl() {
         bindump(dub ? "│BUF/2" : "│BUF/1", bits);
 
         // Lookup the endpoint
-        handle_buffer(ep); usb_hw_clear->buf_status = ~0; bits ^= 0x01; // TODO: TOTAL HACK!
+        handle_buffers(ep); usb_hw_clear->buf_status = ~0; bits ^= 0x01; // TODO: TOTAL HACK!
 
 //         // Check the polled endpoints (IN and OUT)
 //         for (uint8_t i = 0; i <= MAX_ENDPOINTS && bits; i++) {
@@ -922,7 +922,7 @@ void isr_usbctrl() {
 //                 mask = 1 << (i * 2 + j);
 //                 if (bits &  mask) {
 //                     bits ^= mask;
-//                     handle_buffer(&eps[i]);
+//                     handle_buffers(&eps[i]);
 //                 }
 //             }
 //         }
