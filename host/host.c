@@ -62,8 +62,9 @@ typedef struct {
     volatile               // Data buffer is volative
     uint8_t   *data_buf  ; // Data buffer in DPSRAM
     uint8_t   *user_buf  ; // User buffer in RAM or flash
-    uint16_t   bytes_left; // Bytes remaining
-    uint16_t   bytes_done; // Bytes transferred
+    uint16_t   bytes_long; // Bytes in the whole transfer
+    uint16_t   bytes_left; // Bytes left to transfer
+    uint16_t   bytes_done; // Bytes done transferring
     endpoint_c cb        ; // Callback function
 } endpoint_t;
 
@@ -93,6 +94,7 @@ SDK_INLINE void clear_endpoint(endpoint_t *ep) {
     ep->setup      = false;
     ep->data_pid   = 0;
     ep->user_buf   = temp_buf; // TODO: Add something like a ring buffer here?
+    ep->bytes_long = 0;
     ep->bytes_left = 0;
     ep->bytes_done = 0;
 }
@@ -110,6 +112,9 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
         .data_buf   = usbh_dpram->epx_data,
         .cb         = NULL,
     };
+
+    // Use the normal method to clear the endpoint
+    clear_endpoint(ep);
 
     // We're done unless this is EPX or an interrupt endpoint
     if (ep != epx && ep->type != USB_TRANSFER_TYPE_INTERRUPT) {
@@ -261,30 +266,22 @@ void handle_buffers(endpoint_t *ep) {
         sync_buffer(ep, 0, bcr);                      // And sync the one buffer
     }
 
-    // -- Debug output ---------------------------------------------------------
-
-    if (!ep->bytes_done) {
-        char *str = ep_in(ep) ? "│ZLP/I" : "│ZLP/O";
-        bindump(str, 0);
-    }
-
-    // Return if the transfer is done
-    if (!ep->bytes_left) return;
-
     // -- Prepare next buffer(s) -----------------------------------------------
 
-    ecr = usbh_dpram->epx_ctrl; // TODO: Add ep->ecr so it'll work with any endpoint
-    bcr = next_buffer(ep, 0);
+    if (ep->bytes_left) {
+        ecr = usbh_dpram->epx_ctrl; // TODO: Add ep->ecr so it'll work with any endpoint
+        bcr = next_buffer(ep, 0);
 
-    if (~bcr & USB_BUF_CTRL_LAST) {
-        ecr |= EP_CTRL_DOUBLE_BUFFERED_BITS;
-        bcr |= next_buffer(ep, 1) << 16;
-    } else {
-        ecr &= ~EP_CTRL_DOUBLE_BUFFERED_BITS;
+        if (~bcr & USB_BUF_CTRL_LAST) {
+            ecr |= EP_CTRL_DOUBLE_BUFFERED_BITS;
+            bcr |= next_buffer(ep, 1) << 16;
+        } else {
+            ecr &= ~EP_CTRL_DOUBLE_BUFFERED_BITS;
+        }
     }
 
     // Debug output
-    if (ep->bytes_left + ep->bytes_done) {
+    if (ep->bytes_long) {
         printf( "┌───────┬──────┬─────────────────────────────────────┬────────────┐\n");
         printf( "│Buff\t│ %4s │ %-35s │%12s│\n", "", "Buffer Handler", "");
         bindump("│DAR", usb_hw->dev_addr_ctrl); // Device address register
@@ -293,7 +290,13 @@ void handle_buffers(endpoint_t *ep) {
         bindump("│ECR", ecr);                   // EPX control register
         bindump("│BCR", bcr);                   // EPX buffer control register
         printf( "└───────┴──────┴─────────────────────────────────────┴────────────┘\n");
+    } else {
+        char *str = ep_in(ep) ? "│ZLP/I" : "│ZLP/O";
+        bindump(str, 0);
     }
+
+    // Return if the transfer is done
+    if (!ep->bytes_left) return;
 
     // Available bits for the buffer control register
     uint32_t available = USB_BUF_CTRL_AVAIL << 16 | USB_BUF_CTRL_AVAIL;
@@ -405,7 +408,7 @@ void transfer(endpoint_t *ep) {
     }
 
     // If there's no data phase, flip the endpoint direction
-    if (!ep->bytes_left) {
+    if (!ep->bytes_long) {
         in = !in;
         ep->ep_addr ^= USB_DIR_IN;
     }
@@ -444,11 +447,15 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *setup) {
     // Copy the setup packet
     memcpy((void*) usbh_dpram->setup_packet, setup, sizeof(usb_setup_packet_t));
 
-    // Transfer is now active
+    // Clear the endpoint
+    clear_endpoint(ep);
+
+    // Prepare for a transfer
     ep->active     = true;
     ep->setup      = true;
     ep->data_pid   = 1;
     ep->ep_addr    = setup->bmRequestType & USB_DIR_IN;
+    ep->bytes_long = setup->wLength;
     ep->bytes_left = setup->wLength;
 
     // Debug output
@@ -460,9 +467,12 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *setup) {
 void transfer_zlp(void *arg) {
     endpoint_t *ep = (endpoint_t *) arg;
 
-    // Transfer is now active
-    ep->active     = true;
-    ep->data_pid   = 1;
+    // Clear the endpoint
+    clear_endpoint(ep);
+
+    //Prepare for a ZLP
+    ep->active   = true;
+    ep->data_pid = 1;
 
     // // Debug output
     // show_endpoint(ep, "ZLP");
