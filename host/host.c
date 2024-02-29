@@ -113,11 +113,8 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
         .user_buf   = temp_buf, // TODO: Add something like a ring buffer here?
     };
 
-    // We're done unless this is EPX or an interrupt endpoint
-    if (ep != epx && ep->type != USB_TRANSFER_TYPE_INTERRUPT) {
-        show_endpoint(ep, "Reset");
-        return;
-    }
+    // EPX and interrupt endpoints need more work, others can return here
+    if (ep != epx && ep->type != USB_TRANSFER_TYPE_INTERRUPT) return;
 
     // Calculate the ECR
     uint32_t type   = ep->type;
@@ -130,10 +127,6 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
                     | type << EP_CTRL_BUFFER_TYPE_LSB     // Set transfer type
                     | (ms ? ms - 1 : 0) << lsb            // Polling time in ms
                     | offset;                             // Data buffer offset
-
-    // Debug output
-    show_endpoint(ep, "Reset");
-    bindump(" ECR", ecr);
 
     // Set the ECR
     usbh_dpram->epx_ctrl = ecr;
