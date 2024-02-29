@@ -247,40 +247,6 @@ uint32_t next_buffer(endpoint_t *ep, uint8_t buf_id) {
     return bcr;
 }
 
-void next_buffers(endpoint_t *ep) {
-    uint32_t ecr = usbh_dpram->epx_ctrl; // TODO: Allow ep->ecr to work?
-    uint32_t bcr = next_buffer(ep, 0);
-    if (~bcr & USB_BUF_CTRL_LAST) {
-        ecr |= EP_CTRL_DOUBLE_BUFFERED_BITS;
-        bcr |= next_buffer(ep, 1) << 16;
-    } else {
-        ecr &= ~EP_CTRL_DOUBLE_BUFFERED_BITS;
-    }
-
-    // Debug output
-    if (ep->bytes_left + ep->bytes_done) {
-        printf( "┌───────┬──────┬─────────────────────────────────────┬────────────┐\n");
-        printf( "│Buff\t│ %4s │ %-35s │%12s│\n", "", "Buffer Handler", "");
-        bindump("│DAR", usb_hw->dev_addr_ctrl); // Device address register
-        bindump("│SSR", usb_hw->sie_status);    // SIE status register
-        bindump("│SCR", usb_hw->sie_ctrl);      // SIE control register
-        bindump("│ECR", ecr);                   // EPX control register
-        bindump("│BCR", bcr);                   // EPX buffer control register
-        printf( "└───────┴──────┴─────────────────────────────────────┴────────────┘\n");
-    }
-
-    // Available bits for the buffer control register
-    uint32_t available = USB_BUF_CTRL_AVAIL << 16 | USB_BUF_CTRL_AVAIL;
-
-    // Update ECR and BCR
-    usbh_dpram->epx_ctrl     = ecr;
-    usbh_dpram->epx_buf_ctrl = bcr & ~available;
-    nop();
-    nop();
-    nop(); // TODO: Remove?
-    usbh_dpram->epx_buf_ctrl = bcr;
-}
-
 void handle_buffer(endpoint_t *ep) {
     if (!ep->active) show_endpoint(ep, "Inactive"), panic("Halted");
 
@@ -306,9 +272,42 @@ void handle_buffer(endpoint_t *ep) {
         bindump(str, 0);
     }
 
+    // Return if the transfer is done
+    if (!ep->bytes_left) return;
+
     // -- Prepare next buffer(s) -----------------------------------------------
 
-    if (ep->bytes_left) next_buffers(ep);
+    ecr = usbh_dpram->epx_ctrl; // TODO: Add ep->ecr so it'll work with any endpoint
+    bcr = next_buffer(ep, 0);
+
+    if (~bcr & USB_BUF_CTRL_LAST) {
+        ecr |= EP_CTRL_DOUBLE_BUFFERED_BITS;
+        bcr |= next_buffer(ep, 1) << 16;
+    } else {
+        ecr &= ~EP_CTRL_DOUBLE_BUFFERED_BITS;
+    }
+
+    // Debug output
+    if (ep->bytes_left + ep->bytes_done) {
+        printf( "┌───────┬──────┬─────────────────────────────────────┬────────────┐\n");
+        printf( "│Buff\t│ %4s │ %-35s │%12s│\n", "", "Buffer Handler", "");
+        bindump("│DAR", usb_hw->dev_addr_ctrl); // Device address register
+        bindump("│SSR", usb_hw->sie_status);    // SIE status register
+        bindump("│SCR", usb_hw->sie_ctrl);      // SIE control register
+        bindump("│ECR", ecr);                   // EPX control register
+        bindump("│BCR", bcr);                   // EPX buffer control register
+        printf( "└───────┴──────┴─────────────────────────────────────┴────────────┘\n");
+    }
+
+    // Available bits for the buffer control register
+    uint32_t available = USB_BUF_CTRL_AVAIL << 16 | USB_BUF_CTRL_AVAIL;
+
+    // Update ECR and BCR (do BCR first so controller has time to respond)
+    usbh_dpram->epx_buf_ctrl = bcr & ~available;
+    usbh_dpram->epx_ctrl     = ecr;
+    nop();
+    nop();
+    usbh_dpram->epx_buf_ctrl = bcr;
 }
 
 // ==[ Devices ]================================================================
