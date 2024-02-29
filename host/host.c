@@ -271,6 +271,8 @@ void send_buffers(endpoint_t *ep) {
             hexdump("│SETUP", packet, sizeof(usb_setup_packet_t), 1);
             printf( "└───────┴──────┴──────────────────────────────────────────────────┘\n");
         } else {
+        //     char *str = pid ? "|DATA0" : "|DATA1"; // We reversed this above
+        //     hexdump(str, (ep->data_buf + buf_id * 64), len, 1);
             printf( "└───────┴──────┴─────────────────────────────────────┴────────────┘\n");
         }
     }
