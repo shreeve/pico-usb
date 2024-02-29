@@ -258,7 +258,9 @@ void send_buffers(endpoint_t *ep) {
     // Debug output
     if (ep->bytes_long) {
         printf( "┌───────┬──────┬─────────────────────────────────────┬────────────┐\n");
-        printf( "│Buffers│ %4u │ %-35s │%12s│\n", usb_hw->sof_rd, "Buffer Handler", "");
+        printf( "│Frame  │ %4u │ %-35s │%12s│\n", usb_hw->sof_rd, "Buffer Handler", "");
+        show_endpoint(ep);
+        printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
         bindump("│DAR", usb_hw->dev_addr_ctrl); // Device address register
         bindump("│SSR", usb_hw->sie_status);    // SIE status register
         bindump("│SCR", usb_hw->sie_ctrl);      // SIE control register
@@ -266,6 +268,7 @@ void send_buffers(endpoint_t *ep) {
         bindump("│BCR", bcr);                   // EPX buffer control register
         if (ep->setup) {
             uint32_t *packet = (uint32_t *) usbh_dpram->setup_packet;
+            printf( "├───────┼──────┼─────────────────────────────────────┴────────────┤\n");
             hexdump("│SETUP", packet, sizeof(usb_setup_packet_t), 1);
             printf( "└───────┴──────┴──────────────────────────────────────────────────┘\n");
         } else {
@@ -285,7 +288,7 @@ void send_buffers(endpoint_t *ep) {
 }
 
 void handle_buffers(endpoint_t *ep) {
-    if (!ep->active) show_endpoint(ep, "Inactive"), panic("Halted");
+    if (!ep->active) show_endpoint(ep), panic("Halted");
 
     // Sync current buffer(s)
     uint32_t ecr = usbh_dpram->epx_ctrl;              // ECR is single or double
@@ -445,9 +448,6 @@ void control_transfer(endpoint_t *ep, usb_setup_packet_t *setup) {
     ep->ep_addr    = setup->bmRequestType & USB_DIR_IN;
     ep->bytes_long = setup->wLength;
     ep->bytes_left = setup->wLength;
-
-    // Debug output
-    show_endpoint(ep, "Start");
 
     transfer(ep);
 }
@@ -772,7 +772,7 @@ void usb_task() {
 //
 //                 // Debug output, unless this is a ZLP on dev0
 //                 // if (dev_addr || len) {
-//                     show_endpoint(ep, "Transfer");
+//                     show_endpoint(ep);
 //                     hexdump(" Data", usbh_dpram->epx_data, len, 1);
 //                 // }
 //
@@ -831,7 +831,9 @@ void isr_usbctrl() {
     printf_interrupts(ints);
     printf( "\n\n");
     printf( "┌───────┬──────┬─────────────────────────────────────┬────────────┐\n");
-    printf( "│Frame  │ %4u │ %-35s │%12s│\n", usb_hw->sof_rd, "Interrupt Handler", "");
+    printf( "│Frame  │ %4u │ %-35s │ ", usb_hw->sof_rd, "Interrupt Handler");
+    show_endpoint(ep);
+    printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
     bindump("│INTR", usb_hw->intr);
     bindump("│INTS", ints);
     bindump("│DAR" , dar);
@@ -936,12 +938,13 @@ void isr_usbctrl() {
         uint16_t len = ep->bytes_done;
 
         // Debug output
-        printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
         if (len) {
-            printf( "│XFER\t│ %4u │ Device %-28u │ Task #%-4u │\n", len, ep->dev_addr, guid);
+            printf( "├───────┼──────┼─────────────────────────────────────┴────────────┤\n");
+            printf( "│XFER\t│ %4u │ Device %-28u   Task #%-4u │\n", len, ep->dev_addr, guid);
             hexdump("│Data", temp_buf, len, 1);
         } else {
             char *str = ep_in(ep) ? "IN" : "OUT";
+            printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
             printf( "│ZLP\t│ %-4s │ Device %-28u │ Task #%-4u │\n", str, ep->dev_addr, guid);
         }
 
