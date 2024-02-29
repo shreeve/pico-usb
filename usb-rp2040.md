@@ -321,6 +321,7 @@ properly.
 
 A simple enumeration process looks like:
 
+* **Connect** - The device connects to the USB bus.
 * **Reset** - The host resets the USB line state.
 * **GDD/8/IN** - The host sends a `Get Device Descriptor` request and asks the
   device to send 8 bytes IN (from the device to the host) from the first 8 bytes
