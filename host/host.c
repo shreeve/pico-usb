@@ -50,6 +50,8 @@
 //                   "├─┼┤"  // ╠═╬╣ // ┣━╋┫ // ├─┼┤ // 8 9 a b
 //                   "└─┴┘"; // ╚═╩╝ // ┗━┻┛ // ╰─┴╯ // c d e f
 
+static uint8_t temp_buf[TEMP_BUF_SIZE];
+
 // ==[ Endpoints ]==============================================================
 
 typedef void (*endpoint_c)(uint8_t *buf, uint16_t len);
@@ -74,8 +76,6 @@ typedef struct {
 } endpoint_t;
 
 static endpoint_t eps[MAX_ENDPOINTS], *epx = eps;
-
-static uint8_t temp_buf[TEMP_BUF_SIZE];
 
 SDK_INLINE const char *ep_dir(endpoint_t *ep) {
     return ep->ep_addr & USB_DIR_IN ? "IN" : "OUT";
