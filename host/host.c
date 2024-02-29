@@ -90,8 +90,8 @@ SDK_INLINE uint8_t ep_num(endpoint_t *ep) {
 }
 
 SDK_INLINE void show_endpoint(endpoint_t *ep, const char *str) {
-    printf(" EP%d_%-3s│ 0x%02x │ Device %u (%s)\n",
-             ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr, str);
+    printf("│EP%d_%-3s│ 0x%02x │ Device %-3u %24s │ %12s |\n",
+             ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr, str, "");
 }
 
 SDK_INLINE void clear_endpoint(endpoint_t *ep) {
@@ -678,7 +678,7 @@ void setup_usb_host() {
     reset_devices();
     reset_endpoints();
 
-    bindump(" INT", usb_hw->inte);
+    bindump("│INT", usb_hw->inte);
 }
 
 // ==[ Tasks ]==================================================================
