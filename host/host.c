@@ -165,7 +165,7 @@ endpoint_t *next_endpoint(uint8_t dev_addr, usb_endpoint_descriptor_t *usb) {
             return ep;
         }
     }
-    panic("No free endpoints remaining"); // TODO: Handle this properly
+    panic("No free endpoints remaining");
     return NULL;
 }
 
@@ -346,7 +346,7 @@ static device_t devices[MAX_DEVICES], *dev0 = devices;
 // Get a device by its address
 SDK_INLINE device_t *get_device(uint8_t dev_addr) {
     if (dev_addr < MAX_DEVICES) return &devices[dev_addr];
-    panic("Device %u does not exist", dev_addr); // TODO: Handle this properly
+    panic("Device %u does not exist", dev_addr);
     return NULL;
 }
 
@@ -358,7 +358,7 @@ uint8_t next_dev_addr() {
             return i;
         }
     }
-    panic("No free devices remaining"); // TODO: Handle this properly
+    panic("No free devices remaining");
     return 0;
 }
 
@@ -434,14 +434,14 @@ void start_control_transfer(endpoint_t *ep, usb_setup_packet_t *setup) {
     if ( ep_num(ep))     panic("Control transfers must use EP0");
     if (!ep->configured) panic("Endpoint not configured");
     if ( ep->active)     panic("Only one control transfer at a time");
-    if ( ep->type)       panic("Control transfers require a control EP");
+    if ( ep->type)       panic("Control transfers require a control endpoint");
 
     // Validate device address and state
     uint8_t dev_addr = ep->dev_addr;
     device_t *dev = get_device(dev_addr);
     if (!dev->state || (dev_addr ? dev->state <  DEVICE_ADDRESSED
                                  : dev->state >= DEVICE_ADDRESSED)) {
-        panic("Invalid device %u", dev_addr); // TODO: Handle this properly
+        panic("Device %u has an invalid state", dev_addr);
     }
 
     // Copy the setup packet
@@ -943,7 +943,7 @@ void isr_usbctrl() {
         // 3. IN short packet (less than maxsize) transferred
 
         // Panic if the endpoint is not active
-        if (!ep->active) panic("EP should still be active in TRANS_COMPLETE");
+        if (!ep->active) panic("Endpoints must be active to be completed");
 
         // Get the transfer length (actual bytes transferred)
         uint16_t len = ep->bytes_done;
@@ -975,7 +975,7 @@ void isr_usbctrl() {
 
         printf("Receive timeout\n");
 
-        panic("Panic here for now");
+        panic("Timed out waiting for data");
     }
 
     // Data error (IN packet from device has wrong data PID)
@@ -997,7 +997,7 @@ void isr_usbctrl() {
     }
 
     // Were any interrupts missed?
-    if (ints) panic("Unhandled IRQ 0x%04x", ints);
+    if (ints) panic("Unhandled IRQ bitmask 0x%04x", ints);
 
     // TODO: I see a lot of NAK's being set in SSR... this will clear it, but can we prevent it or deal with it better?
     // usb_hw_clear->sie_status = 1 << 28u; // Clear the NAK??? // ALERT: Get rid of this!!!
