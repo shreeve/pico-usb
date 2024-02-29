@@ -101,7 +101,7 @@ SDK_INLINE void clear_endpoint(endpoint_t *ep) {
 
 void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
 
-    // Populate the endpoint
+    // Populate the endpoint (clears all endpoint variables not set here)
     *ep = (endpoint_t) {
         .dev_addr   = ep->dev_addr,
         .ep_addr    = usb->bEndpointAddress,
@@ -110,11 +110,8 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
         .interval   = usb->bInterval,
         .configured = true,
         .data_buf   = usbh_dpram->epx_data,
-        .cb         = NULL,
+        .user_buf   = temp_buf, // TODO: Add something like a ring buffer here?
     };
-
-    // Use the normal method to clear the endpoint
-    clear_endpoint(ep);
 
     // We're done unless this is EPX or an interrupt endpoint
     if (ep != epx && ep->type != USB_TRANSFER_TYPE_INTERRUPT) {
