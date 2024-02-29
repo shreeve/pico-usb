@@ -89,9 +89,8 @@ SDK_INLINE uint8_t ep_num(endpoint_t *ep) {
     return ep->ep_addr & ~USB_DIR_IN;
 }
 
-SDK_INLINE void show_endpoint(endpoint_t *ep, const char *str) {
-    printf("│EP%d_%-3s│ 0x%02x │ Device %-3u %24s │ %12s |\n",
-             ep_num(ep), ep_dir(ep), ep->ep_addr, ep->dev_addr, str, "");
+SDK_INLINE void show_endpoint(endpoint_t *ep) {
+    printf(" │ %-3uEP%-2d%3s │\n", ep->dev_addr, ep_num(ep), ep_dir(ep));
 }
 
 SDK_INLINE void clear_endpoint(endpoint_t *ep) {
@@ -258,7 +257,7 @@ void send_buffers(endpoint_t *ep) {
     // Debug output
     if (ep->bytes_long) {
         printf( "┌───────┬──────┬─────────────────────────────────────┬────────────┐\n");
-        printf( "│Frame  │ %4u │ %-35s │%12s│\n", usb_hw->sof_rd, "Buffer Handler", "");
+        printf( "│Frame  │ %4u │ %-35s", usb_hw->sof_rd, "Buffer Handler");
         show_endpoint(ep);
         printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
         bindump("│DAR", usb_hw->dev_addr_ctrl); // Device address register
@@ -831,7 +830,7 @@ void isr_usbctrl() {
     printf_interrupts(ints);
     printf( "\n\n");
     printf( "┌───────┬──────┬─────────────────────────────────────┬────────────┐\n");
-    printf( "│Frame  │ %4u │ %-35s │ ", usb_hw->sof_rd, "Interrupt Handler");
+    printf( "│Frame  │ %4u │ %-35s", usb_hw->sof_rd, "Interrupt Handler");
     show_endpoint(ep);
     printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
     bindump("│INTR", usb_hw->intr);
