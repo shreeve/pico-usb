@@ -321,7 +321,6 @@ enum {
     DEVICE_ALLOCATED,
     DEVICE_CONNECTED,
     DEVICE_ADDRESSED,
-    DEVICE_CONFIGURED,
     DEVICE_ACTIVE,
     DEVICE_SUSPENDED,
 };
@@ -635,7 +634,7 @@ void enumerate(void *arg) {
 
         case ENUMERATION_SET_CONFIG:
             device_t *dev = get_device(ep->dev_addr);
-            dev->state = DEVICE_CONFIGURED;
+            dev->state = DEVICE_ACTIVE;
 
             printf("Enumeration completed\n");
             break;
