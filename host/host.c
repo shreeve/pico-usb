@@ -561,7 +561,6 @@ void enumerate(void *arg) {
             new_addr      = next_dev_addr();
             device_t *dev = get_device(new_addr);
             dev->speed    = dev0->speed;
-            dev->state    = DEVICE_ALLOCATED;
 
             // Allocate EP0 for the new device
             endpoint_t *ep = next_endpoint(new_addr, &((usb_endpoint_descriptor_t) {
