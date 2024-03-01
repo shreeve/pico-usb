@@ -241,7 +241,7 @@ uint32_t calc_buffer(endpoint_t *ep, uint8_t buf_id) {
     return bcr;
 }
 
-// Send next buffer(s) immediately for active transfers, new ones still need SIE
+// Send buffer(s) immediately for active transfers, new ones still need SIE help
 void send_buffers(endpoint_t *ep) {
     uint32_t ecr = usbh_dpram->epx_ctrl; // TODO: Add ep->ecr so any EP works
     uint32_t bcr = calc_buffer(ep, 0);
