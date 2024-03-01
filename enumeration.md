@@ -6,14 +6,16 @@
 <img width="675" alt="pico-usb" src="https://github.com/shreeve/pico-usb/assets/142875/7daaf85d-302d-46e8-9360-e97e20c2a100">
 </kbd>
 
-#### Example console output (February 28, 2024)
+#### Example console output (February 29, 2024)
 
 ```
 ==[ USB host example]==
 
 USB host reset
 
+┌───────┬──────┬─────────────────────────────────────┬────────────┐
 │INT    │      │ 00000000 00001111 11111111 11111011 │ 0x000ffffb │
+└───────┴──────┴─────────────────────────────────────┴────────────┘
 
 => 1) New ISR, device
 
