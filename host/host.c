@@ -462,6 +462,48 @@ void transfer_zlp(void *arg) {
     transfer(ep);
 }
 
+// ==[ Descriptors ]============================================================
+
+void show_device_descriptor(void *ptr) {
+    usb_device_descriptor_t *d = (usb_device_descriptor_t *) ptr;
+
+    printf("\nConnected device:\n");
+    printb("  USB version:\t"        , d->bcdUSB);
+    printf("  Device class:\t%u\n"   , d->bDeviceClass);
+    printf("    Subclass:\t%u\n"     , d->bDeviceSubClass);
+    printf("    Protocol:\t%u\n"     , d->bDeviceProtocol);
+    printf("  Packet size:\t%u\n"    , d->bMaxPacketSize0);
+    printf("  Vendor ID:\t0x%04x\n"  , d->idVendor);
+    printf("  Product ID:\t0x%04x\n" , d->idProduct);
+    printb("  Revision:\t"           , d->bcdDevice);
+    printf("  Manufacturer:\t[#%u]\n", d->iManufacturer);
+    printf("  Product:\t[#%u]\n"     , d->iProduct);
+    printf("  Serial:\t[#%u]\n"      , d->iSerialNumber);
+    printf("\n");
+}
+
+void show_configuration_descriptor(void *ptr) {
+    usb_configuration_descriptor_t *d = (usb_configuration_descriptor_t *) ptr;
+
+    printf("\nConfiguration descriptor:\n");
+    printf("  Total length:\t%u\n"  , d->wTotalLength);
+    printf("  Interfaces:\t%u\n"    , d->bNumInterfaces);
+    printf("  Config Value:\t%u\n"  , d->bConfigurationValue);
+    printf("  Config Name:\t[#%u]\n", d->iConfiguration);
+    printf("  Attributes:\t");
+    {
+        char *sp = d->bmAttributes & 0x40 ? "Self-powered"  : NULL;
+        char *rw = d->bmAttributes & 0x20 ? "Remote wakeup" : NULL;
+
+        if (sp && rw) printf("%s, %s\n", sp, rw);
+        else if  (sp) printf("%s\n", sp);
+        else if  (rw) printf("%s\n", rw);
+        else          printf("None\n");
+    }
+    printf("  Max power:\t%umA\n"   , d->bMaxPower * 2);
+    printf("\n");
+}
+
 // ==[ Enumeration ]============================================================
 
 enum {
@@ -552,7 +594,7 @@ void enumerate(void *arg) {
 
         case ENUMERATION_GET_MAXSIZE: {
             uint8_t maxsize0 =
-                ((usb_device_descriptor_t *) epx->data_buf)->bMaxPacketSize0;
+                ((usb_device_descriptor_t *) epx->user_buf)->bMaxPacketSize0;
 
             printf("Starting SET_ADDRESS\n");
 
@@ -585,48 +627,14 @@ void enumerate(void *arg) {
         }   break;
 
         case ENUMERATION_GET_DEVICE: {
-            usb_device_descriptor_t *desc;
-            desc = (usb_device_descriptor_t *) temp_buf; // TODO: We should have a different buffer here...
-
-            printf("\nConnected device:\n");
-            printb("  USB version:\t"        , desc->bcdUSB);
-            printf("  Device class:\t%u\n"   , desc->bDeviceClass);
-            printf("    Subclass:\t%u\n"     , desc->bDeviceSubClass);
-            printf("    Protocol:\t%u\n"     , desc->bDeviceProtocol);
-            printf("  Packet size:\t%u\n"    , desc->bMaxPacketSize0);
-            printf("  Vendor ID:\t0x%04x\n"  , desc->idVendor);
-            printf("  Product ID:\t0x%04x\n" , desc->idProduct);
-            printb("  Revision:\t"           , desc->bcdDevice);
-            printf("  Manufacturer:\t[#%u]\n", desc->iManufacturer);
-            printf("  Product:\t[#%u]\n"     , desc->iProduct);
-            printf("  Serial:\t[#%u]\n"      , desc->iSerialNumber);
-            printf("\n");
+            show_device_descriptor(ep->user_buf);
 
             printf("Starting GET_CONFIG\n");
             get_configuration_descriptor(ep);
         }   break;
 
         case ENUMERATION_GET_CONFIG: {
-            usb_configuration_descriptor_t *desc;
-            desc = (usb_configuration_descriptor_t *) ep->data_buf; // TODO: We should have a different buffer here...
-
-            printf("\nConfiguration descriptor:\n");
-            printf("  Total length:\t%u\n"  , desc->wTotalLength);
-            printf("  Interfaces:\t%u\n"    , desc->bNumInterfaces);
-            printf("  Config Value:\t%u\n"  , desc->bConfigurationValue);
-            printf("  Config Name:\t[#%u]\n", desc->iConfiguration);
-            printf("  Attributes:\t");
-            {
-                char *sp = desc->bmAttributes & 0x40 ? "Self-powered"  : NULL;
-                char *rw = desc->bmAttributes & 0x20 ? "Remote wakeup" : NULL;
-
-                if (sp && rw) printf("%s, %s\n", sp, rw);
-                else if  (sp) printf("%s\n", sp);
-                else if  (rw) printf("%s\n", rw);
-                else          printf("None\n");
-            }
-            printf("  Max power:\t%umA\n"   , desc->bMaxPower * 2);
-            printf("\n");
+            show_configuration_descriptor(ep->user_buf);
 
             printf("Starting SET_CONFIG\n");
             set_configuration(ep, 1);
