@@ -504,6 +504,18 @@ void show_configuration_descriptor(void *ptr) {
     printf("\n");
 }
 
+void get_descriptor(endpoint_t *ep, uint8_t type, uint8_t len) {
+    control_transfer(ep, &((usb_setup_packet_t) {
+        .bmRequestType = USB_DIR_IN
+                       | USB_REQ_TYPE_STANDARD
+                       | USB_REQ_TYPE_RECIPIENT_DEVICE,
+        .bRequest      = USB_REQUEST_GET_DESCRIPTOR,
+        .wValue        = MAKE_U16(type, 0),
+        .wIndex        = 0,
+        .wLength       = len,
+    }));
+}
+
 // ==[ Enumeration ]============================================================
 
 enum {
