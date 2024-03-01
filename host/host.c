@@ -530,17 +530,8 @@ enum {
 
 void get_device_descriptor(endpoint_t *ep) {
     printf("Get device descriptor\n");
-
-    // If we're using device 0, only ask for 8 bytes
-    control_transfer(ep, &((usb_setup_packet_t) {
-        .bmRequestType = USB_DIR_IN
-                       | USB_REQ_TYPE_STANDARD
-                       | USB_REQ_TYPE_RECIPIENT_DEVICE,
-        .bRequest      = USB_REQUEST_GET_DESCRIPTOR,
-        .wValue        = MAKE_U16(USB_DT_DEVICE, 0),
-        .wIndex        = 0,
-        .wLength       = ep->dev_addr ? sizeof(usb_device_descriptor_t) : 8,
-    }));
+    uint8_t len = sizeof(usb_device_descriptor_t);
+    get_descriptor(ep, USB_DT_DEVICE, ep->dev_addr ? len : 8);
 }
 
 void set_device_address(endpoint_t *ep) {
@@ -560,16 +551,7 @@ void set_device_address(endpoint_t *ep) {
 
 void get_configuration_descriptor(endpoint_t *ep) {
     printf("Get configuration descriptor\n");
-
-    control_transfer(ep, &((usb_setup_packet_t) {
-        .bmRequestType = USB_DIR_IN
-                       | USB_REQ_TYPE_STANDARD
-                       | USB_REQ_TYPE_RECIPIENT_DEVICE,
-        .bRequest      = USB_REQUEST_GET_DESCRIPTOR,
-        .wValue        = MAKE_U16(USB_DT_CONFIG, 0),
-        .wIndex        = 0,
-        .wLength       = sizeof(usb_configuration_descriptor_t),
-    }));
+    get_descriptor(ep, USB_DT_CONFIG, sizeof(usb_configuration_descriptor_t));
 }
 
 void set_configuration(endpoint_t *ep, uint16_t cfg) {
