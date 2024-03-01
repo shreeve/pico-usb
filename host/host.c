@@ -295,7 +295,6 @@ void handle_buffers(endpoint_t *ep) {
     uint32_t ecr = usbh_dpram->epx_ctrl;              // ECR is single or double
     uint32_t bcr = usbh_dpram->epx_buf_ctrl;          // Buffer control register
     if (ecr & EP_CTRL_DOUBLE_BUFFERED_BITS) {         // When double buffered...
-     // sync_buffer(ep, 0, bcr); // TODO: Remove, this is for the 1 INT per buff
         if (sync_buffer(ep, 0, bcr) == ep->maxsize)   // If first buffer is full
             if (ep->bytes_left)                       // And, there's more data
                 sync_buffer(ep, 1, bcr >> 16);        // Then, sync second also
