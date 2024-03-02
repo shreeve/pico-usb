@@ -333,7 +333,7 @@ typedef struct {
  // uint8_t  protocol    ; // Device protocol
  // uint16_t vid         ; // Vendor Id  (0x0403: FTDI)
  // uint16_t pid         ; // Product Id (0xcd18: Abaxis Piccolo Xpress)
- // uint16_t revision    ; // Revision number
+ // uint16_t version     ; // Version number
  // uint8_t  manufacturer; // String index of manufacturer
  // uint8_t  product     ; // String index of product
  // uint8_t  serial      ; // String index of serial number
@@ -500,7 +500,7 @@ void show_device_descriptor(void *ptr) {
     printf("  Packet Size:  %u\n"    , d->bMaxPacketSize0);
     printf("  Vendor ID:    0x%04x\n", d->idVendor);
     printf("  Product ID:   0x%04x\n", d->idProduct);
-    printb("  Revision:     "        , d->bcdDevice);
+    printb("  Version:      "        , d->bcdDevice);
     printf("  Manufacturer: [#%u]\n" , d->iManufacturer);
     printf("  Product:      [#%u]\n" , d->iProduct);
     printf("  Serial:       [#%u]\n" , d->iSerialNumber);
