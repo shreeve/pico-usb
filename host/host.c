@@ -464,6 +464,30 @@ void transfer_zlp(void *arg) {
 
 // ==[ Descriptors ]============================================================
 
+SDK_INLINE void get_descriptor(endpoint_t *ep, uint8_t type, uint8_t len) {
+    control_transfer(ep, &((usb_setup_packet_t) {
+        .bmRequestType = USB_DIR_IN
+                       | USB_REQ_TYPE_STANDARD
+                       | USB_REQ_TYPE_RECIPIENT_DEVICE,
+        .bRequest      = USB_REQUEST_GET_DESCRIPTOR,
+        .wValue        = MAKE_U16(type, 0),
+        .wIndex        = 0,
+        .wLength       = len,
+    }));
+}
+
+void get_string_descriptor(endpoint_t *ep, uint8_t index) {
+    control_transfer(ep, &((usb_setup_packet_t) {
+        .bmRequestType = USB_DIR_IN
+                       | USB_REQ_TYPE_STANDARD
+                       | USB_REQ_TYPE_RECIPIENT_DEVICE,
+        .bRequest      = USB_REQUEST_GET_DESCRIPTOR,
+        .wValue        = MAKE_U16(USB_DT_STRING, index),
+        .wIndex        = 0,
+        .wLength       = MAX_TEMP,
+    }));
+}
+
 void show_device_descriptor(void *ptr) {
     usb_device_descriptor_t *d = (usb_device_descriptor_t *) ptr;
 
@@ -502,18 +526,6 @@ void show_configuration_descriptor(void *ptr) {
     }
     printf("  Max power:\t%umA\n"   , d->bMaxPower * 2);
     printf("\n");
-}
-
-void get_descriptor(endpoint_t *ep, uint8_t type, uint8_t len) {
-    control_transfer(ep, &((usb_setup_packet_t) {
-        .bmRequestType = USB_DIR_IN
-                       | USB_REQ_TYPE_STANDARD
-                       | USB_REQ_TYPE_RECIPIENT_DEVICE,
-        .bRequest      = USB_REQUEST_GET_DESCRIPTOR,
-        .wValue        = MAKE_U16(type, 0),
-        .wIndex        = 0,
-        .wLength       = len,
-    }));
 }
 
 // ==[ Enumeration ]============================================================
