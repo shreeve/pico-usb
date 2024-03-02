@@ -743,7 +743,7 @@ typedef struct {
             uint8_t  ep_addr;
             uint16_t len;
             uint8_t  status;
-        } transfer;
+        } payload;
 
         struct {
             void (*fn) (void *);
@@ -759,8 +759,8 @@ static queue_t *queue = &((queue_t) { 0 });
 const char *task_name(uint8_t type) {
     switch (type) {
         case TASK_CONNECT:  return "TASK_CONNECT";
-        case TASK_TRANSFER: return "TASK_TRANSFER";
         case TASK_CALLBACK: return "TASK_CALLBACK";
+        case TASK_PAYLOAD:  return "TASK_PAYLOAD";
         default:            return "UNKNOWN";
     }
     panic("Unknown task queued");
@@ -802,10 +802,10 @@ void usb_task() {
 
                 break;
 
-//             case TASK_TRANSFER: {
-//                 uint8_t dev_addr = task.transfer.dev_addr;
-//                 uint8_t ep_addr  = task.transfer.ep_addr;
-//                 uint16_t len     = task.transfer.len;
+//             case TASK_PAYLOAD: {
+//                 uint8_t dev_addr = task.payload.dev_addr;
+//                 uint8_t ep_addr  = task.payload.ep_addr;
+//                 uint16_t len     = task.payload.len;
 //
 //                 // Lookup endpoint
 //                 endpoint_t *ep = find_endpoint(dev_addr, ep_addr);
@@ -920,12 +920,12 @@ void isr_usbctrl() {
 
 //         // Queue the stalled transfer
 //         queue_add_blocking(queue, &((task_t) {
-//             .type              = TASK_TRANSFER,
+//             .type              = TASK_PAYLOAD,
 //             .guid              = guid++,
-//             .transfer.dev_addr = 999, // TODO: Need to flesh this out
-//             .transfer.ep_addr  = 999, // TODO: Need to flesh this out
-//             .transfer.len      = 999, // TODO: Need to flesh this out
-//             .transfer.status   = TRANSFER_STALLED,
+//             .payload.dev_addr  = 999, // TODO: Need to flesh this out
+//             .payload.ep_addr   = 999, // TODO: Need to flesh this out
+//             .payload.len       = 999, // TODO: Need to flesh this out
+//             .payload.status    = TRANSFER_STALLED,
 //         }));
     }
 
