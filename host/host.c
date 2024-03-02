@@ -319,7 +319,7 @@ enum {
 enum {
     DEVICE_DISCONNECTED,
     DEVICE_ALLOCATED,
-    DEVICE_CONNECTED,
+    DEVICE_ENUMERATING,
     DEVICE_ADDRESSED,
     DEVICE_ACTIVE,
     DEVICE_SUSPENDED,
@@ -332,8 +332,8 @@ enum {
 };
 
 typedef struct {
-    uint8_t  speed        ; // Device speed (0:disconnected, 1:full, 2:high)
     uint8_t  state        ; // Current device state
+    uint8_t  speed        ; // Device speed (0:disconnected, 1:full, 2:high)
     uint8_t  control_state; // Control transfer state
     uint8_t  class        ; // Device class
     uint8_t  subclass     ; // Device subclass
@@ -647,6 +647,7 @@ void enumerate(void *arg) {
             // Allocate a new device
             new_addr      = next_dev_addr();
             device_t *dev = get_device(new_addr);
+            dev->state    = DEVICE_ENUMERATING;
             dev->speed    = dev0->speed;
 
             // Allocate EP0 for the new device
@@ -812,8 +813,8 @@ void usb_task() {
 
                 // Initialize dev0
                 reset_device(0); // TODO: Is this really necessary?
+                dev0->state = DEVICE_ENUMERATING;
                 dev0->speed = task.connect.speed;
-                dev0->state = DEVICE_CONNECTED;
 
                 // Show the device connection and speed
                 char *str = dev0->speed == LOW_SPEED ? "low" : "full";
