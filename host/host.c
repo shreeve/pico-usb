@@ -917,12 +917,11 @@ void isr_usbctrl() {
 
 //         // Queue the stalled transfer
 //         queue_add_blocking(queue, &((task_t) {
-//             .type              = TASK_PAYLOAD,
-//             .guid              = guid++,
-//             .payload.dev_addr  = 999, // TODO: Need to flesh this out
-//             .payload.ep_addr   = 999, // TODO: Need to flesh this out
-//             .payload.len       = 999, // TODO: Need to flesh this out
-//             .payload.status    = TRANSFER_STALLED,
+//             .type           = TASK_PAYLOAD,
+//             .guid           = guid++,
+//             .payload.ep     = ep,  // TODO: Need to flesh this out
+//             .payload.len    = 999, // TODO: Need to flesh this out
+//             .payload.status = TRANSFER_STALLED,
 //         }));
     }
 
