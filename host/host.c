@@ -804,12 +804,13 @@ void usb_task() {
 
             case TASK_CONNECT:
 
-                // TODO: See if we can get this to work
-                // // Prevent nested connections
-                // if (dev0->state == DEVICE_ENUMERATING) {
-                //     printf("Only one device can be enumerated at a time\n");
-                //     break;
-                // }
+                // Defer nested connections
+                if (dev0->state == DEVICE_ENUMERATING) {
+                    bool empty = queue_is_empty(queue);
+                    queue_add_blocking(queue, &task);
+                    if (empty) return;
+                    break;
+                }
 
                 // Initialize dev0
                 reset_device(0); // TODO: Is this really necessary?
