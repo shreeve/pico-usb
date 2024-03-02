@@ -731,8 +731,8 @@ void setup_usb_host() {
 // ==[ Tasks ]==================================================================
 
 enum {
-    TASK_CONNECT,
     TASK_CALLBACK,
+    TASK_CONNECT,
     TASK_PAYLOAD,
 };
 
@@ -742,13 +742,13 @@ typedef struct {
 
     union {
         struct {
-            uint8_t speed;
-        } connect;
-
-        struct {
             void (*fn) (void *);
             void *arg;
         } callback;
+
+        struct {
+            uint8_t speed;
+        } connect;
 
         struct {
             uint8_t  dev_addr;
@@ -786,6 +786,11 @@ void usb_task() {
         uint8_t type = task.type;
         printf("\n=> %u) New task, %s\n\n", task.guid, task_name(type));
         switch (type) {
+            case TASK_CALLBACK: {
+                printf("Calling %s\n", callback_name(task.callback.fn));
+                task.callback.fn(task.callback.arg);
+            }   break;
+
             case TASK_CONNECT:
 
                 // TODO: See if we can get this to work
@@ -808,11 +813,6 @@ void usb_task() {
                 enumerate(NULL);
 
                 break;
-
-            case TASK_CALLBACK: {
-                printf("Calling %s\n", callback_name(task.callback.fn));
-                task.callback.fn(task.callback.arg);
-            }   break;
 
             case TASK_PAYLOAD: {
                 uint8_t  dev_addr = task.payload.dev_addr;
