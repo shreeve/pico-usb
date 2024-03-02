@@ -725,8 +725,8 @@ void setup_usb_host() {
 
 enum {
     TASK_CONNECT,
-    TASK_TRANSFER,
     TASK_CALLBACK,
+    TASK_PAYLOAD,
 };
 
 typedef struct {
@@ -744,11 +744,6 @@ typedef struct {
             uint16_t len;
             uint8_t  status;
         } payload;
-
-        struct {
-            void (*fn) (void *);
-            void *arg;
-        } callback;
     };
 } task_t;
 
@@ -802,6 +797,11 @@ void usb_task() {
 
                 break;
 
+            case TASK_CALLBACK: {
+                printf("Calling %s\n", callback_name(task.callback.fn));
+                task.callback.fn(task.callback.arg);
+            }   break;
+
 //             case TASK_PAYLOAD: {
 //                 uint8_t dev_addr = task.payload.dev_addr;
 //                 uint8_t ep_addr  = task.payload.ep_addr;
@@ -819,11 +819,6 @@ void usb_task() {
 //                 // Advance the enumeration
 //
 //             }   break;
-
-            case TASK_CALLBACK: {
-                printf("Calling %s\n", callback_name(task.callback.fn));
-                task.callback.fn(task.callback.arg);
-            }   break;
 
             default:
                 printf("Unknown task queued\n");
