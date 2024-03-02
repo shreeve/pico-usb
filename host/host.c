@@ -498,8 +498,8 @@ void show_device_descriptor(void *ptr) {
     printf("    Subclass:   %u\n"    , d->bDeviceSubClass);
     printf("    Protocol:   %u\n"    , d->bDeviceProtocol);
     printf("  Packet Size:  %u\n"    , d->bMaxPacketSize0);
-    printf("  Vendor ID:    0x%04x\n", d->idVendor);
-    printf("  Product ID:   0x%04x\n", d->idProduct);
+    printf("  Vendor Id:    0x%04x\n", d->idVendor);
+    printf("  Product Id:   0x%04x\n", d->idProduct);
     printb("  Version:      "        , d->bcdDevice);
     printf("  Manufacturer: [#%u]\n" , d->iManufacturer);
     printf("  Product:      [#%u]\n" , d->iProduct);
