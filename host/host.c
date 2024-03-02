@@ -491,30 +491,31 @@ void get_string_descriptor(endpoint_t *ep, uint8_t index) {
 void show_device_descriptor(void *ptr) {
     usb_device_descriptor_t *d = (usb_device_descriptor_t *) ptr;
 
-    printf("\nConnected device:\n");
-    printb("  USB version:\t"        , d->bcdUSB);
-    printf("  Device class:\t%u\n"   , d->bDeviceClass);
-    printf("    Subclass:\t%u\n"     , d->bDeviceSubClass);
-    printf("    Protocol:\t%u\n"     , d->bDeviceProtocol);
-    printf("  Packet size:\t%u\n"    , d->bMaxPacketSize0);
-    printf("  Vendor ID:\t0x%04x\n"  , d->idVendor);
-    printf("  Product ID:\t0x%04x\n" , d->idProduct);
-    printb("  Revision:\t"           , d->bcdDevice);
-    printf("  Manufacturer:\t[#%u]\n", d->iManufacturer);
-    printf("  Product:\t[#%u]\n"     , d->iProduct);
-    printf("  Serial:\t[#%u]\n"      , d->iSerialNumber);
+    printf("\nConnected Device:\n");
+    printf("  Total Length: %u\n"    , d->bLength);
+    printb("  USB Version:  "        , d->bcdUSB);
+    printf("  Device Class: %u\n"    , d->bDeviceClass);
+    printf("    Subclass:   %u\n"    , d->bDeviceSubClass);
+    printf("    Protocol:   %u\n"    , d->bDeviceProtocol);
+    printf("  Packet Size:  %u\n"    , d->bMaxPacketSize0);
+    printf("  Vendor ID:    0x%04x\n", d->idVendor);
+    printf("  Product ID:   0x%04x\n", d->idProduct);
+    printb("  Revision:     "        , d->bcdDevice);
+    printf("  Manufacturer: [#%u]\n" , d->iManufacturer);
+    printf("  Product:      [#%u]\n" , d->iProduct);
+    printf("  Serial:       [#%u]\n" , d->iSerialNumber);
     printf("\n");
 }
 
 void show_configuration_descriptor(void *ptr) {
     usb_configuration_descriptor_t *d = (usb_configuration_descriptor_t *) ptr;
 
-    printf("\nConfiguration descriptor:\n");
-    printf("  Total length:\t%u\n"  , d->wTotalLength);
-    printf("  Interfaces:\t%u\n"    , d->bNumInterfaces);
-    printf("  Config Value:\t%u\n"  , d->bConfigurationValue);
-    printf("  Config Name:\t[#%u]\n", d->iConfiguration);
-    printf("  Attributes:\t");
+    printf("\nConfiguration Descriptor:\n");
+    printf("  Total Length: %u\n"   , d->wTotalLength);
+    printf("  Interfaces:   %u\n"   , d->bNumInterfaces);
+    printf("  Config Value: %u\n"   , d->bConfigurationValue);
+    printf("  Config Name:  [#%u]\n", d->iConfiguration);
+    printf("  Attributes:   ");
     {
         char *sp = d->bmAttributes & 0x40 ? "Self-powered"  : NULL;
         char *rw = d->bmAttributes & 0x20 ? "Remote wakeup" : NULL;
@@ -524,7 +525,7 @@ void show_configuration_descriptor(void *ptr) {
         else if  (rw) printf("%s\n", rw);
         else          printf("None\n");
     }
-    printf("  Max power:\t%umA\n"   , d->bMaxPower * 2);
+    printf("  Max power:    %umA\n" , d->bMaxPower * 2);
     printf("\n");
 }
 
