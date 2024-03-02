@@ -103,7 +103,8 @@ SDK_INLINE void clear_endpoint(endpoint_t *ep) {
     ep->bytes_done = 0;
 }
 
-void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
+void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb,
+                    uint8_t *user_buf) {
 
     // Populate the endpoint (clears all endpoint variables not set here)
     *ep = (endpoint_t) {
@@ -114,7 +115,7 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb) {
         .interval   = usb->bInterval,
         .configured = true,
         .data_buf   = usbh_dpram->epx_data,
-        .user_buf   = temp_buf, // TODO: Add something like a ring buffer here?
+        .user_buf   = user_buf == NULL ? temp_buf : user_buf,
     };
 
     // EPX and interrupt endpoints need more work, others can return here
@@ -156,7 +157,7 @@ endpoint_t *next_endpoint(uint8_t dev_addr, usb_endpoint_descriptor_t *usb) {
         endpoint_t *ep = &eps[i];
         if (!ep->configured) {
             ep->dev_addr = dev_addr;
-            setup_endpoint(ep, usb);
+            setup_endpoint(ep, usb, NULL);
             return ep;
         }
     }
@@ -172,7 +173,7 @@ void reset_epx() {
         .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
         .wMaxPacketSize   = 8, // Default per USB 2.0 spec
         .bInterval        = 0,
-    }));
+    }), NULL);
 }
 
 void reset_endpoints() {
