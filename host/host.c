@@ -491,7 +491,7 @@ void get_string_descriptor(endpoint_t *ep, uint8_t index) {
 void show_device_descriptor(void *ptr) {
     usb_device_descriptor_t *d = (usb_device_descriptor_t *) ptr;
 
-    printf("\nConnected Device:\n");
+    printf("Connected Device:\n");
     printf("  Total Length: %u\n"    , d->bLength);
     printb("  USB Version:  "        , d->bcdUSB);
     printf("  Device Class: %u\n"    , d->bDeviceClass);
@@ -510,7 +510,7 @@ void show_device_descriptor(void *ptr) {
 void show_configuration_descriptor(void *ptr) {
     usb_configuration_descriptor_t *d = (usb_configuration_descriptor_t *) ptr;
 
-    printf("\nConfiguration Descriptor:\n");
+    printf("Configuration Descriptor:\n");
     printf("  Total Length: %u\n"   , d->wTotalLength);
     printf("  Interfaces:   %u\n"   , d->bNumInterfaces);
     printf("  Config Value: %u\n"   , d->bConfigurationValue);
