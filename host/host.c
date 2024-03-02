@@ -978,9 +978,6 @@ void isr_usbctrl() {
         // Get the transfer length (actual bytes transferred)
         uint16_t len = ep->bytes_done;
 
-        // Clear the endpoint (since its complete)
-        clear_endpoint(ep);
-
         // Debug output
         if (len) {
             printf( "├───────┼──────┼─────────────────────────────────────┴────────────┤\n");
@@ -991,6 +988,9 @@ void isr_usbctrl() {
             printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
             printf( "│ZLP\t│ %-4s │ Device %-28u │ Task #%-4u │\n", str, ep->dev_addr, guid);
         }
+
+        // Clear the endpoint (since its complete)
+        clear_endpoint(ep);
 
         // Queue a ZLP or advance the enumeration
         queue_add_blocking(queue, &((task_t) {
