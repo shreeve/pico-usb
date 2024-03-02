@@ -528,6 +528,33 @@ void show_configuration_descriptor(void *ptr) {
     printf("\n");
 }
 
+void show_string(endpoint_t *ep, uint8_t index) {
+    uint8_t *ptr = ep->user_buf;
+    get_string_descriptor(ep, index);
+
+    // Convert Unicode string to UTF-8
+    uint8_t   len = *ptr / 2;                            // Unicode length
+    uint16_t *uni = (uint16_t *) (ptr + 2);              // Unicode string
+    char     *str = (char [MAX_TEMP]) { 0 }, *utf = str; // UTF-8 string
+
+    while (len--) {
+        uint16_t u = *uni++;
+        if (u < 0x80) {
+            *utf++ = (char)          u;
+        } else if (u < 0x800) {
+            *utf++ = (char) (0xc0 | (u >>  6));
+            *utf++ = (char) (0x80 | (u        & 0x3f));
+        } else {
+            *utf++ = (char) (0xe0 | (u >> 12));
+            *utf++ = (char) (0x80 |((u >>  6) & 0x3f));
+            *utf++ = (char) (0x80 | (u        & 0x3f));
+        }
+    }
+    *utf++ = 0;
+
+    printf("[String #%u]: \"%s\"\n", index, str);
+}
+
 // ==[ Enumeration ]============================================================
 
 enum {
