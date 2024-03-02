@@ -814,23 +814,17 @@ void usb_task() {
                 task.callback.fn(task.callback.arg);
             }   break;
 
-//             case TASK_PAYLOAD: {
-//                 uint8_t dev_addr = task.payload.dev_addr;
-//                 uint8_t ep_addr  = task.payload.ep_addr;
-//                 uint16_t len     = task.payload.len;
-//
-//                 // Lookup endpoint
-//                 endpoint_t *ep = find_endpoint(dev_addr, ep_addr);
-//
-//                 // Debug output, unless this is a ZLP on dev0
-//                 // if (dev_addr || len) {
-//                     show_endpoint(ep);
-//                     hexdump(" Data", usbh_dpram->epx_data, len, 1);
-//                 // }
-//
-//                 // Advance the enumeration
-//
-//             }   break;
+            case TASK_PAYLOAD: {
+                uint8_t  dev_addr = task.payload.dev_addr;
+                uint8_t  ep_addr  = task.payload.ep_addr;
+                uint16_t len      = task.payload.len;
+
+                // Lookup endpoint
+                endpoint_t *ep = find_endpoint(dev_addr, ep_addr);
+
+                // Call ZLP or advance the enumeration
+                len ? transfer_zlp(ep) : enumerate(ep);
+            }   break;
 
             default:
                 printf("Unknown task queued\n");
@@ -998,12 +992,14 @@ void isr_usbctrl() {
         // Clear the endpoint (since its complete)
         clear_endpoint(ep);
 
-        // Queue a ZLP or advance the enumeration
+        // Queue the payload
         queue_add_blocking(queue, &((task_t) {
-            .type         = TASK_CALLBACK,
-            .guid         = guid++,
-            .callback.fn  = len ? transfer_zlp : enumerate,
-            .callback.arg = ep,
+            .type             = TASK_PAYLOAD,
+            .guid             = guid++,
+            .payload.dev_addr = ep->dev_addr,
+            .payload.ep_addr  = ep->ep_addr,
+            .payload.len      = len,
+            .payload.status   = TRANSFER_SUCCESS, // TODO: Why do we need this?
         }));
     }
 
