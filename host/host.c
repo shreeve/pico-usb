@@ -185,8 +185,8 @@ void reset_endpoints() {
 
 // ==[ Buffers ]================================================================
 
-// Sync a buffer by checking its BCR half and returning the buffer length
-uint16_t sync_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
+// Read a buffer by checking its BCR half and returning the buffer length
+uint16_t read_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
     bool     in   = ep_in(ep);                   // Buffer is inbound
     bool     full = bcr & USB_BUF_CTRL_FULL;     // Buffer is full (populated)
     uint16_t len  = bcr & USB_BUF_CTRL_LEN_MASK; // Buffer length
@@ -291,17 +291,17 @@ void send_buffers(endpoint_t *ep) {
 void handle_buffers(endpoint_t *ep) {
     if (!ep->active) show_endpoint(ep), panic("Halted");
 
-    // Sync current buffer(s)
+    // Read current buffer(s)
     uint32_t ecr = usbh_dpram->epx_ctrl;              // ECR is single or double
     uint32_t bcr = usbh_dpram->epx_buf_ctrl;          // Buffer control register
     if (ecr & EP_CTRL_DOUBLE_BUFFERED_BITS) {         // When double buffered...
-        if (sync_buffer(ep, 0, bcr) == ep->maxsize)   // If first buffer is full
+        if (read_buffer(ep, 0, bcr) == ep->maxsize)   // If first buffer is full
             if (ep->bytes_left)                       // And, there's more data
-                sync_buffer(ep, 1, bcr >> 16);        // Then, sync second also
+                read_buffer(ep, 1, bcr >> 16);        // Then, read second also
     } else {                                          // When single buffered...
         uint32_t bch = usb_hw->buf_cpu_should_handle; // Check CPU handling bits
         if (bch & 1u) bcr >>= 16;                     // Do RP2040-E4 workaround
-        sync_buffer(ep, 0, bcr);                      // And sync the one buffer
+        read_buffer(ep, 0, bcr);                      // And read the one buffer
     }
 
     // Send next buffer(s)
