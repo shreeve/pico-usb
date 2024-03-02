@@ -28,7 +28,7 @@
 #define MAX_HUBS      0
 #define MAX_DEVICES   2
 #define MAX_ENDPOINTS 4
-#define TEMP_BUF_SIZE 256
+#define MAX_TEMP      255 // Must be 255 or less
 
 #define MAKE_U16(x, y) (((x) << 8) | ((y)     ))
 #define SWAP_U16(x)    (((x) >> 8) | ((x) << 8))
@@ -50,7 +50,7 @@
 //                   "├─┼┤"  // ╠═╬╣ // ┣━╋┫ // ├─┼┤ // 8 9 a b
 //                   "└─┴┘"; // ╚═╩╝ // ┗━┻┛ // ╰─┴╯ // c d e f
 
-static uint8_t temp_buf[TEMP_BUF_SIZE];
+static uint8_t temp_buf[MAX_TEMP];
 
 // ==[ Endpoints ]==============================================================
 
