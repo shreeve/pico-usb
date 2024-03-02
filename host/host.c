@@ -765,8 +765,8 @@ static queue_t *queue = &((queue_t) { 0 });
 
 const char *task_name(uint8_t type) {
     switch (type) {
-        case TASK_CONNECT:  return "TASK_CONNECT";
         case TASK_CALLBACK: return "TASK_CALLBACK";
+        case TASK_CONNECT:  return "TASK_CONNECT";
         case TASK_PAYLOAD:  return "TASK_PAYLOAD";
         default:            return "UNKNOWN";
     }
