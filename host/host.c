@@ -483,7 +483,7 @@ SDK_INLINE void get_descriptor(endpoint_t *ep, uint8_t type, uint8_t len) {
     }));
 }
 
-void get_string_descriptor(endpoint_t *ep, uint8_t index) {
+void get_string_descriptor_blocking(endpoint_t *ep, uint8_t index) {
     control_transfer(ep, &((usb_setup_packet_t) {
         .bmRequestType = USB_DIR_IN
                        | USB_REQ_TYPE_STANDARD
@@ -493,6 +493,8 @@ void get_string_descriptor(endpoint_t *ep, uint8_t index) {
         .wIndex        = 0,
         .wLength       = MAX_TEMP,
     }));
+
+    do { usb_task(); } while (!ep->bytes_done);
 }
 
 void show_device_descriptor(void *ptr) {
@@ -536,11 +538,11 @@ void show_configuration_descriptor(void *ptr) {
     printf("\n");
 }
 
-void show_string(endpoint_t *ep, uint8_t index) {
+void show_string_blocking(endpoint_t *ep, uint8_t index) {
     uint8_t *ptr = ep->user_buf;
 
-    // // Request a string and wait for it
-    // get_string_descriptor_blocking(ep, index);
+    // Request a string and wait for it
+    get_string_descriptor_blocking(ep, index);
 
     // Prepare to parse Unicode string
     uint8_t   len =              *ptr / 2 ;
@@ -673,9 +675,9 @@ void enumerate(void *arg) {
         case ENUMERATION_GET_DEVICE: {
             show_device_descriptor(ep->user_buf);
 
-            // show_string(ep, 1); // TODO: These should be "blocking"... like TUSB
-            // show_string(ep, 2); // TODO: These should be "blocking"... like TUSB
-            // show_string(ep, 3); // TODO: These should be "blocking"... like TUSB
+            // show_string_blocking(ep, 1);
+            // show_string_blocking(ep, 2);
+            // show_string_blocking(ep, 3);
 
             printf("Starting GET_CONFIG\n");
             get_configuration_descriptor(ep);
