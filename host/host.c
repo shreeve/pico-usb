@@ -739,6 +739,11 @@ typedef struct {
         } connect;
 
         struct {
+            void (*fn) (void *);
+            void *arg;
+        } callback;
+
+        struct {
             uint8_t  dev_addr;
             uint8_t  ep_addr;
             uint16_t len;
