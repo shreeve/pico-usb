@@ -962,12 +962,6 @@ void isr_usbctrl() {
 
         usb_hw_clear->sie_status = USB_SIE_STATUS_TRANS_COMPLETE_BITS;
 
-        // NOTE: TRANS_COMPLETE triggers when (see datasheet, p. 401):
-        //
-        // 1. SETUP packet sent without {RECEIVE,SEND}_DATA_BITS in SCR
-        // 2. IN or OUT packet transferred with LAST set in BCR
-        // 3. IN short packet (less than maxsize) transferred
-
         // Panic if the endpoint is not active
         if (!ep->active) panic("Endpoints must be active to be completed");
 
