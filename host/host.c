@@ -751,10 +751,9 @@ typedef struct {
         } connect;
 
         struct {
-            uint8_t  dev_addr;
-            uint8_t  ep_addr;
-            uint16_t len;
-            uint8_t  status;
+            endpoint_t *ep;
+            uint16_t    len;
+            uint8_t     status;
         } payload;
     };
 } task_t;
@@ -786,6 +785,7 @@ void usb_task() {
         uint8_t type = task.type;
         printf("\n=> %u) New task, %s\n\n", task.guid, task_name(type));
         switch (type) {
+
             case TASK_CALLBACK: {
                 printf("Calling %s\n", callback_name(task.callback.fn));
                 task.callback.fn(task.callback.arg);
@@ -815,12 +815,8 @@ void usb_task() {
                 break;
 
             case TASK_PAYLOAD: {
-                uint8_t  dev_addr = task.payload.dev_addr;
-                uint8_t  ep_addr  = task.payload.ep_addr;
-                uint16_t len      = task.payload.len;
-
-                // Lookup endpoint
-                endpoint_t *ep = find_endpoint(dev_addr, ep_addr);
+                endpoint_t *ep  = task.payload.ep;
+                uint16_t    len = task.payload.len;
 
                 // Call ZLP or advance the enumeration
                 len ? transfer_zlp(ep) : enumerate(ep);
@@ -992,14 +988,13 @@ void isr_usbctrl() {
         // Clear the endpoint (since its complete)
         clear_endpoint(ep);
 
-        // Queue the payload
+        // Queue the payload task
         queue_add_blocking(queue, &((task_t) {
             .type             = TASK_PAYLOAD,
             .guid             = guid++,
-            .payload.dev_addr = ep->dev_addr,
-            .payload.ep_addr  = ep->ep_addr,
+            .payload.ep       = ep,
             .payload.len      = len,
-            .payload.status   = TRANSFER_SUCCESS, // TODO: Why do we need this?
+            .payload.status   = TRANSFER_SUCCESS, // TODO: Is this needed?
         }));
     }
 
