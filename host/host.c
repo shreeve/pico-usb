@@ -530,7 +530,9 @@ void show_configuration_descriptor(void *ptr) {
 
 void show_string(endpoint_t *ep, uint8_t index) {
     uint8_t *ptr = ep->user_buf;
-    get_string_descriptor(ep, index);
+
+    // // Request a string and wait for it
+    // get_string_descriptor_blocking(ep, index);
 
     // Prepare to parse Unicode string
     uint8_t   len =              *ptr / 2 ;
