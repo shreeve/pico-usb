@@ -663,6 +663,10 @@ void enumerate(void *arg) {
         case ENUMERATION_GET_DEVICE: {
             show_device_descriptor(ep->user_buf);
 
+            // show_string(ep, 1); // TODO: These should be "blocking"... like TUSB
+            // show_string(ep, 2); // TODO: These should be "blocking"... like TUSB
+            // show_string(ep, 3); // TODO: These should be "blocking"... like TUSB
+
             printf("Starting GET_CONFIG\n");
             get_configuration_descriptor(ep);
         }   break;
