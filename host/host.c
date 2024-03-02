@@ -741,7 +741,7 @@ void setup_usb_host() {
 enum {
     TASK_CALLBACK,
     TASK_CONNECT,
-    TASK_PAYLOAD,
+    TASK_TRANSFER,
 };
 
 typedef struct {
@@ -762,7 +762,7 @@ typedef struct {
             endpoint_t *ep;
             uint16_t    len;
             uint8_t     status;
-        } payload;
+        } transfer;
     };
 } task_t;
 
@@ -774,7 +774,7 @@ const char *task_name(uint8_t type) {
     switch (type) {
         case TASK_CALLBACK: return "TASK_CALLBACK";
         case TASK_CONNECT:  return "TASK_CONNECT";
-        case TASK_PAYLOAD:  return "TASK_PAYLOAD";
+        case TASK_TRANSFER: return "TASK_TRANSFER";
         default:            return "UNKNOWN";
     }
     panic("Unknown task queued");
@@ -822,9 +822,9 @@ void usb_task() {
 
                 break;
 
-            case TASK_PAYLOAD: {
-                endpoint_t *ep  = task.payload.ep;
-                uint16_t    len = task.payload.len;
+            case TASK_TRANSFER: {
+                endpoint_t *ep  = task.transfer.ep;
+                uint16_t    len = task.transfer.len;
 
                 // Call ZLP or advance the enumeration
                 len ? transfer_zlp(ep) : enumerate(ep);
@@ -925,11 +925,11 @@ void isr_usbctrl() {
 
 //         // Queue the stalled transfer
 //         queue_add_blocking(queue, &((task_t) {
-//             .type           = TASK_PAYLOAD,
-//             .guid           = guid++,
-//             .payload.ep     = ep,  // TODO: Need to flesh this out
-//             .payload.len    = 999, // TODO: Need to flesh this out
-//             .payload.status = TRANSFER_STALLED,
+//             .type            = TASK_TRANSFER,
+//             .guid            = guid++,
+//             .transfer.ep     = ep,  // TODO: Need to flesh this out
+//             .transfer.len    = 999, // TODO: Need to flesh this out
+//             .transfer.status = TRANSFER_STALLED,
 //         }));
     }
 
@@ -989,13 +989,13 @@ void isr_usbctrl() {
         // Clear the endpoint (since its complete)
         clear_endpoint(ep);
 
-        // Queue the payload task
+        // Queue the transfer task
         queue_add_blocking(queue, &((task_t) {
-            .type             = TASK_PAYLOAD,
-            .guid             = guid++,
-            .payload.ep       = ep,
-            .payload.len      = len,
-            .payload.status   = TRANSFER_SUCCESS, // TODO: Is this needed?
+            .type            = TASK_TRANSFER,
+            .guid            = guid++,
+            .transfer.ep     = ep,
+            .transfer.len    = len,
+            .transfer.status = TRANSFER_SUCCESS, // TODO: Is this needed?
         }));
     }
 
