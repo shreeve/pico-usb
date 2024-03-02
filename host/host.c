@@ -532,11 +532,12 @@ void show_string(endpoint_t *ep, uint8_t index) {
     uint8_t *ptr = ep->user_buf;
     get_string_descriptor(ep, index);
 
-    // Convert Unicode string to UTF-8
-    uint8_t   len = *ptr / 2;                            // Unicode length
-    uint16_t *uni = (uint16_t *) (ptr + 2);              // Unicode string
-    char     *str = (char [MAX_TEMP]) { 0 }, *utf = str; // UTF-8 string
+    // Prepare to parse Unicode string
+    uint8_t   len =              *ptr / 2 ;
+    uint16_t *uni = (uint16_t *) (ptr + 2);
 
+    // Convert Unicode string to UTF-8
+    char *str = (char [MAX_TEMP]) { 0 }, *utf = str;
     while (len--) {
         uint16_t u = *uni++;
         if (u < 0x80) {
