@@ -144,8 +144,8 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb,
 }
 
 endpoint_t *find_endpoint(uint8_t dev_addr, uint8_t ep_addr) {
-    if (!dev_addr && !ep_addr) return epx; // Shortcut for EPX
     bool want_ep0 = !(ep_addr & ~USB_DIR_IN);
+    if (!dev_addr && want_ep0) return epx;
 
     for (uint8_t i = 1; i < MAX_ENDPOINTS; i++) {
         endpoint_t *ep = &eps[i];
