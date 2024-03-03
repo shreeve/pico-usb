@@ -72,6 +72,8 @@ typedef struct {
     bool       active    ; // Transfer is active
     bool       setup     ; // SETUP packet flag // TODO: How useful is this?
     uint8_t    data_pid  ; // Toggle between DATA0/DATA1 packets
+    io_rw_32  *ecr       ; // Endpoint control register
+    io_rw_32  *bcr       ; // Buffer control register
     volatile               // Data buffer is volative
     uint8_t   *data_buf  ; // Data buffer in DPSRAM
     uint8_t   *user_buf  ; // User buffer in RAM or flash
@@ -119,28 +121,48 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb,
         .type       = usb->bmAttributes,
         .maxsize    = usb->wMaxPacketSize,
         .interval   = usb->bInterval,
-        .configured = true,
-        .data_buf   = usbh_dpram->epx_data,
         .user_buf   = user_buf == NULL ? temp_buf : user_buf,
     };
 
-    // EPX and interrupt endpoints need more work, others can return here
-    if (ep != epx && ep->type != USB_TRANSFER_TYPE_INTERRUPT) return;
+    // Setup the necessary registers and data buffer pointer
+    if (ep->interval) {
+        if (!ep_num(ep)) panic("EP0 cannot be polled");
+        uint8_t most = MIN(USER_ENDPOINTS, MAX_POLLED);
+        for (uint8_t i = 0; i < most; i++) {
+            if (usbh_dpram->int_ep_ctrl[i].ctrl) continue; // Skip if being used
+            ep->ecr      = &usbh_dpram->int_ep_ctrl       [i].ctrl;
+            ep->bcr      = &usbh_dpram->int_ep_buffer_ctrl[i].ctrl;
+            ep->data_buf = &usbh_dpram->epx_data[(i + 2) * 64]; // Can't do ISO?
+            break;
+        }
+        if (!ep->ecr) panic("No free polled endpoints remaining");
+    } else {
+        ep->ecr      = &usbh_dpram->epx_ctrl;
+        ep->bcr      = &usbh_dpram->epx_buf_ctrl;
+        ep->data_buf = &usbh_dpram->epx_data[0];
+    }
+
+    // EPX and polled endpoints need more setup, others can return
+    if (ep != epx && !ep->interval) return;
 
     // Calculate the ECR
     uint32_t type   = ep->type;
     uint32_t ms     = ep->interval;
     uint32_t lsb    = EP_CTRL_HOST_INTERRUPT_INTERVAL_LSB;
-    uint32_t offset = offsetof(usb_host_dpram_t, epx_data); // TODO: Make this generic, not EPX specific
+    uint32_t offset = (uint32_t) ep->data_buf & 0x0fff;   // Offset from DSPRAM
+    uint32_t style  = ep->interval                        // Polled endpoint?
+                    ? EP_CTRL_INTERRUPT_PER_BUFFER        // Y: Single buffering
+                    : EP_CTRL_DOUBLE_BUFFERED_BITS        // N: Double buffering
+                    | EP_CTRL_INTERRUPT_PER_DOUBLE_BUFFER;// and an INT per pair
     uint32_t ecr    = EP_CTRL_ENABLE_BITS                 // Enable endpoint
-                    | EP_CTRL_DOUBLE_BUFFERED_BITS        // Double buffering
-                    | EP_CTRL_INTERRUPT_PER_DOUBLE_BUFFER // INT per double
+                    | style                               // Set buffering style
                     | type << EP_CTRL_BUFFER_TYPE_LSB     // Set transfer type
                     | (ms ? ms - 1 : 0) << lsb            // Polling time in ms
                     | offset;                             // Data buffer offset
 
-    // Set the ECR
-    usbh_dpram->epx_ctrl = ecr;
+    // Set the ECR and mark this endpoint as configured
+   *ep->ecr = ecr;
+    ep->configured = true;
 }
 
 endpoint_t *find_endpoint(uint8_t dev_addr, uint8_t ep_addr) {
