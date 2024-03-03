@@ -456,6 +456,17 @@ void transfer(endpoint_t *ep) {
     usb_hw->sie_ctrl      = scr;
 }
 
+void transfer_zlp(void *arg) {
+    endpoint_t *ep = (endpoint_t *) arg;
+
+    // Prepare the ZLP transfer
+    clear_endpoint(ep);
+    ep->active   = true;
+    ep->data_pid = 1;
+
+    transfer(ep);
+}
+
 void control_transfer(endpoint_t *ep, usb_setup_packet_t *setup) {
     if ( ep_num(ep))     panic("Control transfers must use EP0");
     if (!ep->configured) panic("Endpoint not configured");
@@ -481,17 +492,6 @@ void control_transfer(endpoint_t *ep, usb_setup_packet_t *setup) {
     ep->ep_addr    = setup->bmRequestType & USB_DIR_IN;
     ep->bytes_long = setup->wLength;
     ep->bytes_left = setup->wLength;
-
-    transfer(ep);
-}
-
-void transfer_zlp(void *arg) {
-    endpoint_t *ep = (endpoint_t *) arg;
-
-    // Prepare the ZLP transfer
-    clear_endpoint(ep);
-    ep->active   = true;
-    ep->data_pid = 1;
 
     transfer(ep);
 }
