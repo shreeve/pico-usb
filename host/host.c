@@ -30,11 +30,12 @@
 #define USER_DEVICES   2 // Not including dev0
 #define USER_ENDPOINTS 4 // Not including any EP0s
 
-// Hardware or other limits
-#define MAX_DEVICES   (1 + USER_DEVICES)
-#define MAX_ENDPOINTS (1 + USER_DEVICES + USER_ENDPOINTS)
-#define MAX_POLLED    15  // Maximum polled endpoints
-#define MAX_TEMP      255 // Must be 255 or less
+enum {
+    MAX_DEVICES   =   1 + USER_DEVICES,
+    MAX_ENDPOINTS =   1 + USER_DEVICES + USER_ENDPOINTS,
+    MAX_POLLED    =  15, // Maximum polled endpoints
+    MAX_TEMP      = 255, // Must be 255 or less
+};
 
 #define MAKE_U16(x, y) (((x) << 8) | ((y)     ))
 #define SWAP_U16(x)    (((x) >> 8) | ((x) << 8))
