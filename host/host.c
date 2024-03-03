@@ -692,9 +692,11 @@ void enumerate(void *arg) {
         }   break;
 
         case ENUMERATION_SET_ADDRESS: {
-            endpoint_t *ep = find_endpoint(new_addr, 0);
-            device_t *dev = get_device(ep->dev_addr);
-            dev->state = DEVICE_ADDRESSED;
+            endpoint_t *ep  = find_endpoint(new_addr, 0);
+            device_t   *dev = get_device(ep->dev_addr);
+
+            dev0->state = DEVICE_ALLOCATED;
+            dev->state  = DEVICE_ADDRESSED;
 
             printf("Starting GET_DEVICE\n");
             get_device_descriptor(ep);
