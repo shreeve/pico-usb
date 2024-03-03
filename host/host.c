@@ -311,9 +311,6 @@ void send_buffers(endpoint_t *ep) {
         }
     }
 
-    // Available bits for the buffer control register
-    uint32_t available = USB_BUF_CTRL_AVAIL << 16 | USB_BUF_CTRL_AVAIL;
-
     // Update ECR and BCR (set BCR first so controller has time to respond)
     *ep->bcr = bcr & UNAVAILABLE;
     *ep->ecr = ecr;
