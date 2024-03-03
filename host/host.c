@@ -835,13 +835,13 @@ void usb_task() {
 
             case TASK_CONNECT:
 
-                // Defer nested connections
-                if (dev0->state == DEVICE_ENUMERATING) {
-                    bool empty = queue_is_empty(queue);
-                    queue_add_blocking(queue, &task);
-                    if (empty) return;
-                    break;
-                }
+                // // Defer nested connections
+                // if (dev0->state == DEVICE_ENUMERATING) {
+                //     bool empty = queue_is_empty(queue);
+                //     queue_add_blocking(queue, &task);
+                //     if (empty) return;
+                //     break;
+                // }
 
                 // Initialize dev0
                 reset_device(0); // TODO: Is this really necessary?
