@@ -112,7 +112,7 @@ SDK_INLINE void clear_endpoint(endpoint_t *ep) {
 void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb,
                     uint8_t *user_buf) {
 
-    // Populate the endpoint (clears all endpoint variables not set here)
+    // Populate the endpoint (clears all fields not present)
     *ep = (endpoint_t) {
         .dev_addr   = ep->dev_addr,
         .ep_addr    = usb->bEndpointAddress,
