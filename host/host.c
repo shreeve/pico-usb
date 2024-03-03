@@ -770,9 +770,9 @@ typedef struct {
         } connect;
 
         struct {
-            endpoint_t *ep;
-            uint16_t    len;
-            uint8_t     status;
+            endpoint_t *ep;     // TODO: Risky to just sent this pointer?
+            uint16_t    len;    // TODO: Should we point to a safe buffer of this length?
+            uint8_t     status; // TODO: Are we even using this?
         } transfer;
     };
 } task_t;
