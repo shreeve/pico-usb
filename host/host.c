@@ -142,9 +142,6 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb,
         ep->data_buf = &usbh_dpram->epx_data[0];
     }
 
-    // EPX and polled endpoints need more setup, others can return
-    if (ep != epx && !ep->interval) return;
-
     // Calculate the ECR
     uint32_t type   = ep->type;
     uint32_t ms     = ep->interval;
