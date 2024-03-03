@@ -25,9 +25,15 @@
 
 // ==[ PicoUSB ]================================================================
 
-#define MAX_HUBS      0
-#define MAX_DEVICES   2
-#define MAX_ENDPOINTS 4
+// User defined limits
+#define USER_HUBS      0
+#define USER_DEVICES   2 // Not including dev0
+#define USER_ENDPOINTS 4 // Not including any EP0s
+
+// Hardware or other limits
+#define MAX_DEVICES   (1 + USER_DEVICES)
+#define MAX_ENDPOINTS (1 + USER_DEVICES + USER_ENDPOINTS)
+#define MAX_POLLED    15  // Maximum polled endpoints
 #define MAX_TEMP      255 // Must be 255 or less
 
 #define MAKE_U16(x, y) (((x) << 8) | ((y)     ))
@@ -141,7 +147,7 @@ endpoint_t *find_endpoint(uint8_t dev_addr, uint8_t ep_addr) {
     if (!dev_addr && !ep_addr) return epx; // Shortcut for EPX
     bool want_ep0 = !(ep_addr & ~USB_DIR_IN);
 
-    for (uint8_t i = 0; i < MAX_ENDPOINTS; i++) {
+    for (uint8_t i = 1; i < MAX_ENDPOINTS; i++) {
         endpoint_t *ep = &eps[i];
         if (ep->configured && ep->dev_addr == dev_addr) {
             if (want_ep0 && !(ep->ep_addr & ~USB_DIR_IN)) return ep;
@@ -955,7 +961,7 @@ void isr_usbctrl() {
         handle_buffers(ep); usb_hw_clear->buf_status = ~0; bits ^= 0x01; // TODO: TOTAL HACK!
 
 //         // Check the polled endpoints (IN and OUT)
-//         for (uint8_t i = 0; i <= MAX_ENDPOINTS && bits; i++) {
+//         for (uint8_t i = 0; i < MAX_ENDPOINTS && bits; i++) {
 //             for (uint8_t j = 0; j < 2; j++) {
 //                 mask = 1 << (i * 2 + j);
 //                 if (bits &  mask) {
