@@ -58,6 +58,8 @@
 
 static uint8_t temp_buf[MAX_TEMP];
 
+void usb_task(); // Forward declaration
+
 // ==[ Endpoints ]==============================================================
 
 typedef void (*endpoint_c)(uint8_t *buf, uint16_t len);
@@ -121,7 +123,7 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb,
         .type       = usb->bmAttributes,
         .maxsize    = usb->wMaxPacketSize,
         .interval   = usb->bInterval,
-        .user_buf   = user_buf == NULL ? temp_buf : user_buf,
+        .user_buf   = user_buf != NULL ? user_buf : temp_buf,
     };
 
     // Setup the necessary registers and data buffer pointer
@@ -520,7 +522,7 @@ void get_string_descriptor_blocking(endpoint_t *ep, uint8_t index) {
         .wLength       = MAX_TEMP,
     }));
 
-    do { usb_task(); } while (!ep->bytes_done);
+    do { usb_task(); } while (ep->active);
 }
 
 void show_device_descriptor(void *ptr) {
@@ -704,10 +706,6 @@ void enumerate(void *arg) {
         case ENUMERATION_GET_DEVICE: {
             show_device_descriptor(ep->user_buf);
 
-            // show_string_blocking(ep, 1);
-            // show_string_blocking(ep, 2);
-            // show_string_blocking(ep, 3);
-
             printf("Starting GET_CONFIG\n");
             get_configuration_descriptor(ep);
         }   break;
@@ -724,6 +722,11 @@ void enumerate(void *arg) {
             dev->state = DEVICE_ACTIVE;
 
             printf("Enumeration completed\n");
+
+            show_string_blocking(ep, 1);
+            show_string_blocking(ep, 2);
+            show_string_blocking(ep, 3);
+
             break;
     }
 }
@@ -858,9 +861,19 @@ void usb_task() {
                 endpoint_t *ep  = task.transfer.ep;
                 uint16_t    len = task.transfer.len;
 
-                // Call ZLP or advance the enumeration
-                len ? transfer_zlp(ep) : enumerate(ep);
-            }   break;
+                // Handle the transfer
+                device_t *dev = get_device(ep->dev_addr);
+                if (len) {
+                    printf("Will send a ZLP...\n");
+                    transfer(ep);
+                } else if (dev->state < DEVICE_ACTIVE) {
+                    printf("Will enumerate()\n");
+                    enumerate(ep);
+                } else {
+                    printf("Not sure what to do...\n");
+                    // TODO: Not sure what to do...
+                }
+           }   break;
 
             default:
                 printf("Unknown task queued\n");
