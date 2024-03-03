@@ -469,7 +469,7 @@ void transfer_zlp(void *arg) {
 void control_transfer(endpoint_t *ep, usb_setup_packet_t *setup) {
     if ( ep_num(ep))     panic("Control transfers must use EP0");
     if (!ep->configured) panic("Endpoint not configured");
-    if ( ep->active)     panic("Only one control transfer at a time");
+    if ( ep->active)     panic("Control transfers per device must be serial");
     if ( ep->type)       panic("Control transfers require a control endpoint");
 
     // Validate device address and state
