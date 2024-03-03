@@ -332,12 +332,6 @@ enum {
     DEVICE_SUSPENDED,
 };
 
-enum {
-    CONTROL_NONE,
-    CONTROL_WAITING,
-    CONTROL_DONE,
-};
-
 typedef struct {
     uint8_t  state       ; // Current device state
     uint8_t  speed       ; // Device speed (0:disconnected, 1:full, 2:high)
