@@ -929,6 +929,7 @@ void isr_usbctrl() {
     bindump("│SCR" , usb_hw->sie_ctrl);
     bindump("│ECR" , ecr);
     bindump("│BCR" , bcr);
+    bool flat = false; // For the last line of debug output
 
     // Connection (attach or detach)
     if (ints &  USB_INTS_HOST_CONN_DIS_BITS) {
@@ -1023,6 +1024,7 @@ void isr_usbctrl() {
             printf( "├───────┼──────┼─────────────────────────────────────┴────────────┤\n");
             printf( "│XFER\t│ %4u │ Device %-28u   Task #%-4u │\n", len, ep->dev_addr, guid);
             hexdump("│Data", temp_buf, len, 1);
+            flat = true;
         } else {
             char *str = ep_in(ep) ? "IN" : "OUT";
             printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
@@ -1077,7 +1079,7 @@ void isr_usbctrl() {
     // TODO: How should we deal with NAKs seen in the SSR?
     // usb_hw_clear->sie_status = 1 << 28u; // Clear the NAK???
 
-    printf("└───────┴──────┴─────────────────────────────────────┴────────────┘\n");
+    printf("└───────┴──────┴─────────────────────────────────────%s────────────┘\n", flat ? "─" : "┴");
 }
 
 // ==[ Main ]===================================================================
