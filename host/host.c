@@ -71,15 +71,15 @@ typedef struct {
     uint8_t    type      ; // Transfer type: control/bulk/interrupt/isochronous
     uint16_t   maxsize   ; // Maximum packet size
     uint16_t   interval  ; // Polling interval in ms
+    uint8_t    data_pid  ; // Toggle between DATA0/DATA1 packets
     bool       configured; // Endpoint is configured
     bool       active    ; // Transfer is active
     bool       setup     ; // SETUP packet flag // TODO: How useful is this?
-    uint8_t    data_pid  ; // Toggle between DATA0/DATA1 packets
-    io_rw_32  *ecr       ; // Endpoint control register
-    io_rw_32  *bcr       ; // Buffer control register
     volatile               // Data buffer is volative
     uint8_t   *data_buf  ; // Data buffer in DPSRAM
     uint8_t   *user_buf  ; // User buffer in RAM or flash
+    io_rw_32  *ecr       ; // Endpoint control register
+    io_rw_32  *bcr       ; // Buffer control register
     uint16_t   bytes_long; // Bytes in the whole transfer
     uint16_t   bytes_left; // Bytes left to transfer
     uint16_t   bytes_done; // Bytes done transferring
