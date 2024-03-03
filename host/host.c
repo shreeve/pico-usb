@@ -870,8 +870,6 @@ void usb_task() {
                 } else if (dev->state < DEVICE_ACTIVE) {
                     printf("Calling enumerate\n");
                     enumerate(ep);
-                } else {
-                    printf("Not sure what to do...\n");
                 }
            }   break;
 
