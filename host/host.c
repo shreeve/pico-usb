@@ -864,14 +864,13 @@ void usb_task() {
                 // Handle the transfer
                 device_t *dev = get_device(ep->dev_addr);
                 if (len) {
-                    printf("Will send a ZLP...\n");
+                    printf("Calling transfer_zlp\n");
                     transfer_zlp(ep);
                 } else if (dev->state < DEVICE_ACTIVE) {
-                    printf("Will enumerate()\n");
+                    printf("Calling enumerate\n");
                     enumerate(ep);
                 } else {
                     printf("Not sure what to do...\n");
-                    // TODO: Not sure what to do...
                 }
            }   break;
 
