@@ -459,10 +459,11 @@ void transfer(endpoint_t *ep) {
 void transfer_zlp(void *arg) {
     endpoint_t *ep = (endpoint_t *) arg;
 
-    // Perform the ZLP transfer
+    // Prepare the ZLP transfer
     clear_endpoint(ep);
     ep->active   = true;
     ep->data_pid = 1;
+
     transfer(ep);
 }
 
@@ -483,7 +484,7 @@ void control_transfer(endpoint_t *ep, usb_setup_packet_t *setup) {
     // Copy the setup packet
     memcpy((void*) usbh_dpram->setup_packet, setup, sizeof(usb_setup_packet_t));
 
-    // Perform the control transfer
+    // Prepare the control transfer
     clear_endpoint(ep);
     ep->active     = true;
     ep->setup      = true;
@@ -491,6 +492,7 @@ void control_transfer(endpoint_t *ep, usb_setup_packet_t *setup) {
     ep->ep_addr    = setup->bmRequestType & USB_DIR_IN;
     ep->bytes_long = setup->wLength;
     ep->bytes_left = setup->wLength;
+
     transfer(ep);
 }
 
