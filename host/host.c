@@ -359,18 +359,17 @@ enum {
 };
 
 typedef struct {
-    uint8_t  state        ; // Current device state
-    uint8_t  speed        ; // Device speed (0:disconnected, 1:full, 2:high)
-    uint8_t  control_state; // Control transfer state
-    uint8_t  class        ; // Device class
-    uint8_t  subclass     ; // Device subclass
-    uint8_t  protocol     ; // Device protocol
-    uint16_t vid          ; // Vendor Id  (0x0403: FTDI)
-    uint16_t pid          ; // Product Id (0xcd18: Abaxis Piccolo Xpress)
-    uint16_t version      ; // Version number
-    uint8_t  manufacturer ; // String index of manufacturer
-    uint8_t  product      ; // String index of product
-    uint8_t  serial       ; // String index of serial number
+    uint8_t  state       ; // Current device state
+    uint8_t  speed       ; // Device speed (0:disconnected, 1:full, 2:high)
+    uint8_t  class       ; // Device class
+    uint8_t  subclass    ; // Device subclass
+    uint8_t  protocol    ; // Device protocol
+    uint16_t vid         ; // Vendor Id  (0x0403: FTDI)
+    uint16_t pid         ; // Product Id (0xcd18: Abaxis Piccolo Xpress)
+    uint16_t version     ; // Version number
+    uint8_t  manufacturer; // String index of manufacturer
+    uint8_t  product     ; // String index of product
+    uint8_t  serial      ; // String index of serial number
 } device_t;
 
 static device_t devices[MAX_DEVICES], *dev0 = devices;
