@@ -723,9 +723,9 @@ void enumerate(void *arg) {
 
             printf("Enumeration completed\n");
 
-            show_string_blocking(ep, 1);
-            show_string_blocking(ep, 2);
-            show_string_blocking(ep, 3);
+            // show_string_blocking(ep, 1);
+            // show_string_blocking(ep, 2);
+            // show_string_blocking(ep, 3);
 
             break;
     }
