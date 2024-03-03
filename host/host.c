@@ -991,7 +991,7 @@ void isr_usbctrl() {
         bindump(dub ? "│BUF/2" : "│BUF/1", bits);
 
         // Lookup the endpoint
-        handle_buffers(ep); usb_hw_clear->buf_status = ~0; bits ^= 0x01; // TODO: TOTAL HACK!
+        handle_buffers(ep); usb_hw_clear->buf_status = 0x1; bits ^= 0x1; // TODO: TOTAL HACK!
 
 //         // Check the polled endpoints (IN and OUT)
 //         for (uint8_t i = 0; i < MAX_ENDPOINTS && bits; i++) {
