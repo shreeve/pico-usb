@@ -273,7 +273,7 @@ uint32_t calc_buffer(endpoint_t *ep, uint8_t buf_id) {
 
 // Send buffer(s) immediately for active transfers, new ones still need SIE help
 void send_buffers(endpoint_t *ep) {
-    uint32_t ecr = usbh_dpram->epx_ctrl; // TODO: Add ep->ecr so any EP works
+    uint32_t ecr = *ep->ecr;
     uint32_t bcr = calc_buffer(ep, 0);
 
     // Set ECR and BCR based on whether the transfer should be double buffered
@@ -311,19 +311,19 @@ void send_buffers(endpoint_t *ep) {
     uint32_t available = USB_BUF_CTRL_AVAIL << 16 | USB_BUF_CTRL_AVAIL;
 
     // Update ECR and BCR (set BCR first so controller has time to respond)
-    usbh_dpram->epx_buf_ctrl = bcr & ~available;
-    usbh_dpram->epx_ctrl     = ecr;
+    *ep->bcr = bcr & ~available;
+    *ep->ecr = ecr;
     nop();
     nop();
-    usbh_dpram->epx_buf_ctrl = bcr;
+    *ep->bcr = bcr;
 }
 
 void handle_buffers(endpoint_t *ep) {
     if (!ep->active) show_endpoint(ep), panic("Halted");
 
     // Read current buffer(s)
-    uint32_t ecr = usbh_dpram->epx_ctrl;              // ECR is single or double
-    uint32_t bcr = usbh_dpram->epx_buf_ctrl;          // Buffer control register
+    uint32_t ecr = *ep->ecr;                          // ECR is single or double
+    uint32_t bcr = *ep->bcr;                          // Buffer control register
     if (ecr & EP_CTRL_DOUBLE_BUFFERED_BITS) {         // When double buffered...
         if (read_buffer(ep, 0, bcr) == ep->maxsize)   // If first buffer is full
             if (ep->bytes_left)                       // And, there's more data
