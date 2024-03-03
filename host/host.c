@@ -288,29 +288,6 @@ void ship_buffers(endpoint_t *ep) {
         ecr &= ~EP_CTRL_DOUBLE_BUFFERED_BITS;
     }
 
-    // Debug output
-    if (ep->bytes_long) {
-        printf( "┌───────┬──────┬─────────────────────────────────────┬────────────┐\n");
-        printf( "│Frame  │ %4u │ %-35s", usb_hw->sof_rd, "Buffer Handler");
-        show_endpoint(ep);
-        printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
-        bindump("│DAR", usb_hw->dev_addr_ctrl); // Device address register
-        bindump("│SSR", usb_hw->sie_status);    // SIE status register
-        bindump("│SCR", usb_hw->sie_ctrl);      // SIE control register
-        bindump("│ECR", ecr);                   // EPX control register
-        bindump("│BCR", bcr);                   // EPX buffer control register
-        if (ep->setup) {
-            uint32_t *packet = (uint32_t *) usbh_dpram->setup_packet;
-            printf( "├───────┼──────┼─────────────────────────────────────┴────────────┤\n");
-            hexdump("│SETUP", packet, sizeof(usb_setup_packet_t), 1);
-            printf( "└───────┴──────┴──────────────────────────────────────────────────┘\n");
-        } else {
-        //     char *str = pid ? "|DATA0" : "|DATA1"; // We reversed this above
-        //     hexdump(str, (ep->data_buf + buf_id * 64), len, 1);
-            printf( "└───────┴──────┴─────────────────────────────────────┴────────────┘\n");
-        }
-    }
-
     // Update ECR and BCR (set BCR first so controller has time to respond)
     *ep->bcr = bcr & UNAVAILABLE;
     *ep->ecr = ecr;
@@ -450,6 +427,28 @@ void transfer(endpoint_t *ep) {
       | (in  ?     USB_SIE_CTRL_RECEIVE_DATA_BITS    // Receive bit means IN
                  : USB_SIE_CTRL_SEND_DATA_BITS)      // Send bit means OUT
       |            USB_SIE_CTRL_START_TRANS_BITS;    // Start the transfer now
+
+    // Debug output
+    if (ep->setup || (*ep->bcr & 0x3f)) {
+        printf("\n");
+        printf( "┌───────┬──────┬─────────────────────────────────────┬────────────┐\n");
+        printf( "│Frame  │ %4u │ %-35s", usb_hw->sof_rd, "Transfer started");
+        show_endpoint(ep);
+        printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
+        bindump("│DAR", usb_hw->dev_addr_ctrl);
+        bindump("│SSR", usb_hw->sie_status);
+        bindump("│SCR", usb_hw->sie_ctrl);
+        bindump("│ECR", *ep->ecr);
+        bindump("│BCR", *ep->bcr);
+        if (ep->setup) {
+            uint32_t *packet = (uint32_t *) usbh_dpram->setup_packet;
+            printf( "├───────┼──────┼─────────────────────────────────────┴────────────┤\n");
+            hexdump("│SETUP", packet, sizeof(usb_setup_packet_t), 1);
+            printf( "└───────┴──────┴──────────────────────────────────────────────────┘\n");
+        } else {
+            printf( "└───────┴──────┴─────────────────────────────────────┴────────────┘\n");
+        }
+    }
 
     // Perform the transfer (also gives SCR some time to settle)
     usb_hw->dev_addr_ctrl = dar;
@@ -871,6 +870,8 @@ void usb_task() {
                 } else if (dev->state < DEVICE_ACTIVE) {
                     printf("Calling enumerate\n");
                     enumerate(ep);
+                } else {
+                    printf("Transfer completed\n");
                 }
            }   break;
 
