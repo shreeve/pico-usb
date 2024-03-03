@@ -523,7 +523,8 @@ void get_string_descriptor_blocking(endpoint_t *ep, uint8_t index) {
         .wLength       = MAX_TEMP,
     }));
 
-    do { usb_task(); } while (ep->active);
+    do { usb_task(); } while (ep->active); // This transfer...
+    do { usb_task(); } while (ep->active); // The ZLP...
 }
 
 void show_device_descriptor(void *ptr) {
@@ -724,9 +725,9 @@ void enumerate(void *arg) {
 
             printf("Enumeration completed\n");
 
-            // show_string_blocking(ep, 1);
-            // show_string_blocking(ep, 2);
-            // show_string_blocking(ep, 3);
+            show_string_blocking(ep, 1);
+            show_string_blocking(ep, 2);
+            show_string_blocking(ep, 3);
 
             break;
     }
