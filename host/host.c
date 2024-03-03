@@ -452,7 +452,7 @@ void transfer(endpoint_t *ep) {
     // Perform the transfer (also gives SCR some time to settle)
     usb_hw->dev_addr_ctrl = dar;
     usb_hw->sie_ctrl      = scr & ~USB_SIE_CTRL_START_TRANS_BITS;
-    send_buffers(ep); // New transfers need this and help from SIE's START_TRANS
+    send_buffers(ep);
     usb_hw->sie_ctrl      = scr;
 }
 
