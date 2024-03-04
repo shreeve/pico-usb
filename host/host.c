@@ -611,7 +611,8 @@ void get_device_descriptor(endpoint_t *ep) {
 void set_device_address(endpoint_t *ep) {
     printf("Set device address to %u\n", ep->dev_addr);
 
-    control_transfer(ep, &((usb_setup_packet_t) {
+    // TODO: Allow devices to change their address (not just from zero)
+    control_transfer(epx, &((usb_setup_packet_t) {
         .bmRequestType = USB_DIR_OUT
                        | USB_REQ_TYPE_STANDARD
                        | USB_REQ_TYPE_RECIPIENT_DEVICE,
