@@ -247,7 +247,7 @@ uint16_t read_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
 }
 
 // Calculate and return the corresponding BCR half for a buffer
-uint32_t calc_buffer(endpoint_t *ep, uint8_t buf_id) {
+uint16_t calc_buffer(endpoint_t *ep, uint8_t buf_id) {
     bool     in  = ep_in(ep);                         // Buffer is inbound
     bool     mas = ep->bytes_left > ep->maxsize;      // Any more packets?
     uint8_t  pid = ep->data_pid;                      // Set DATA0/DATA1
