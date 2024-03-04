@@ -810,7 +810,7 @@ SDK_INLINE const char *task_name(uint8_t type) {
 SDK_INLINE const char *callback_name(void (*fn) (void *)) {
     if (fn == enumerate   ) return "enumerate";
     if (fn == transfer_zlp) return "transfer_zlp";
-    panic("Unknown callback queued");
+    printf("Calling unknown callback function\n");
 }
 
 void usb_task() {
