@@ -797,7 +797,7 @@ static uint32_t guid = 1;
 
 static queue_t *queue = &((queue_t) { 0 });
 
-const char *task_name(uint8_t type) {
+SDK_INLINE const char *task_name(uint8_t type) {
     switch (type) {
         case TASK_CALLBACK: return "TASK_CALLBACK";
         case TASK_CONNECT:  return "TASK_CONNECT";
@@ -807,7 +807,7 @@ const char *task_name(uint8_t type) {
     panic("Unknown task queued");
 }
 
-const char *callback_name(void (*fn) (void *)) {
+SDK_INLINE const char *callback_name(void (*fn) (void *)) {
     if (fn == enumerate   ) return "enumerate";
     if (fn == transfer_zlp) return "transfer_zlp";
     panic("Unknown callback queued");
@@ -877,7 +877,7 @@ void usb_task() {
 
 // ==[ Interrupts ]=============================================================
 
-void printf_interrupts(uint32_t ints) {
+SDK_INLINE void printf_interrupts(uint32_t ints) {
     if (ints & USB_INTS_HOST_CONN_DIS_BITS   ) printf(", device"  );
     if (ints & USB_INTS_STALL_BITS           ) printf(", stall"   );
     if (ints & USB_INTS_BUFF_STATUS_BITS     ) printf(", buffer"  );
