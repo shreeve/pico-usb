@@ -445,6 +445,9 @@ void transfer(endpoint_t *ep) {
         }
     }
 
+    // Mark the endpoint as active
+    ep->active = true;
+
     // Perform the transfer (also gives SCR some time to settle)
     usb_hw->dev_addr_ctrl = dar;
     usb_hw->sie_ctrl      = scr & ~USB_SIE_CTRL_START_TRANS_BITS;
@@ -455,11 +458,8 @@ void transfer(endpoint_t *ep) {
 void transfer_zlp(void *arg) {
     endpoint_t *ep = (endpoint_t *) arg;
 
-    // Prepare the ZLP transfer
-    clear_endpoint(ep);
-    ep->active   = true;
+    // Send the ZLP transfer
     ep->data_pid = 1;
-
     transfer(ep);
 }
 
@@ -480,15 +480,12 @@ void control_transfer(endpoint_t *ep, usb_setup_packet_t *setup) {
     // Copy the setup packet
     memcpy((void*) usbh_dpram->setup_packet, setup, sizeof(usb_setup_packet_t));
 
-    // Prepare the control transfer
-    clear_endpoint(ep);
-    ep->active     = true;
+    // Send the control transfer
     ep->setup      = true;
     ep->data_pid   = 1;
     ep->ep_addr    = setup->bmRequestType & USB_DIR_IN;
     ep->bytes_long = setup->wLength;
     ep->bytes_left = setup->wLength;
-
     transfer(ep);
 }
 
