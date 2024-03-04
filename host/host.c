@@ -360,7 +360,7 @@ SDK_INLINE device_t *get_device(uint8_t dev_addr) {
 uint8_t next_dev_addr() {
     for (uint8_t i = 1; i < MAX_DEVICES; i++) {
         if (devices[i].state == DEVICE_DISCONNECTED) {
-            devices[i].state = DEVICE_ALLOCATED;
+            devices[i].state =  DEVICE_ALLOCATED;
             return i;
         }
     }
