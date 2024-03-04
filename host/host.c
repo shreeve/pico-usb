@@ -288,7 +288,7 @@ void ship_buffers(endpoint_t *ep) {
         ecr &= ~EP_CTRL_DOUBLE_BUFFERED_BITS;
     }
 
-    // Update ECR and BCR (set BCR first so controller has time to respond)
+    // Update ECR and BCR (set BCR first so controller has time to settle)
     *ep->bcr = bcr & UNAVAILABLE;
     *ep->ecr = ecr;
     nop();
