@@ -252,7 +252,7 @@ uint16_t calc_buffer(endpoint_t *ep, uint8_t buf_id) {
     bool     mas = ep->bytes_left > ep->maxsize;      // Any more packets?
     uint8_t  pid = ep->data_pid;                      // Set DATA0/DATA1
     uint16_t len = MIN(ep->maxsize, ep->bytes_left);  // Buffer length
-    uint32_t bcr = (in  ? 0 : USB_BUF_CTRL_FULL)      // IN/Recv=0, OUT/Send=1
+    uint16_t bcr = (in  ? 0 : USB_BUF_CTRL_FULL)      // IN/Recv=0, OUT/Send=1
                  | (mas ? 0 : USB_BUF_CTRL_LAST)      // Trigger TRANS_COMPLETE
                  | (pid ?     USB_BUF_CTRL_DATA1_PID  // Use DATA1 if needed
                             : USB_BUF_CTRL_DATA0_PID) // Use DATA0 if needed
