@@ -233,7 +233,7 @@ uint16_t read_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
         memcpy(ep->user_buf, (void *) (ep->data_buf + buf_id * 64), len);
         hexdump(buf_id ? "│IN/2" : "│IN/1", ep->user_buf, len, 1);
         ep->user_buf += len;
-    }
+    } // OUT will be shown in ship_buffers(), empty will be shown as a ZLP/OUT
 
     // Update byte counts
     ep->bytes_done += len;
@@ -267,7 +267,7 @@ uint32_t calc_buffer(endpoint_t *ep, uint8_t buf_id) {
         memcpy((void *) (ep->data_buf + buf_id * 64), ep->user_buf, len);
         hexdump(buf_id ? "│OUT/2" : "│OUT/1", ep->user_buf, len, 1);
         ep->user_buf += len;
-    }
+    } // IN will be shown in read_buffers(), empty will be shown as a ZLP/IN
 
     // Update byte counts
     ep->bytes_left -= len;
