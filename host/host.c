@@ -683,7 +683,7 @@ void enumerate(void *arg) {
             ep->dev_addr = new_addr;
 
             printf("Starting SET_ADDRESS\n");
-            set_device_address(ep, new_ep);
+            set_device_address(ep);
         }   break;
 
         case ENUMERATION_SET_ADDRESS: {
