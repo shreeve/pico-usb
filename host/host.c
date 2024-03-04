@@ -603,8 +603,9 @@ enum {
 
 void get_device_descriptor(endpoint_t *ep) {
     printf("Get device descriptor\n");
-    uint8_t len = sizeof(usb_device_descriptor_t);
-    get_descriptor(ep, USB_DT_DEVICE, ep->dev_addr ? len : 8);
+
+    uint8_t len = ep->dev_addr ? sizeof(usb_device_descriptor_t) : 8;
+    get_descriptor(ep, USB_DT_DEVICE, len);
 }
 
 void set_device_address(endpoint_t *ep) {
@@ -623,6 +624,7 @@ void set_device_address(endpoint_t *ep) {
 
 void get_configuration_descriptor(endpoint_t *ep) {
     printf("Get configuration descriptor\n");
+
     get_descriptor(ep, USB_DT_CONFIG, sizeof(usb_configuration_descriptor_t));
 }
 
@@ -662,8 +664,6 @@ void enumerate(void *arg) {
             uint8_t maxsize0 =
                 ((usb_device_descriptor_t *) epx->user_buf)->bMaxPacketSize0;
 
-            printf("Starting SET_ADDRESS\n");
-
             // Allocate a new device
             new_addr      = next_dev_addr();
             device_t *dev = get_device(new_addr);
@@ -681,7 +681,8 @@ void enumerate(void *arg) {
             }));
             ep->dev_addr = new_addr;
 
-            set_device_address(ep);
+            printf("Starting SET_ADDRESS\n");
+            set_device_address(ep, new_ep);
         }   break;
 
         case ENUMERATION_SET_ADDRESS: {
