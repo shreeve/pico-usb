@@ -469,14 +469,6 @@ void control_transfer(endpoint_t *ep, usb_setup_packet_t *setup) {
     if ( ep->active)     panic("Control transfers per device must be serial");
     if ( ep->type)       panic("Control transfers require a control endpoint");
 
-    // Validate device address and state
-    uint8_t dev_addr = ep->dev_addr;
-    device_t *dev = get_device(dev_addr);
-    if (!dev->state || (dev_addr ? dev->state <  DEVICE_ADDRESSED
-                                 : dev->state >= DEVICE_ADDRESSED)) {
-        panic("Device %u has an invalid state", dev_addr);
-    }
-
     // Copy the setup packet
     memcpy((void*) usbh_dpram->setup_packet, setup, sizeof(usb_setup_packet_t));
 
