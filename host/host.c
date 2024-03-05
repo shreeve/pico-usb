@@ -25,6 +25,8 @@
 
 // ==[ PicoUSB ]================================================================
 
+// TODO: Add debug levels: 0=none, 1=errors, 2=info, 3=debug
+
 // User defined limits
 #define USER_HUBS      0
 #define USER_DEVICES   2 // Not including dev0
