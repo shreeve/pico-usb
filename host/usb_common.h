@@ -93,6 +93,12 @@ struct usb_interface_descriptor {
     uint8_t  iInterface;
 } __packed;
 
+struct usb_string_descriptor {
+    uint8_t  bLength;
+    uint8_t  bDescriptorType;
+    uint16_t bUnicode;
+} __packed;
+
 struct usb_endpoint_descriptor {
     uint8_t  bLength;
     uint8_t  bDescriptorType;
@@ -125,6 +131,7 @@ typedef struct usb_descriptor               usb_descriptor_t;
 typedef struct usb_device_descriptor        usb_device_descriptor_t;
 typedef struct usb_configuration_descriptor usb_configuration_descriptor_t;
 typedef struct usb_interface_descriptor     usb_interface_descriptor_t;
+typedef struct usb_string_descriptor        usb_string_descriptor_t;
 typedef struct usb_endpoint_descriptor      usb_endpoint_descriptor_t;
 typedef struct usb_endpoint_descriptor_long usb_endpoint_descriptor_long_t;
 typedef struct usb_setup_packet             usb_setup_packet_t;
