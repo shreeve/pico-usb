@@ -819,19 +819,15 @@ void usb_task() {
                 task.callback.fn(task.callback.arg);
             }   break;
 
-            case TASK_CONNECT:
+            case TASK_CONNECT: {
+                static uint64_t last_attempt;
 
-                // Defer nested connections
-                if (dev0->state == DEVICE_ENUMERATING) {
-                    // TODO: One day, maybe add nested new connections?
-                    // bool empty = queue_is_empty(queue);
-                    // queue_add_blocking(queue, &task);
-                    // if (empty) return;
-
-                    // For now, just ignore nested device connects
-                    printf("Blocked a nested connection request\n");
+                // For now, ignore rapid device connects
+                if (time_us_64() - last_attempt < 1000000) {
+                    printf("Connections allowed only once every second\n");
                     break;
                 }
+                last_attempt = time_us_64();
 
                 // Initialize dev0
                 reset_device(0); // TODO: Is this really necessary?
@@ -845,7 +841,7 @@ void usb_task() {
                 // Start enumeration
                 enumerate(NULL);
 
-                break;
+            }   break;
 
             case TASK_TRANSFER: {
                 endpoint_t *ep  = task.transfer.ep;
