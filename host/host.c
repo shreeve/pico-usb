@@ -665,7 +665,7 @@ void enumerate(void *arg) {
             dev->state    = DEVICE_ENUMERATING;
             dev->speed    = dev0->speed;
 
-            // Allocate EP0 for the new device
+            // Allocate EP0 on the new device
             endpoint_t *ep = next_endpoint(new_addr, &((usb_endpoint_descriptor_t) {
                 .bLength          = sizeof(usb_endpoint_descriptor_t),
                 .bDescriptorType  = USB_DT_ENDPOINT,
