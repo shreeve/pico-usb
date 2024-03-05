@@ -1072,7 +1072,7 @@ void isr_usbctrl() {
 // ==[ Main ]===================================================================
 
 int main() {
-    stdio_init_all();
+    stdout_uart_init(); // We only need stdout via UART
     printf("\033[2J\033[H\n==[ USB host example]==\n\n");
     setup_usb_host();
 
