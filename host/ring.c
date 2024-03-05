@@ -172,4 +172,24 @@ uint16_t ring_read_blocking(ring_t *r, void *ptr, uint16_t len) {
     return ring_read_internal(r, ptr, len, true);
 }
 
+// ==[ String printing ]========================================================
+
+#if 1
+
+#include <stdarg.h>
+
+#define RING_BUFFER_SIZE ((1 << 8) - 1)
+
+static char ring_buffer[RING_BUFFER_SIZE];
+
+uint16_t ring_printf(ring_t *r, const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    uint16_t len = vsnprintf(ring_buffer, RING_BUFFER_SIZE, fmt, args);
+    va_end(args);
+    return ring_write_blocking(r, ring_buffer, len);
+}
+
+#endif
+
 // =============================================================================
