@@ -59,6 +59,7 @@ enum {
 //                   "├─┼┤"  // ╠═╬╣ // ┣━╋┫ // ├─┼┤ // 8 9 a b
 //                   "└─┴┘"; // ╚═╩╝ // ┗━┻┛ // ╰─┴╯ // c d e f
 
+static uint8_t ctrl_buf[MAX_TEMP];
 static uint8_t temp_buf[MAX_TEMP];
 
 void usb_task(); // Forward declaration
@@ -126,7 +127,7 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb,
         .type       = usb->bmAttributes,
         .maxsize    = usb->wMaxPacketSize,
         .interval   = usb->bInterval,
-        .user_buf   = user_buf != NULL ? user_buf : temp_buf, // TODO: We need a legit value here...
+        .user_buf   = user_buf != NULL ? user_buf : temp_buf,
     };
 
     // Setup the necessary registers and data buffer pointer
@@ -182,12 +183,14 @@ endpoint_t *find_endpoint(uint8_t dev_addr, uint8_t ep_addr) {
     return NULL;
 }
 
-endpoint_t *next_endpoint(uint8_t dev_addr, usb_endpoint_descriptor_t *usb) {
+endpoint_t *next_endpoint(uint8_t dev_addr, usb_endpoint_descriptor_t *usb,
+                          uint8_t *user_buf) {
+
     for (uint8_t i = 1; i < MAX_ENDPOINTS; i++) {
         endpoint_t *ep = &eps[i];
         if (!ep->configured) {
             ep->dev_addr = dev_addr;
-            setup_endpoint(ep, usb, NULL);
+            setup_endpoint(ep, usb, user_buf);
             return ep;
         }
     }
@@ -646,6 +649,8 @@ void enumerate(void *arg) {
 
     if (!ep) step = ENUMERATION_START;
 
+    // TODO: We need a way to ensure only one device enumerating at a time!
+
     switch (step++) {
 
         case ENUMERATION_START:
@@ -665,7 +670,7 @@ void enumerate(void *arg) {
             dev->state    = DEVICE_ENUMERATING;
             dev->speed    = dev0->speed;
 
-            // Allocate EP0 on the new device
+            // Allocate EP0 on the new device (uses the shared ctrl_buf buffer)
             endpoint_t *ep = next_endpoint(new_addr, &((usb_endpoint_descriptor_t) {
                 .bLength          = sizeof(usb_endpoint_descriptor_t),
                 .bDescriptorType  = USB_DT_ENDPOINT,
@@ -673,7 +678,7 @@ void enumerate(void *arg) {
                 .bmAttributes     = USB_TRANSFER_TYPE_CONTROL,
                 .wMaxPacketSize   = maxsize0,
                 .bInterval        = 0,
-            }));
+            }), ctrl_buf);
             ep->dev_addr = new_addr;
 
             printf("Starting SET_ADDRESS\n");
