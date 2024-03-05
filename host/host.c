@@ -110,7 +110,7 @@ SDK_INLINE void clear_endpoint(endpoint_t *ep) {
     ep->active     = false;
     ep->setup      = false;
     ep->data_pid   = 0;
-    ep->user_buf   = temp_buf;
+    ep->user_buf   = temp_buf; // TODO: We need a legit value here... maybe don't change this, just advance another pointer
     ep->bytes_long = 0;
     ep->bytes_left = 0;
     ep->bytes_done = 0;
@@ -126,7 +126,7 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb,
         .type       = usb->bmAttributes,
         .maxsize    = usb->wMaxPacketSize,
         .interval   = usb->bInterval,
-        .user_buf   = user_buf != NULL ? user_buf : temp_buf,
+        .user_buf   = user_buf != NULL ? user_buf : temp_buf, // TODO: We need a legit value here...
     };
 
     // Setup the necessary registers and data buffer pointer
@@ -554,7 +554,7 @@ void show_configuration_descriptor(void *ptr) {
 }
 
 void show_string_blocking(endpoint_t *ep, uint8_t index) {
-    uint8_t *ptr = ep->user_buf;
+    uint8_t *ptr = ep->user_buf; // TODO: Confirm this address is ok
 
     // Request a string and wait for it
     get_string_descriptor_blocking(ep, index);
@@ -652,12 +652,12 @@ void enumerate(void *arg) {
             printf("Enumeration started\n");
 
             printf("Starting GET_MAXSIZE\n");
-            get_device_descriptor(epx);
+            get_device_descriptor(epx); // TODO: We need to make sure we snag the value right when it comes back
             break;
 
         case ENUMERATION_GET_MAXSIZE: {
             uint8_t maxsize0 =
-                ((usb_device_descriptor_t *) epx->user_buf)->bMaxPacketSize0;
+                ((usb_device_descriptor_t *) epx->user_buf)->bMaxPacketSize0; // TODO: How do we know this is our packet?
 
             // Allocate a new device
             new_addr      = next_dev_addr();
@@ -692,14 +692,14 @@ void enumerate(void *arg) {
         }   break;
 
         case ENUMERATION_GET_DEVICE: {
-            show_device_descriptor(ep->user_buf);
+            show_device_descriptor(ep->user_buf); // TODO: How is this even correct?
 
             printf("Starting GET_CONFIG\n");
             get_configuration_descriptor(ep);
         }   break;
 
         case ENUMERATION_GET_CONFIG: {
-            show_configuration_descriptor(ep->user_buf);
+            show_configuration_descriptor(ep->user_buf); // TODO: How is this even correct?
 
             printf("Starting SET_CONFIG\n");
             set_configuration(ep, 1);
@@ -1012,7 +1012,7 @@ void isr_usbctrl() {
         if (len) {
             printf( "├───────┼──────┼─────────────────────────────────────┴────────────┤\n");
             printf( "│XFER\t│ %4u │ Device %-28u   Task #%-4u │\n", len, ep->dev_addr, guid);
-            hexdump("│Data", temp_buf, len, 1);
+            hexdump("│Data", temp_buf, len, 1); // TODO: We should use the base buffer address for this endpoint
             flat = true;
         } else {
             char *str = ep_in(ep) ? "IN" : "OUT";
@@ -1021,7 +1021,7 @@ void isr_usbctrl() {
         }
 
         // Clear the endpoint (since its complete)
-        clear_endpoint(ep);
+        clear_endpoint(ep); // TODO: This resets the buffer, which is why user_buf points to temp_buf... it's wrong on several levels!
 
         // Queue the transfer task
         queue_add_blocking(queue, &((task_t) {
