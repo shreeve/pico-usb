@@ -564,7 +564,7 @@ void show_string_blocking(endpoint_t *ep, uint8_t index) {
     uint16_t *uni = (uint16_t *) (ptr + 2);
 
     // Convert Unicode string to UTF-8
-    char *str = (char [MAX_TEMP]) { 0 }, *utf = str;
+    char *str = (char[MAX_TEMP]) { 0 }, *utf = str;
     while (len--) {
         uint16_t u = *uni++;
         if (u < 0x80) {
