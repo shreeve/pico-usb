@@ -38,8 +38,10 @@ void ring_init_with_spin_lock(ring_t *r, uint size, uint spin_lock_num) {
     r->rptr = 0;
 }
 
-void ring_init(ring_t *r, uint size) {
+ring_t *ring_new(uint size) {
+    ring_t *r = (ring_t *) calloc(sizeof(ring_t), 1);
     ring_init_with_spin_lock(r, size, next_striped_spin_lock_num());
+    return r;
 }
 
 void ring_reset(ring_t *r) {
@@ -52,7 +54,7 @@ void ring_reset(ring_t *r) {
 void ring_destroy(ring_t *r) {
     uint32_t save = spin_lock_blocking(r->core.spin_lock);
     free(r->data);
-    *r = (ring_t) { 0 };
+    free(r);
     spin_unlock(r->core.spin_lock, save);
 }
 
