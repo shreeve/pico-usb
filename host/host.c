@@ -231,7 +231,7 @@ uint16_t read_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
     // Copy inbound data from the data buffer to the user buffer
     if (in && len) {
         memcpy(ep->user_buf, (void *) (ep->data_buf + buf_id * 64), len);
-        hexdump(buf_id ? "│IN/2" : "│IN/1", ep->user_buf, len, 1);
+        hexdump(buf_id ? "│IN/2" : "│IN/1", ep->user_buf, len, 1); // ~7.5 ms
         ep->user_buf += len;
     } // NOTE: OUT will show in ship_buffers(), empty will show as a ZLP/OUT
 
@@ -451,7 +451,7 @@ void transfer(endpoint_t *ep) {
     // Perform the transfer (also gives SCR some time to settle)
     usb_hw->dev_addr_ctrl = dar;
     usb_hw->sie_ctrl      = scr & ~USB_SIE_CTRL_START_TRANS_BITS;
-    ship_buffers(ep);
+    ship_buffers(ep); // ~20 μs
     usb_hw->sie_ctrl      = scr;
 }
 
@@ -811,7 +811,7 @@ void usb_task() {
 
     while (queue_try_remove(queue, &task)) {
         uint8_t type = task.type;
-        printf("\n=> %u) New task, %s\n\n", task.guid, task_name(type));
+        printf("\n=> %u) New task, %s\n\n", task.guid, task_name(type)); // ~3 ms (sprintf was ~31 μs, ring_printf was 37 μs)
         switch (type) {
 
             case TASK_CALLBACK: {
@@ -936,7 +936,7 @@ void isr_usbctrl() {
             printf( "├───────┼──────┼─────────────────────────────────────┼────────────┤\n");
             printf( "│CONNECT│ %-4s │ %-35s │ Task #%-4u │\n", "", "New device connected", guid);
 
-            queue_add_blocking(queue, &((task_t) {
+            queue_add_blocking(queue, &((task_t) { // ~20 μs
                 .type          = TASK_CONNECT,
                 .guid          = guid++,
                 .connect.speed = speed,
