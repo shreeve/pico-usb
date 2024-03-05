@@ -25,5 +25,8 @@ target_link_libraries(${project_name} PRIVATE
   hardware_irq
 )
 
+# uncomment to disable stdio via uart
+# pico_enable_stdio_uart(${project_name} 0)
+
 # uncomment to create uf2 files
 # pico_add_extra_outputs(${project_name})
