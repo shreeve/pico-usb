@@ -644,6 +644,7 @@ enum {
     DRIVER_COUNT = sizeof(drivers) / sizeof(driver_t)
 };
 
+// Determine the length of an interface descriptor by adding up all its elements
 static uint16_t interface_len(usb_interface_descriptor_t *ifc,
                               uint8_t ias, uint16_t max) {
     uint8_t  *cur = (uint8_t *) ifc;
@@ -666,6 +667,7 @@ static uint16_t interface_len(usb_interface_descriptor_t *ifc,
     return len;
 }
 
+// Parse a configuration descriptor and enable drivers for each interface
 bool enable_drivers(endpoint_t *ep) {
     usb_configuration_descriptor_t *ptr =                // Main descriptor is a
         (usb_configuration_descriptor_t *) ep->user_buf; // List of descriptors
@@ -680,7 +682,7 @@ bool enable_drivers(endpoint_t *ep) {
         uint8_t ias = 1; // Number of interface associations
 
         // Debug output
-        hexdump("|CFG", cur, *cur, 1);
+        hexdump("|DRV", cur, *cur, 1);
 
         // Optional: Interface Assocation Descriptor (IAD)
         if (cur[1] == USB_DT_INTERFACE_ASSOCIATION) {
