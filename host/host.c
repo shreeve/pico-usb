@@ -57,8 +57,8 @@ enum {
 //                   "├─┼┤"  // ╠═╬╣ // ┣━╋┫ // ├─┼┤ // 8 9 a b
 //                   "└─┴┘"; // ╚═╩╝ // ┗━┻┛ // ╰─┴╯ // c d e f
 
-static uint8_t ctrl_buf[MAX_TEMP];
-static uint8_t temp_buf[MAX_TEMP];
+static uint8_t ctrl_buf[MAX_TEMP]; // Buffer for control transfers (shared)
+static uint8_t temp_buf[MAX_TEMP]; // TODO: Where is this needed???
 
 void usb_task(); // Forward declaration
 
