@@ -227,7 +227,7 @@ enum { // Used to mask availability in the BCR (enum resolves at compile time)
     UNAVAILABLE = ~(USB_BUF_CTRL_AVAIL << 16 | USB_BUF_CTRL_AVAIL)
 };
 
-// Read a buffer and return its length
+// Read a buffer and return its length (data_buf -> user_buf)
 uint16_t read_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
     bool     in   = ep_in(ep);                   // Buffer is inbound
     bool     full = bcr & USB_BUF_CTRL_FULL;     // Buffer is full (populated)
@@ -254,7 +254,7 @@ uint16_t read_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
     return len;
 }
 
-// Fill a buffer and return its half of the BCR
+// Fill a buffer and return its half of the BCR (user_buf -> data_buf)
 uint16_t fill_buffer(endpoint_t *ep, uint8_t buf_id) {
     bool     in  = ep_in(ep);                         // Buffer is inbound
     bool     mas = ep->bytes_left > ep->maxsize;      // Any more packets?
