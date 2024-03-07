@@ -25,8 +25,6 @@
 
 // ==[ PicoUSB ]================================================================
 
-// TODO: Add debug levels: 0=none, 1=errors, 2=info, 3=debug
-
 // User defined limits
 #define USER_HUBS      0
 #define USER_DEVICES   2 // Not including dev0
@@ -54,6 +52,7 @@ enum {
 #define usb_hw_clear ((usb_hw_t *) hw_clear_alias_untyped(usb_hw))
 #define usb_hw_set   ((usb_hw_t *) hw_set_alias_untyped  (usb_hw))
 
+// TODO: Add debug levels: 0=none, 1=errors, 2=info, 3=debug
 // const char *box = "┌─┬┐"  // ╔═╦╗ // ┏━┳┓ // ╭─┬╮ // 0 1 2 3
 //                   "│ ││"  // ║ ║║ // ┃ ┃┃ // │ ││ // 4 5 6 7
 //                   "├─┼┤"  // ╠═╬╣ // ┣━╋┫ // ├─┼┤ // 8 9 a b
@@ -77,12 +76,14 @@ typedef struct {
     uint8_t    data_pid  ; // Toggle between DATA0/DATA1 packets
     bool       configured; // Endpoint is configured
     bool       active    ; // Transfer is active
-    bool       setup     ; // SETUP packet flag // TODO: How useful is this?
-    volatile               // Data buffer is volative
-    uint8_t   *data_buf  ; // Data buffer in DPSRAM
-    uint8_t   *user_buf  ; // User buffer in RAM or flash
     io_rw_32  *ecr       ; // Endpoint control register
     io_rw_32  *bcr       ; // Buffer control register
+    volatile               // Data buffer is volative
+    uint8_t   *data_buf  ; // Data buffer in DPSRAM
+
+    // Transfer state
+    bool       setup     ; // SETUP packet flag
+    uint8_t   *user_buf  ; // User buffer in DPSRAM, RAM, or flash
     uint16_t   bytes_long; // Bytes in the whole transfer
     uint16_t   bytes_left; // Bytes left to transfer
     uint16_t   bytes_done; // Bytes done transferring
@@ -109,9 +110,11 @@ SDK_INLINE void show_endpoint(endpoint_t *ep) {
 
 SDK_INLINE void clear_endpoint(endpoint_t *ep) {
     ep->active     = false;
-    ep->setup      = false;
     ep->data_pid   = 0;
-    ep->user_buf   = temp_buf; // TODO: We need a legit value here... maybe don't change this, just advance another pointer
+
+    // Transfer state
+    ep->setup      = false;
+    ep->user_buf   = temp_buf; // TODO: We need a legit value here...
     ep->bytes_long = 0;
     ep->bytes_left = 0;
     ep->bytes_done = 0;
