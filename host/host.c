@@ -303,7 +303,7 @@ void send_buffers(endpoint_t *ep) {
     *ep->bcr = bcr;
 }
 
-// Processes completed buffers in ISR context
+// Processes buffers in ISR context
 void handle_buffers(endpoint_t *ep) {
     if (!ep->active) show_endpoint(ep), panic("Halted");
 
