@@ -240,7 +240,7 @@ uint16_t read_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
         memcpy(ep->user_buf, (void *) (ep->data_buf + buf_id * 64), len);
         hexdump(buf_id ? "│IN/2" : "│IN/1", ep->user_buf, len, 1); // ~7.5 ms
         ep->user_buf += len;
-    } // NOTE: OUT will show in ship_buffers(), empty will show as a ZLP/OUT
+    } // NOTE: OUT will show in send_buffers(), empty will show as a ZLP/OUT
 
     // Update byte counts
     ep->bytes_done += len;
@@ -282,8 +282,8 @@ uint16_t fill_buffer(endpoint_t *ep, uint8_t buf_id) {
     return bcr;
 }
 
-// Ship buffer(s) immediately for active transfers, new ones still need SIE help
-void ship_buffers(endpoint_t *ep) {
+// Send buffer(s) immediately for active transfers, new ones still need SIE help
+void send_buffers(endpoint_t *ep) {
     uint32_t ecr = *ep->ecr;
     uint32_t bcr = fill_buffer(ep, 0);
 
@@ -319,8 +319,8 @@ void handle_buffers(endpoint_t *ep) {
         read_buffer(ep, 0, bcr);                      // And read the one buffer
     }
 
-    // Ship next buffer(s)
-    if (ep->bytes_left) ship_buffers(ep);
+    // Send next buffer(s)
+    if (ep->bytes_left) send_buffers(ep);
 }
 
 // ==[ Devices ]================================================================
@@ -458,7 +458,7 @@ void transfer(endpoint_t *ep) {
     // Perform the transfer (also gives SCR some time to settle)
     usb_hw->dev_addr_ctrl = dar;
     usb_hw->sie_ctrl      = scr & ~USB_SIE_CTRL_START_TRANS_BITS;
-    ship_buffers(ep); // ~20 μs
+    send_buffers(ep); // ~20 μs
     usb_hw->sie_ctrl      = scr;
 }
 
