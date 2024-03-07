@@ -589,20 +589,7 @@ void show_string_blocking(endpoint_t *ep, uint8_t index) {
     printf("[String #%u]: \"%s\"\n", index, str);
 }
 
-// ==[ Drivers ]================================================================
-
-typedef struct {
-  const char *name;
-  void (* const init  )(void);
-  bool (* const open  )(uint8_t dev_addr, const usb_interface_descriptor_t *ifc,
-                        uint16_t len);
-  bool (* const config)(uint8_t dev_addr, uint8_t itf_num);
-  bool (* const cb    )(uint8_t dev_addr, uint8_t ep_addr, // Ugh... xfer_result_t result,
-                        uint32_t xferred_bytes);
-  void (* const close )(uint8_t dev_addr);
-} driver_t;
-
-// --[ CDC ]--------------------------------------------------------------------
+// ==[ Classes ]================================================================
 
 void cdch_init() {
     printf("CDC Host Driver Initialized\n");
@@ -629,7 +616,18 @@ void cdch_close(uint8_t dev_addr) {
     printf("CDC Host Driver Closed\n");
 }
 
-// --[ General ]----------------------------------------------------------------
+// ==[ Drivers ]================================================================
+
+typedef struct {
+  const char *name;
+  void (* const init  )(void);
+  bool (* const open  )(uint8_t dev_addr, const usb_interface_descriptor_t *ifc,
+                        uint16_t len);
+  bool (* const config)(uint8_t dev_addr, uint8_t itf_num);
+  bool (* const cb    )(uint8_t dev_addr, uint8_t ep_addr, // Ugh... xfer_result_t result,
+                        uint32_t xferred_bytes);
+  void (* const close )(uint8_t dev_addr);
+} driver_t;
 
 static const driver_t drivers[] = {
     {
