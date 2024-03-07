@@ -3,7 +3,6 @@
 //
 // Author: Steve Shreeve <steve.shreeve@gmail.com>
 //   Date: January 29, 2024
-//   Note: This is a work in progress. It is not yet functional.
 //  Legal: Same license as the Raspberry Pi Pico SDK
 //
 // Thanks to Ha Thach for TinyUSB and https://github.com/hathach/tinyusb
