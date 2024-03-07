@@ -589,6 +589,161 @@ void show_string_blocking(endpoint_t *ep, uint8_t index) {
     printf("[String #%u]: \"%s\"\n", index, str);
 }
 
+// ==[ Drivers ]================================================================
+
+typedef struct {
+  const char *name;
+  void (* const init  )(void);
+  bool (* const open  )(uint8_t dev_addr, const usb_interface_descriptor_t *ifc,
+                        uint16_t len);
+  bool (* const config)(uint8_t dev_addr, uint8_t itf_num);
+  bool (* const cb    )(uint8_t dev_addr, uint8_t ep_addr, // Ugh... xfer_result_t result,
+                        uint32_t xferred_bytes);
+  void (* const close )(uint8_t dev_addr);
+} driver_t;
+
+// --[ CDC ]--------------------------------------------------------------------
+
+void cdch_init() {
+    printf("CDC Host Driver Initialized\n");
+}
+
+bool cdch_open(uint8_t dev_addr, const usb_interface_descriptor_t *ifc,
+               uint16_t len) {
+    printf("CDC Host Driver Opened\n");
+    return true;
+}
+
+bool cdch_config(uint8_t dev_addr, uint8_t itf_num) {
+    printf("CDC Host Driver Configured\n");
+    return true;
+}
+
+bool cdch_cb(uint8_t dev_addr, uint8_t ep_addr, // Ugh... xfer_result_t result,
+             uint32_t xferred_bytes) {
+    printf("CDC Host Driver Callback\n");
+    return true;
+}
+
+void cdch_close(uint8_t dev_addr) {
+    printf("CDC Host Driver Closed\n");
+}
+
+// --[ General ]----------------------------------------------------------------
+
+static const driver_t drivers[] = {
+    {
+        .name   = "CDC",
+        .init   = cdch_init,
+        .open   = cdch_open,
+        .config = cdch_config,
+        .cb     = cdch_cb,
+        .close  = cdch_close,
+    }
+};
+
+enum {
+    DRIVER_COUNT = sizeof(drivers) / sizeof(driver_t)
+};
+
+static uint16_t interface_len(usb_interface_descriptor_t *ifc,
+                              uint8_t ias, uint16_t max) {
+    uint8_t  *cur = (uint8_t *) ifc;
+    uint16_t  len = 0;
+
+    while (ias--) {
+        len += *cur;
+        cur += *cur;
+        while (len < max) {
+            if  (cur[1] == USB_DT_INTERFACE_ASSOCIATION) return len;
+            if ((cur[1] == USB_DT_INTERFACE) &&
+               ((usb_interface_descriptor_t *) cur)->bAlternateSetting == 0) {
+                break;
+            }
+            len += *cur;
+            cur += *cur;
+        }
+    }
+
+    return len;
+}
+
+bool enable_drivers(endpoint_t *ep) {
+    usb_configuration_descriptor_t *ptr =                // Main descriptor is a
+        (usb_configuration_descriptor_t *) ep->user_buf; // List of descriptors
+    usb_interface_descriptor_t *ifc;                     // Interface descriptor
+    uint8_t  *cur = (uint8_t *) ptr;                     // Start of descriptors
+    uint8_t  *end = (uint8_t *) ptr + ptr->wTotalLength; // End of descriptors
+    device_t *dev = get_device(ep->dev_addr);            // Current device
+    uint16_t  len;
+
+    // Iterate through each descriptor within the main configuration descriptor
+    for (cur += *cur; cur < end; cur += len) {
+        uint8_t ias = 1; // Number of interface associations
+
+        // Debug output
+        hexdump("|CFG", cur, *cur, 1);
+
+        // Optional: Interface Assocation Descriptor (IAD)
+        if (cur[1] == USB_DT_INTERFACE_ASSOCIATION) {
+            ias = ((usb_interface_assoc_descriptor_t *) cur)->bInterfaceCount;
+            cur += *cur; // Advance to the next descriptor
+        }
+
+        // Required: Interface Descriptor
+        if (cur[1] == USB_DT_INTERFACE) {
+            ifc = (usb_interface_descriptor_t *) cur;
+        } else {
+            panic("Missing interface descriptor");
+        }
+
+        // Special case: CDC needs two interfaces (CDC Control + CDC Data)
+        if (ias                     == 1             &&
+            ifc->bInterfaceClass    == USB_CLASS_CDC &&
+            ifc->bInterfaceSubClass == USB_SUBCLASS_CDC_ABSTRACT_CONTROL_MODEL)
+            ias = 2;
+
+        // Special case: Add MIDI here... any others?
+
+        // Ensure we have something at least as big as an interface descriptor
+        len = interface_len(ifc, ias, (uint16_t) (end - cur));
+        if (len < sizeof(usb_interface_descriptor_t))
+            panic("Interface descriptor is not big enough");
+
+        // Try to find a driver for this interface
+        for (uint8_t i = 0; i < DRIVER_COUNT; i++) {
+//             driver_t *driver = &drivers[i];
+//
+//             if (driver->open(dev_addr, cur, len)) {
+//                 printf("  %s driver opened\n", driver->name);
+//
+//                 // Bind each interface association to the driver
+//                 for (uint8_t j = 0; j < ias; j++) {
+//                     uint8_t k = cur->bInterfaceNumber + j;
+//                     dev->itf2drv[k] = i; // TODO: This needs to start with an invalid value
+//                 }
+//
+//                 // Bind all endpoints to the driver
+//                 endpoint_bind_driver(dev->ep2drv, cur, len, i);
+//
+//                 break;
+//             }
+
+            // Complain if we didn't find a matching driver
+            if (i == DRIVER_COUNT - 1) {
+                printf("Interface %u skipped: class=%u subclass=%u protocol=%u\n",
+                    ifc->bInterfaceNumber,
+                    ifc->bInterfaceClass,
+                    ifc->bInterfaceSubClass,
+                    ifc->bInterfaceProtocol
+                );
+            }
+        }
+    }
+
+    printf("Whoa... that was cool\n");
+}
+
 // ==[ Enumeration ]============================================================
 
 enum {
