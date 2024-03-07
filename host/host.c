@@ -596,7 +596,8 @@ enum {
     ENUMERATION_GET_MAXSIZE,
     ENUMERATION_SET_ADDRESS,
     ENUMERATION_GET_DEVICE,
-    ENUMERATION_GET_CONFIG,
+    ENUMERATION_GET_CONFIG_SHORT,
+    ENUMERATION_GET_CONFIG_FULL,
     ENUMERATION_SET_CONFIG,
     ENUMERATION_END,
 };
@@ -623,10 +624,10 @@ void set_device_address(endpoint_t *ep) {
     }));
 }
 
-void get_configuration_descriptor(endpoint_t *ep) {
+void get_configuration_descriptor(endpoint_t *ep, uint8_t len) {
     printf("Get configuration descriptor\n");
 
-    get_descriptor(ep, USB_DT_CONFIG, sizeof(usb_configuration_descriptor_t));
+    get_descriptor(ep, USB_DT_CONFIG, len);
 }
 
 void set_configuration(endpoint_t *ep, uint16_t cfg) {
@@ -665,7 +666,7 @@ void enumerate(void *arg) {
 
         case ENUMERATION_GET_MAXSIZE: {
             uint8_t maxsize0 =
-                ((usb_device_descriptor_t *) epx->user_buf)->bMaxPacketSize0; // TODO: How do we know this is our packet?
+                ((usb_device_descriptor_t *) epx->user_buf)->bMaxPacketSize0;
 
             // Allocate a new device
             new_addr      = next_dev_addr();
@@ -700,14 +701,28 @@ void enumerate(void *arg) {
         }   break;
 
         case ENUMERATION_GET_DEVICE: {
-            show_device_descriptor(ep->user_buf); // TODO: How is this even correct?
+            show_device_descriptor(ep->user_buf);
+            uint8_t len = sizeof(usb_configuration_descriptor_t);
 
-            printf("Starting GET_CONFIG\n");
-            get_configuration_descriptor(ep);
+            printf("Starting GET_CONFIG_SHORT (%u bytes)\n", len);
+            get_configuration_descriptor(ep, len);
         }   break;
 
-        case ENUMERATION_GET_CONFIG: {
-            show_configuration_descriptor(ep->user_buf); // TODO: How is this even correct?
+        case ENUMERATION_GET_CONFIG_SHORT: {
+            uint8_t len =
+                ((usb_configuration_descriptor_t *) ep->user_buf)->wTotalLength;
+            if (len > MAX_TEMP) {
+                show_configuration_descriptor(ep->user_buf);
+                panic("Configuration descriptor too large");
+            }
+
+            printf("Starting GET_CONFIG_FULL (%u bytes)\n", len);
+            get_configuration_descriptor(ep, len);
+        }   break;
+
+        case ENUMERATION_GET_CONFIG_FULL: {
+            show_configuration_descriptor(ep->user_buf);
+            enable_drivers(ep);
 
             printf("Starting SET_CONFIG\n");
             set_configuration(ep, 1);
