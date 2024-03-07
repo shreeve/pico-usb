@@ -226,33 +226,6 @@ enum { // Used to mask availability in the BCR (enum resolves at compile time)
     UNAVAILABLE = ~(USB_BUF_CTRL_AVAIL << 16 | USB_BUF_CTRL_AVAIL)
 };
 
-// Read a buffer and return its length (data_buf -> user_buf)
-uint16_t read_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
-    bool     in   = ep_in(ep);                   // Buffer is inbound
-    bool     full = bcr & USB_BUF_CTRL_FULL;     // Buffer is full (populated)
-    uint16_t len  = bcr & USB_BUF_CTRL_LEN_MASK; // Buffer length
-
-    // Inbound buffers must be full and outbound buffers must be empty
-    assert(in == full);
-
-    // Copy inbound data from the data buffer to the user buffer
-    if (in && len) {
-        memcpy(ep->user_buf, (void *) (ep->data_buf + buf_id * 64), len);
-        hexdump(buf_id ? "│IN/2" : "│IN/1", ep->user_buf, len, 1); // ~7.5 ms
-        ep->user_buf += len;
-    } // NOTE: OUT will show in send_buffers(), empty will show as a ZLP/OUT
-
-    // Update byte counts
-    ep->bytes_done += len;
-
-    // Short packet (below maxsize) means the transfer is done
-    if (len < ep->maxsize) {
-        ep->bytes_left = 0;
-    }
-
-    return len;
-}
-
 // Fill a buffer and return its half of the BCR (user_buf -> data_buf)
 uint16_t fill_buffer(endpoint_t *ep, uint8_t buf_id) {
     bool     in  = ep_in(ep);                         // Buffer is inbound
@@ -301,6 +274,33 @@ void send_buffers(endpoint_t *ep) {
     nop();
     nop();
     *ep->bcr = bcr;
+}
+
+// Read a buffer and return its length (data_buf -> user_buf)
+uint16_t read_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
+    bool     in   = ep_in(ep);                   // Buffer is inbound
+    bool     full = bcr & USB_BUF_CTRL_FULL;     // Buffer is full (populated)
+    uint16_t len  = bcr & USB_BUF_CTRL_LEN_MASK; // Buffer length
+
+    // Inbound buffers must be full and outbound buffers must be empty
+    assert(in == full);
+
+    // Copy inbound data from the data buffer to the user buffer
+    if (in && len) {
+        memcpy(ep->user_buf, (void *) (ep->data_buf + buf_id * 64), len);
+        hexdump(buf_id ? "│IN/2" : "│IN/1", ep->user_buf, len, 1); // ~7.5 ms
+        ep->user_buf += len;
+    } // NOTE: OUT will show in send_buffers(), empty will show as a ZLP/OUT
+
+    // Update byte counts
+    ep->bytes_done += len;
+
+    // Short packet (below maxsize) means the transfer is done
+    if (len < ep->maxsize) {
+        ep->bytes_left = 0;
+    }
+
+    return len;
 }
 
 // Processes buffers in ISR context
