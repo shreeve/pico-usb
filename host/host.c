@@ -247,7 +247,7 @@ uint16_t fill_buffer(endpoint_t *ep, uint8_t buf_id) {
         memcpy((void *) (ep->data_buf + buf_id * 64), ep->user_buf, len);
         hexdump(buf_id ? "│OUT/2" : "│OUT/1", ep->user_buf, len, 1);
         ep->user_buf += len;
-    } // NOTE: IN will show in read_buffers(), empty will show as a ZLP/IN
+    } // NOTE: IN will show in read_buffer(), empty will show as a ZLP/IN
 
     // Update byte counts
     ep->bytes_left -= len;
