@@ -242,12 +242,12 @@ uint16_t fill_buffer(endpoint_t *ep, uint8_t buf_id) {
     // Toggle DATA0/DATA1 pid
     ep->data_pid = pid ^ 1u;
 
-    // Copy outbound data from the user buffer to the data buffer
+    // OUT: Copy outbound data from the user buffer to the data buffer
     if (!in && len) {
         memcpy((void *) (ep->data_buf + buf_id * 64), ep->user_buf, len);
         hexdump(buf_id ? "│OUT/2" : "│OUT/1", ep->user_buf, len, 1);
         ep->user_buf += len;
-    } // NOTE: IN will show in read_buffer(), empty will show as a ZLP/IN
+    }
 
     // Update byte counts
     ep->bytes_left -= len;
@@ -285,12 +285,12 @@ uint16_t read_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
     // Inbound buffers must be full and outbound buffers must be empty
     assert(in == full);
 
-    // Copy inbound data from the data buffer to the user buffer
+    // IN: Copy inbound data from the data buffer to the user buffer
     if (in && len) {
         memcpy(ep->user_buf, (void *) (ep->data_buf + buf_id * 64), len);
         hexdump(buf_id ? "│IN/2" : "│IN/1", ep->user_buf, len, 1); // ~7.5 ms
         ep->user_buf += len;
-    } // NOTE: OUT will show in send_buffers(), empty will show as a ZLP/OUT
+    }
 
     // Update byte counts
     ep->bytes_done += len;
