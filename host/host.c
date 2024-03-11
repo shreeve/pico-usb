@@ -211,12 +211,9 @@ void reset_epx() {
     }), NULL);
 }
 
+// Clear out all endpoints
 void reset_endpoints() {
-
-    // Clear out all endpoints
     memclr(eps, sizeof(eps));
-
-    // Allocate the endpoints
     reset_epx();
 }
 
@@ -384,9 +381,8 @@ void reset_device(uint8_t dev_addr) {
     // memset(dev->ep2drv , TUSB_INDEX_INVALID_8, sizeof(dev->ep2drv ));
 }
 
+// Clear out all devices
 void reset_devices() {
-
-    // Clear out all devices
     memclr(devices, sizeof(devices));
 }
 
