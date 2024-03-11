@@ -668,15 +668,19 @@ static uint16_t interface_len(usb_interface_descriptor_t *ifd,
 
 // Parse a configuration descriptor and enable drivers for each interface
 bool enable_drivers(endpoint_t *ep) {
-    usb_configuration_descriptor_t *ptr =                // Main descriptor is a
-        (usb_configuration_descriptor_t *) ep->user_buf; // List of descriptors
-    usb_interface_descriptor_t *ifd;                     // Interface descriptor
-    uint8_t  *cur = (uint8_t *) ptr;                     // Start of descriptors
-    uint8_t  *end = (uint8_t *) ptr + ptr->wTotalLength; // End of descriptors
-    device_t *dev = get_device(ep->dev_addr);            // Current device
-    uint16_t  len;
+    usb_configuration_descriptor_t *cfd; // Configuration descriptor
+    usb_interface_descriptor_t     *ifd; // Interface descriptor
 
-    // Iterate through each descriptor within the main configuration descriptor
+    // The configuration descriptor is a long list of other descriptors
+    cfd = (usb_configuration_descriptor_t *) ep->user_buf;
+    uint8_t  *cur = (uint8_t *) cfd;         // Start of descriptors
+    uint8_t  *end = cur + cfd->wTotalLength; // End of descriptors
+
+    // Some helper variables for looping through the list of descriptors
+    device_t *dev = get_device(ep->dev_addr); // Current device
+    uint16_t  len = 0;                        // How far to advance each time
+
+    // Iterate through each descriptor in the main configuration descriptor
     for (cur += *cur; cur < end; cur += len) {
         uint8_t ias = 1; // Number of interface associations
 
