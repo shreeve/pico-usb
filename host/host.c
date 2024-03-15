@@ -75,6 +75,8 @@ typedef struct {
     uint8_t    data_pid  ; // Toggle between DATA0/DATA1 packets
     bool       configured; // Endpoint is configured
     bool       active    ; // Transfer is active
+
+    // Hardware registers and data buffer
     io_rw_32  *ecr       ; // Endpoint control register
     io_rw_32  *bcr       ; // Buffer control register
     volatile               // Data buffer is volative
