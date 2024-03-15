@@ -75,6 +75,7 @@ typedef struct {
     uint8_t    data_pid  ; // Toggle between DATA0/DATA1 packets
     bool       configured; // Endpoint is configured
     bool       active    ; // Transfer is active
+    bool       setup     ; // Setup packet flag
 
     // Hardware registers and data buffer
     io_rw_32  *ecr       ; // Endpoint control register
@@ -82,8 +83,7 @@ typedef struct {
     volatile               // Data buffer is volative
     uint8_t   *buf       ; // Data buffer in DPSRAM
 
-    // Transfer state
-    bool       setup     ; // SETUP packet flag
+    // Shared with application code
     uint8_t   *user_buf  ; // User buffer in DPSRAM, RAM, or flash
     uint16_t   bytes_long; // Bytes in the whole transfer
     uint16_t   bytes_left; // Bytes left to transfer
