@@ -243,9 +243,10 @@ uint16_t fill_buffer(endpoint_t *ep, uint8_t buf_id) {
 
     // OUT: Copy outbound data from the user buffer to the data buffer
     if (!in && len) {
-        memcpy((void *) (ep->buf + buf_id * 64), ep->user_buf, len);
-        hexdump(buf_id ? "│OUT/2" : "│OUT/1", ep->user_buf, len, 1);
-        ep->user_buf += len;
+        uint8_t *ptr = &ep->user_buf[ep->bytes_done];
+        memcpy((void *) (ep->buf + buf_id * 64), ptr, len);
+        hexdump(buf_id ? "│OUT/2" : "│OUT/1", ptr, len, 1);
+        ep->bytes_done += len;
     }
 
     // Update byte counts
@@ -286,9 +287,9 @@ uint16_t read_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
 
     // IN: Copy inbound data from the data buffer to the user buffer
     if (in && len) {
-        memcpy(ep->user_buf, (void *) (ep->buf + buf_id * 64), len);
-        hexdump(buf_id ? "│IN/2" : "│IN/1", ep->user_buf, len, 1); // ~7.5 ms
-        ep->user_buf += len;
+        uint8_t *ptr = &ep->user_buf[ep->bytes_done];
+        memcpy(ptr, (void *) (ep->buf + buf_id * 64), len);
+        hexdump(buf_id ? "│IN/2" : "│IN/1", ptr, len, 1); // ~7.5 ms
     }
 
     // Update byte counts
