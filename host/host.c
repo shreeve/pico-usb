@@ -78,7 +78,7 @@ typedef struct {
     io_rw_32  *ecr       ; // Endpoint control register
     io_rw_32  *bcr       ; // Buffer control register
     volatile               // Data buffer is volative
-    uint8_t   *data_buf  ; // Data buffer in DPSRAM
+    uint8_t   *buf       ; // Data buffer in DPSRAM
 
     // Transfer state
     bool       setup     ; // SETUP packet flag
@@ -124,12 +124,12 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb,
 
     // Populate the endpoint (clears all fields not present)
     *ep = (endpoint_t) {
-        .dev_addr   = ep->dev_addr,
-        .ep_addr    = usb->bEndpointAddress,
-        .type       = usb->bmAttributes,
-        .maxsize    = usb->wMaxPacketSize,
-        .interval   = usb->bInterval,
-        .user_buf   = user_buf != NULL ? user_buf : temp_buf,
+        .dev_addr = ep->dev_addr,
+        .ep_addr  = usb->bEndpointAddress,
+        .type     = usb->bmAttributes,
+        .maxsize  = usb->wMaxPacketSize,
+        .interval = usb->bInterval,
+        .user_buf = user_buf != NULL ? user_buf : temp_buf,
     };
 
     // Setup the necessary registers and data buffer pointer
@@ -138,23 +138,23 @@ void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb,
         uint8_t most = MIN(USER_ENDPOINTS, MAX_POLLED);
         for (uint8_t i = 0; i < most; i++) {
             if (usbh_dpram->int_ep_ctrl[i].ctrl) continue; // Skip if being used
-            ep->ecr      = &usbh_dpram->int_ep_ctrl       [i].ctrl;
-            ep->bcr      = &usbh_dpram->int_ep_buffer_ctrl[i].ctrl;
-            ep->data_buf = &usbh_dpram->epx_data[(i + 2) * 64]; // Can't do ISO?
+            ep->ecr = &usbh_dpram->int_ep_ctrl       [i].ctrl;
+            ep->bcr = &usbh_dpram->int_ep_buffer_ctrl[i].ctrl;
+            ep->buf = &usbh_dpram->epx_data[(i + 2) * 64]; // Can't do ISO?
             break;
         }
         if (!ep->ecr) panic("No free polled endpoints remaining");
     } else {
-        ep->ecr      = &usbh_dpram->epx_ctrl;
-        ep->bcr      = &usbh_dpram->epx_buf_ctrl;
-        ep->data_buf = &usbh_dpram->epx_data[0];
+        ep->ecr = &usbh_dpram->epx_ctrl;
+        ep->bcr = &usbh_dpram->epx_buf_ctrl;
+        ep->buf = &usbh_dpram->epx_data[0];
     }
 
     // Calculate the ECR
     uint32_t type   = ep->type;
     uint32_t ms     = ep->interval;
     uint32_t lsb    = EP_CTRL_HOST_INTERRUPT_INTERVAL_LSB;
-    uint32_t offset = (uint32_t) ep->data_buf & 0x0fff;   // Offset from DSPRAM
+    uint32_t offset = (uint32_t) ep->buf & 0x0fff;        // Offset from DSPRAM
     uint32_t style  = ep->interval                        // Polled endpoint?
                     ? EP_CTRL_INTERRUPT_PER_BUFFER        // Y: Single buffering
                     : EP_CTRL_DOUBLE_BUFFERED_BITS        // N: Double buffering
@@ -223,7 +223,7 @@ enum { // Used to mask availability in the BCR (enum resolves at compile time)
     UNAVAILABLE = ~(USB_BUF_CTRL_AVAIL << 16 | USB_BUF_CTRL_AVAIL)
 };
 
-// Fill a buffer and return its half of the BCR (user_buf -> data_buf)
+// Fill a buffer and return its half of the BCR (user_buf -> buf)
 uint16_t fill_buffer(endpoint_t *ep, uint8_t buf_id) {
     bool     in  = ep_in(ep);                         // Buffer is inbound
     bool     mas = ep->bytes_left > ep->maxsize;      // Any more packets?
@@ -241,7 +241,7 @@ uint16_t fill_buffer(endpoint_t *ep, uint8_t buf_id) {
 
     // OUT: Copy outbound data from the user buffer to the data buffer
     if (!in && len) {
-        memcpy((void *) (ep->data_buf + buf_id * 64), ep->user_buf, len);
+        memcpy((void *) (ep->buf + buf_id * 64), ep->user_buf, len);
         hexdump(buf_id ? "│OUT/2" : "│OUT/1", ep->user_buf, len, 1);
         ep->user_buf += len;
     }
@@ -273,7 +273,7 @@ void send_buffers(endpoint_t *ep) {
     *ep->bcr = bcr;
 }
 
-// Read a buffer and return its length (data_buf -> user_buf)
+// Read a buffer and return its length (buf -> user_buf)
 uint16_t read_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
     bool     in   = ep_in(ep);                   // Buffer is inbound
     bool     full = bcr & USB_BUF_CTRL_FULL;     // Buffer is full (populated)
@@ -284,7 +284,7 @@ uint16_t read_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
 
     // IN: Copy inbound data from the data buffer to the user buffer
     if (in && len) {
-        memcpy(ep->user_buf, (void *) (ep->data_buf + buf_id * 64), len);
+        memcpy(ep->user_buf, (void *) (ep->buf + buf_id * 64), len);
         hexdump(buf_id ? "│IN/2" : "│IN/1", ep->user_buf, len, 1); // ~7.5 ms
         ep->user_buf += len;
     }
