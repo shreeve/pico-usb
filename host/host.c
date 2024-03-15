@@ -225,8 +225,8 @@ enum { // Used to mask availability in the BCR (enum resolves at compile time)
     UNAVAILABLE = ~(USB_BUF_CTRL_AVAIL << 16 | USB_BUF_CTRL_AVAIL)
 };
 
-// Fill a buffer and return its half of the BCR (user_buf -> buf)
-uint16_t fill_buffer(endpoint_t *ep, uint8_t buf_id) {
+// Prepare a buffer and return its half of the BCR (user_buf -> buf)
+uint16_t prep_buffer(endpoint_t *ep, uint8_t buf_id) {
     bool     in  = ep_in(ep);                         // Buffer is inbound
     bool     mas = ep->bytes_left > ep->maxsize;      // Any more packets?
     uint8_t  pid = ep->data_pid;                      // Set DATA0/DATA1
@@ -241,7 +241,7 @@ uint16_t fill_buffer(endpoint_t *ep, uint8_t buf_id) {
     // Toggle DATA0/DATA1 pid
     ep->data_pid = pid ^ 1u;
 
-    // OUT: Copy outbound data from the user buffer to the data buffer
+    // If we are sending data, copy it from the user buffer to the data buffer
     if (!in && len) {
         uint8_t *ptr = &ep->user_buf[ep->bytes_done];
         memcpy((void *) (ep->buf + buf_id * 64), ptr, len);
@@ -258,12 +258,12 @@ uint16_t fill_buffer(endpoint_t *ep, uint8_t buf_id) {
 // Send buffer(s) immediately for active transfers, new ones still need SIE help
 void send_buffers(endpoint_t *ep) {
     uint32_t ecr = *ep->ecr;
-    uint32_t bcr = fill_buffer(ep, 0);
+    uint32_t bcr = prep_buffer(ep, 0);
 
     // Set ECR and BCR based on whether the transfer should be double buffered
     if (~bcr & USB_BUF_CTRL_LAST) {
         ecr |= EP_CTRL_DOUBLE_BUFFERED_BITS;
-        bcr |= fill_buffer(ep, 1) << 16;
+        bcr |= prep_buffer(ep, 1) << 16;
     } else {
         ecr &= ~EP_CTRL_DOUBLE_BUFFERED_BITS;
     }
@@ -285,7 +285,7 @@ uint16_t read_buffer(endpoint_t *ep, uint8_t buf_id, uint32_t bcr) {
     // Inbound buffers must be full and outbound buffers must be empty
     assert(in == full);
 
-    // IN: Copy inbound data from the data buffer to the user buffer
+    // If we are reading data, copy it from the data buffer to the user buffer
     if (in && len) {
         uint8_t *ptr = &ep->user_buf[ep->bytes_done];
         memcpy(ptr, (void *) (ep->buf + buf_id * 64), len);
