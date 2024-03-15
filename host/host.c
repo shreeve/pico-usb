@@ -86,8 +86,8 @@ typedef struct {
     // Shared with application code
     uint8_t   *user_buf  ; // User buffer in DPSRAM, RAM, or flash
     uint16_t   bytes_long; // Bytes in the whole transfer
-    uint16_t   bytes_left; // Bytes left to transfer
     uint16_t   bytes_done; // Bytes done transferring
+    uint16_t   bytes_left; // Bytes left to transfer
     endpoint_c cb        ; // Callback function
 } endpoint_t;
 
@@ -115,10 +115,10 @@ SDK_INLINE void clear_endpoint(endpoint_t *ep) {
 
     // Transfer state
     ep->setup      = false;
-    ep->user_buf   = temp_buf; // TODO: We need a legit value here...
+    ep->user_buf   = NULL;
     ep->bytes_long = 0;
-    ep->bytes_left = 0;
     ep->bytes_done = 0;
+    ep->bytes_left = 0;
 }
 
 void setup_endpoint(endpoint_t *ep, usb_endpoint_descriptor_t *usb,
@@ -482,6 +482,7 @@ void control_transfer(endpoint_t *ep, usb_setup_packet_t *setup) {
     ep->data_pid   = 1;
     ep->ep_addr    = setup->bmRequestType & USB_DIR_IN;
     ep->bytes_long = setup->wLength;
+    ep->bytes_done = 0;
     ep->bytes_left = setup->wLength;
     transfer(ep);
 }
@@ -557,7 +558,7 @@ void show_configuration_descriptor(void *ptr) {
 }
 
 void show_string_blocking(endpoint_t *ep, uint8_t index) {
-    uint8_t *ptr = ep->user_buf; // TODO: Confirm this address is ok
+    uint8_t *ptr = ep->user_buf;
 
     // Request a string and wait for it
     get_string_descriptor_blocking(ep, index);
@@ -1200,7 +1201,7 @@ void isr_usbctrl() {
         }
 
         // Clear the endpoint (since its complete)
-        clear_endpoint(ep); // TODO: This resets the buffer, which is why user_buf points to temp_buf... it's wrong on several levels!
+        clear_endpoint(ep);
 
         // Queue the transfer task
         queue_add_blocking(queue, &((task_t) {
