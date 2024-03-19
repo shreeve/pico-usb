@@ -85,7 +85,6 @@ typedef struct {
 
     // Shared with application code
     uint8_t   *user_buf  ; // User buffer in DPSRAM, RAM, or flash
-    uint16_t   bytes_long; // Bytes in the whole transfer
     uint16_t   bytes_done; // Bytes done transferring
     uint16_t   bytes_left; // Bytes left to transfer
     endpoint_c cb        ; // Callback function
@@ -116,7 +115,6 @@ SDK_INLINE void clear_endpoint(endpoint_t *ep) {
     // Transfer state
     ep->setup      = false;
     ep->user_buf   = NULL;
-    ep->bytes_long = 0;
     ep->bytes_done = 0;
     ep->bytes_left = 0;
 }
@@ -414,7 +412,7 @@ void transfer(endpoint_t *ep) {
     bool su = ep->setup && !ep->bytes_done; // Start of a SETUP packet
 
     // If there's no data phase, flip the endpoint direction
-    if (!ep->bytes_long) {
+    if (!ep->bytes_left) {
         in = !in;
         ep->ep_addr ^= USB_DIR_IN;
     }
@@ -482,7 +480,6 @@ void control_transfer(endpoint_t *ep, usb_setup_packet_t *setup) {
     ep->setup      = true;
     ep->data_pid   = 1;
     ep->ep_addr    = setup->bmRequestType & USB_DIR_IN;
-    ep->bytes_long = setup->wLength;
     ep->bytes_done = 0;
     ep->bytes_left = setup->wLength;
     transfer(ep);
