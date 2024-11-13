@@ -1,3 +1,7 @@
+# NOTE: Repo has moved to:
+
+* https://github.com/shreeve/picousb
+
 # PicoUSB
 
 A very small USB library (without TinyUSB) for the rp2040.
